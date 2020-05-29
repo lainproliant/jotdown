@@ -9,13 +9,18 @@
 
 #include <iostream>
 #include "jotdown/parser.h"
+#include "moonlight/core.h"
 
 int main() {
-    jotdown::Parser parser(std::cin);
+    auto infile = moonlight::file::open_r("README.md");
+    jotdown::Parser parser(infile);
 
     for (auto iter = parser.begin();
          iter != parser.end();
          iter++) {
-        std::cout << *iter << std::endl;
+        auto tk = *iter;
+        std::cout << tk->repr() << std::endl;
     }
+
+    return 0;
 }

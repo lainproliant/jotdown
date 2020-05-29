@@ -93,8 +93,13 @@ public:
     }
 
     std::string repr() const {
-        return tfm::format("<Token:%s '%s'>",
-                           type_name(type()), strliteral(content()));
+        if (content().size() == 0) {
+            return tfm::format("<%s>", type_name(type()));
+
+        } else {
+            return tfm::format("<%s '%s'>",
+                               type_name(type()), strliteral(content()));
+        }
     }
 
     Type type() const {
@@ -114,6 +119,7 @@ private:
     const std::string _content;
     const Location _location;
 };
+typedef std::shared_ptr<Token> token_t;
 
 // ------------------------------------------------------------------
 class HeaderStartToken : public Token {
@@ -123,6 +129,10 @@ public:
 
     int level() const {
         return _level;
+    }
+
+    std::string repr() const {
+        return tfm::format("<%s %d>", type_name(type()), _level);
     }
 
 private:
@@ -145,9 +155,16 @@ public:
         return _text;
     }
 
+    std::string repr() const {
+        if (_text != content()) {
+            return tfm::format("<%s %s (%s)>", type_name(type()), content(), _text);
+        } else {
+            return tfm::format("<%s %s>", type_name(type()), content());
+        }
+    }
+
 private:
     const std::string& _text;
-
 };
 
 // ------------------------------------------------------------------
@@ -170,6 +187,10 @@ class UnorderedListItemToken : public ListItemToken {
 public:
     UnorderedListItemToken(int level, const Location& loc = NOWHERE)
     : ListItemToken(Type::UL_ITEM, level, "- ", loc) { }
+
+    std::string repr() const {
+        return tfm::format("<%s %d>", type_name(type()), level());
+    }
 };
 
 // ------------------------------------------------------------------
@@ -182,6 +203,10 @@ public:
     const std::string& ordinal() const {
         return content();
     }
+
+    std::string repr() const {
+        return tfm::format("<%s %d '%s'>", type_name(type()), level(), ordinal());
+    }
 };
 
 // ------------------------------------------------------------------
@@ -193,18 +218,20 @@ struct Context {
     bool ol = false;
     bool ul = false;
     int ord = 0;  // TODO: Fix this not actually getting updated!
-    std::deque<Token> tokens;
+    std::deque<token_t> tokens;
 
     void push_token(Token::Type type, const std::string& content = "") {
-        push_token(Token(type, content));
+        push_token(make<Token>(type, content));
     }
 
-    void push_token(const Token& tk) {
+    void push_token(token_t tk) {
         tokens.push_back(tk);
     }
 
     void push_terminal() {
-        push_token(terminal);
+        if (terminal != Token::Type::NONE) {
+            push_token(terminal);
+        }
         terminal = Token::Type::NONE;
     }
 
@@ -212,9 +239,9 @@ struct Context {
         push_token(Token::Type::ERROR, message);
     }
 
-    std::optional<Token> pop_token() {
+    std::optional<token_t> pop_token() {
         if (tokens.size() > 0) {
-            Token tk = tokens.front();
+            token_t tk = tokens.front();
             tokens.pop_front();
             return tk;
         } else {
@@ -267,19 +294,25 @@ class ParseCode : public ParseState {
             break;
         case '\n':
             line_begin = true;
-            sb.push_back(context().fb.getc());
+            ingest();
             break;
         default:
             if (line_begin && context().fb.scan_eq("```")) {
                 context().push_token(Token::Type::CODE_BLOCK, sb);
                 context().fb.advance(3);
                 transition<ParsePostCode>();
+            } else {
+                line_begin = false;
+                ingest();
             }
         }
-
     }
 
 private:
+    void ingest() {
+        sb.push_back(context().fb.getc());
+    }
+
     std::string sb;
     bool line_begin = true;
 };
@@ -326,8 +359,8 @@ class ParseRef : public ParseState {
                 }
 
             } else if (c == ']') {
-                context().push_token(RefToken(sb, link_text_sb,
-                                              context().location()));
+                context().push_token(make<RefToken>(sb, link_text_sb,
+                                                    context().location()));
                 context().fb.advance();
                 pop();
 
@@ -340,7 +373,7 @@ class ParseRef : public ParseState {
             has_link_text = true;
 
         } else if (c == '\n' || c == EOF || isspace(c)) {
-            context().push_token(RefToken(sb, "", context().location()));
+            context().push_token(make<RefToken>(sb, "", context().location()));
             pop();
 
         } else if (ispunct(c)) {
@@ -354,7 +387,7 @@ class ParseRef : public ParseState {
             int c2 = context().fb.peek(2);
             if (isspace(c2) || c2 == EOF) {
                 // This isn't part of the link, we're done.
-                context().push_token(RefToken(sb, "", context().location()));
+                context().push_token(make<RefToken>(sb, "", context().location()));
                 pop();
 
             } else {
@@ -404,6 +437,9 @@ private:
 
 // ------------------------------------------------------------------
 class ParseText : public ParseState {
+public:
+    ParseText(const std::string& init_str = "") : sb(init_str) { }
+
     void run() {
         switch(context().fb.peek()) {
         case '@':
@@ -429,6 +465,7 @@ class ParseText : public ParseState {
             }
         case '\n':
             new_word = false;
+            context().newline = true;
             ingest();
             // fallthrough
 
@@ -436,6 +473,14 @@ class ParseText : public ParseState {
             digest();
             context().push_terminal();
             pop();
+            break;
+
+        default:
+            int c = context().fb.peek();
+            if (isspace(c)) {
+                new_word = true;
+            }
+            ingest();
             break;
         }
     }
@@ -468,6 +513,7 @@ class ParseMaybeCodeBlock : public ParseState {
 
 // ------------------------------------------------------------------
 class ParseMaybeHeader : public ParseState {
+public:
     ParseMaybeHeader(int level) : level(level) { }
 
     void run() {
@@ -479,7 +525,7 @@ class ParseMaybeHeader : public ParseState {
 
         } else if (isspace(c)) {
             context().fb.advance();
-            context().push_token(Token::Type::HEADER_START);
+            context().push_token(make<HeaderStartToken>(level));
             context().terminal = Token::Type::HEADER_END;
             transition<ParseText>();
 
@@ -502,7 +548,9 @@ public:
     ParseOrderedList(int level) : level(level) { }
 
     void run() {
-        context().fb.advance();
+        if (context().level != 0) {
+            context().push_token(Token::Type::LIST_ITEM_END);
+        }
 
         while (! ordinal_scanned) {
             int c = context().fb.getc();
@@ -515,12 +563,18 @@ public:
             } else {
                 // This is an error condition that should not
                 // be possible outside of a programming mistake.
-                throw ParserError("Unexpected parser state encountered.",
-                                  context().location());
+                throw ParserError(
+                    tfm::format("Unexpected parser state encountered: (c='%c')", c),
+                                context().location());
             }
         }
 
-        context().push_token(OrderedListItemToken(level, ordinal));
+        context().push_token(make<OrderedListItemToken>(level, ordinal));
+        context().level = level;
+        context().newline = false;
+        context().ul = false;
+        context().ol = true;
+        context().ord = ordinal.size() + 2;
         context().fb.advance(); // Skip the required opening space.
         transition<ParseText>();
     }
@@ -543,8 +597,7 @@ public:
 
         // Skip the indent, slash, and required opening space.
         context().fb.advance(level+1);
-        context().push_token(UnorderedListItemToken(level,
-                                                    context().location()));
+        context().push_token(make<UnorderedListItemToken>(level, context().location()));
         context().level = level;
         context().newline = false;
         context().ul = true;
@@ -565,7 +618,7 @@ class ParseLineScan : public ParseState {
         int c = context().fb.peek(x);
 
         if (isspace(c) && c != '\n') {
-            x = 0;
+            context().fb.advance();
             return;
 
         } else if (c == '\n' || c == EOF) {
@@ -574,6 +627,10 @@ class ParseLineScan : public ParseState {
             }
             context().fb.advance();
             context().push_token(Token::Type::NEWLINE);
+            context().level = 0;
+            context().ul = false;
+            context().ol = false;
+            context().newline = true;
             pop();
             return;
 
@@ -624,6 +681,10 @@ class ParseBegin : public ParseState {
         case '`':
             push<ParseMaybeCodeBlock>();
             break;
+        case EOF:
+            context().push_token(Token::Type::END);
+            pop();
+            break;
         default:
             push<ParseLineScan>();
             break;
@@ -634,7 +695,7 @@ class ParseBegin : public ParseState {
 // ------------------------------------------------------------------
 class Parser {
 public:
-    typedef moonlight::gen::Iterator<Token> Iterator;
+    typedef moonlight::gen::Iterator<token_t> Iterator;
 
     Parser(std::istream& input, const std::string& filename = "<input>")
     : ctx({
@@ -643,15 +704,15 @@ public:
     machine(ParseState::Machine::init<ParseBegin>(ctx)) { }
 
     static const Iterator end() {
-        return moonlight::gen::end<Token>();
+        return moonlight::gen::end<token_t>();
     }
 
     Iterator begin() {
-        return moonlight::gen::begin<Token>(std::bind(&Parser::parse_one, this));
+        return moonlight::gen::begin<token_t>(std::bind(&Parser::parse_one, this));
     }
 
 private:
-    std::optional<Token> parse_one() {
+    std::optional<token_t> parse_one() {
         auto token = ctx.pop_token();
         if (token) {
             return token;
