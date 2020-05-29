@@ -215,9 +215,9 @@ struct Context {
     Token::Type terminal = Token::Type::NONE;
     bool newline = false;
     int level = 0;
-    bool ol = false;
-    bool ul = false;
-    int ord = 0;  // TODO: Fix this not actually getting updated!
+    bool is_ol = false;
+    bool is_ul = false;
+    int li_text_indent = 0;
     std::deque<token_t> tokens;
 
     void push_token(Token::Type type, const std::string& content = "") {
@@ -237,6 +237,15 @@ struct Context {
 
     void push_error(const std::string& message) {
         push_token(Token::Type::ERROR, message);
+    }
+
+    void push_newline() {
+        push_token(Token::Type::NEWLINE);
+        level = 0;
+        li_text_indent = 0;
+        is_ul = false;
+        is_ol = false;
+        newline = true;
     }
 
     std::optional<token_t> pop_token() {
@@ -410,7 +419,11 @@ class ParseHashtag : public ParseState {
     void run() {
         int c = context().fb.peek();
 
-        if (c == '\n' || c == EOF || isspace(c)) {
+        if (sb.size() == 0 && c == '#') {
+            sb.push_back(c);
+            context().fb.advance();
+
+        } else if (c == '\n' || c == EOF || isspace(c)) {
             context().push_token(Token::Type::HASHTAG, sb);
             pop();
 
@@ -438,8 +451,6 @@ private:
 // ------------------------------------------------------------------
 class ParseText : public ParseState {
 public:
-    ParseText(const std::string& init_str = "") : sb(init_str) { }
-
     void run() {
         switch(context().fb.peek()) {
         case '@':
@@ -457,12 +468,14 @@ public:
         case '#':
             if (new_word && ! isspace(context().fb.peek(2))) {
                 digest();
-                context().fb.advance();
                 push<ParseHashtag>();
+
             } else {
                 new_word = false;
                 ingest();
             }
+            break;
+
         case '\n':
             new_word = false;
             context().newline = true;
@@ -517,24 +530,19 @@ public:
     ParseMaybeHeader(int level) : level(level) { }
 
     void run() {
-        int c = context().fb.peek(2);
+        int c = context().fb.peek(level+1);
 
         if (c == '#') {
-            context().fb.advance();
-            transition<ParseMaybeHeader>(level + 1);
+            transition<ParseMaybeHeader>(level+1);
 
         } else if (isspace(c)) {
-            context().fb.advance();
             context().push_token(make<HeaderStartToken>(level));
             context().terminal = Token::Type::HEADER_END;
+            context().fb.advance(level + 1);
             transition<ParseText>();
 
         } else {
-            std::string sb;
-            for (int x = 0; x < level - 1; x++) {
-                sb.push_back('#');
-            }
-            transition<ParseText>(sb);
+            transition<ParseText>();
         }
     }
 
@@ -543,82 +551,119 @@ private:
 };
 
 // ------------------------------------------------------------------
-class ParseOrderedList : public ParseState {
+class ParseMaybeOrderedList : public ParseState {
 public:
-    ParseOrderedList(int level) : level(level) { }
+    ParseMaybeOrderedList(int level) : _level(level) { }
 
     void run() {
-        if (context().level != 0) {
-            context().push_token(Token::Type::LIST_ITEM_END);
+        // If the given level matches li_text_indent,
+        // this should be treated as text contents of a list item
+        // instead of a new list item.
+        if (_level != 0 && _level == context().li_text_indent) {
+            context().fb.advance(context().li_text_indent);
+            transition<ParseText>();
+            return;
         }
 
-        while (! ordinal_scanned) {
-            int c = context().fb.getc();
+        // If we are at the same level as an unordered list being parsed,
+        // this should be treated as text belonging to the unordered list
+        // as lists must be homogenous between ordered and unordered.
+        if (_level == context().level && context().is_ul) {
+            context().fb.advance(_level);
+            transition<ParseText>();
+            return;
+        }
+
+        // Scan forward from the first alphanumeric character until we
+        // reach a period.  If the following character is a space,
+        // we can treat this as an ordered list item.
+        int y = 1;
+        for (;; y++) {
+            int c = context().fb.peek(_level + y);
             if (isalnum(c)) {
-                ordinal.push_back(c);
+                _ordinal.push_back(c);
+                continue;
 
             } else if (c == '.') {
-                ordinal_scanned = true;
-
-            } else {
-                // This is an error condition that should not
-                // be possible outside of a programming mistake.
-                throw ParserError(
-                    tfm::format("Unexpected parser state encountered: (c='%c')", c),
-                                context().location());
+                int c2 = context().fb.peek(_level + y + 1);
+                if (c2 == ' ' || c2 == '\t') {
+                    break;
+                }
             }
+
+            context().fb.advance(_level);
+            transition<ParseText>();
+            return;
         }
 
-        context().push_token(make<OrderedListItemToken>(level, ordinal));
-        context().level = level;
-        context().newline = false;
-        context().ul = false;
-        context().ol = true;
-        context().ord = ordinal.size() + 2;
-        context().fb.advance(); // Skip the required opening space.
+        context().is_ul = false;
+        context().is_ol = true;
+        context().level = _level;
+        context().li_text_indent = _level + _ordinal.size() + 2;
+        context().push_token(make<OrderedListItemToken>(_level, _ordinal, context().location()));
+        context().fb.advance(context().li_text_indent);
         transition<ParseText>();
     }
 
 private:
-    int level;
-    bool ordinal_scanned = false;
-    std::string ordinal;
+    std::string _ordinal;
+    int _level;
 };
 
 // ------------------------------------------------------------------
-class ParseUnorderedList : public ParseState {
+class ParseMaybeUnorderedList : public ParseState {
 public:
-    ParseUnorderedList(int level) : level(level) { }
+    ParseMaybeUnorderedList(int level) : _level(level) { }
 
     void run() {
-        if (context().level != 0) {
-            context().push_token(Token::Type::LIST_ITEM_END);
+        // If the given level matches li_text_indent,
+        // this should be treated as text contents of a list item
+        // instead of a new list item.
+        if (_level != 0 && _level == context().li_text_indent) {
+            context().fb.advance(_level);
+            transition<ParseText>();
+            return;
         }
 
-        // Skip the indent, slash, and required opening space.
-        context().fb.advance(level+1);
-        context().push_token(make<UnorderedListItemToken>(level, context().location()));
-        context().level = level;
-        context().newline = false;
-        context().ul = true;
-        context().ol = false;
-        context().ord = 2;
+        // If we are at the same level as an ordered list being parsed,
+        // this should be treated as text belonging to the ordered list
+        // as lists must be homogenous between ordered and unordered.
+        if (_level == context().level && context().is_ol) {
+            context().fb.advance(_level);
+            transition<ParseText>();
+            return;
+        }
+
+        // If the character following the initial dash is not a space,
+        // this should not be treated as an unordered list item.
+        if (context().fb.peek(_level+1) != '-' || context().fb.peek(_level+2) != ' ') {
+            context().fb.advance(_level);
+            transition<ParseText>();
+            return;
+        }
+
+        // Skip forward and parse the unordered list item.
+        context().is_ul = true;
+        context().is_ol = false;
+        context().level = _level;
+        context().li_text_indent = _level + 2;
+        context().push_token(make<UnorderedListItemToken>(_level, context().location()));
+        context().fb.advance(context().li_text_indent);
         transition<ParseText>();
+        return;
     }
 
 private:
-    int level;
+    int _level;
 };
 
 // ------------------------------------------------------------------
 class ParseLineScan : public ParseState {
     void run() {
-        x++;
-
-        int c = context().fb.peek(x);
+        int c = context().fb.peek(x+1);
 
         if (isspace(c) && c != '\n') {
-            context().fb.advance();
+            x++;
             return;
 
         } else if (c == '\n' || c == EOF) {
@@ -626,42 +671,20 @@ class ParseLineScan : public ParseState {
                 context().push_token(Token::Type::LIST_ITEM_END);
             }
             context().fb.advance();
-            context().push_token(Token::Type::NEWLINE);
-            context().level = 0;
-            context().ul = false;
-            context().ol = false;
-            context().newline = true;
+            context().push_newline();
             pop();
             return;
 
-        } else if (c == '-' && (context().level != 0 || context().newline)
-                   && x != context().level + context().ord) {
-            int next_c = context().fb.peek(x+1);
-            if (isspace(next_c) && next_c != '\n') {
-                transition<ParseUnorderedList>(x);
-                return;
-            }
+        } else if (c == '-') {
+            transition<ParseMaybeUnorderedList>(x);
+            return;
 
-        } else if (isalnum(c) && (context().level != 0 || context().newline)
-                   && x != context().level + context().ord) {
-            for (size_t y = x+1;; y++) {
-                int next_c = context().fb.peek(y);
-                if (next_c == '.') {
-                    int final_c = context().fb.peek(y+1);
-                    if (isspace(final_c)) {
-                        transition<ParseOrderedList>(x);
-                        return;
-
-                    } else {
-                        break;
-                    }
-                } else if (! isalnum(next_c)) {
-                    break;
-                }
-            }
+        } else if (isalnum(c)) {
+            transition<ParseMaybeOrderedList>(x);
+            return;
         }
 
-        context().fb.advance(x-1);
+        context().fb.advance(x);
         transition<ParseText>();
     }
 
@@ -676,12 +699,15 @@ class ParseBegin : public ParseState {
 
         switch (c) {
         case '#':
-            push<ParseMaybeHeader>(1);
+            push<ParseMaybeHeader>(0);
             break;
         case '`':
             push<ParseMaybeCodeBlock>();
             break;
         case EOF:
+            if (context().level != 0) {
+                context().push_token(Token::Type::LIST_ITEM_END);
+            }
             context().push_token(Token::Type::END);
             pop();
             break;
