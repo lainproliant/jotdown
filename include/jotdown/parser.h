@@ -51,6 +51,7 @@ public:
         NONE,
         TEXT,
         REF,
+        ANCHOR,
         HASHTAG,
         HEADER_START,
         HEADER_END,
@@ -725,7 +726,6 @@ typedef moonlight::gen::Iterator<token_t> Iterator;
 // ------------------------------------------------------------------
 class Parser {
 public:
-
     Parser(std::istream& input, const std::string& filename = "<input>")
     : ctx({
         .fb = moonlight::file::BufferedInput(input, filename)
@@ -737,7 +737,8 @@ public:
     }
 
     Iterator begin() {
-        return moonlight::gen::begin<token_t>(std::bind(&Parser::parse_one, this));
+        return moonlight::gen::begin<token_t>(
+            std::bind(&Parser::parse_one, this));
     }
 
 private:

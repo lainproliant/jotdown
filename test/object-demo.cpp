@@ -21,7 +21,6 @@ int main() {
 
     section.header().add(new Text("Whee!"));
 
+    Document new_doc(doc);
     std::cout << doc.to_json().to_string(true) << std::endl;
-    std::cout << std::endl;
-    std::cout << text_block.to_json().to_string(true) << std::endl;
 }

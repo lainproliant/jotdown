@@ -15,6 +15,8 @@
 #include "tinyformat/tinyformat.h"
 #include "moonlight/json.h"
 
+#include <memory>
+
 namespace jotdown {
 namespace object {
 
@@ -125,13 +127,38 @@ private:
 //-------------------------------------------------------------------
 template<class T>
 class Container : public Object {
+private:
+    std::vector<std::shared_ptr<T>> _contents;
+
 public:
     Container(Type type) : Object(type) { }
+    Container(const Container<T>& other) : Object(other) {
+        _copy_from(other);
+    }
+
+    typedef typename decltype(_contents)::iterator iterator;
+    typedef typename decltype(_contents)::const_iterator const_iterator;
 
     void remove(const T& obj) {
         _contents.erase(std::remove_if(_contents.begin(), _contents.end(), [&](auto& obj_uniq) {
             return obj_uniq.get() == &obj;
         }));
+    }
+
+    iterator begin() {
+        return _contents.begin();
+    }
+
+    iterator end() {
+        return _contents.end();
+    }
+
+    const_iterator begin() const {
+        return _contents.begin();
+    }
+
+    const_iterator end() const {
+        return _contents.end();
     }
 
     const std::vector<std::shared_ptr<T>>& contents() const {
@@ -156,17 +183,9 @@ protected:
 
     void _copy_from(const Container<T>& other) {
         for (auto& obj : other.contents()) {
-            try {
-                _add(std::dynamic_pointer_cast<T*>(obj->clone()));
-
-            } catch (const std::bad_cast& e) {
-                throw ObjectError("Copied from container contains invalid objects.");
-            }
+            _add((T*)obj->clone());
         }
     }
-
-private:
-    std::vector<std::shared_ptr<T>> _contents;
 };
 
 //-------------------------------------------------------------------
@@ -273,6 +292,7 @@ private:
 //-------------------------------------------------------------------
 class TextBlock : public Container<Object> {
 public:
+    friend class Section;
     TextBlock() : Container(Type::TEXT_CONTENT) { }
 
     Anchor& add(Anchor* anchor) {
@@ -427,6 +447,10 @@ public:
         return _code;
     }
 
+    Object* clone() const {
+        return new CodeBlock(code());
+    }
+
     JSON to_json() const {
         JSON json = Object::to_json();
         json.set<std::string>("code", code());
@@ -482,6 +506,13 @@ public:
         return *section;
     }
 
+    Object* clone() const {
+        auto section = new Section(level());
+        section->_copy_from(*this);
+        section->header()._copy_from(header());
+        return section;
+    }
+
     JSON to_json() const {
         JSON json = Container::to_json();
         json.set<double>("__level", level());
@@ -502,6 +533,12 @@ public:
     Section& add(Section* section) {
         _add(section);
         return *section;
+    }
+
+    Object* clone() const {
+        auto doc = new Document();
+        doc->_copy_from(*this);
+        return doc;
     }
 };
 
