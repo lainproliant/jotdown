@@ -22,35 +22,31 @@ sh.env(CC="g++",
 
 
 # -------------------------------------------------------------------
-def compile(src, includes=None):
+def compile_test(src):
     return sh(
-        "{CC} -c {CFLAGS} {input} -o {output}",
+        "{CC} {CFLAGS} {input} {LDFLAGS} -o {output}",
         input=src,
-        includes=includes,
-        output=Path(src).with_suffix(".o"),
+        output=Path(src).with_suffix("")
     )
-
-
-# -------------------------------------------------------------------
-def link(executable, objects):
-    return sh("{CC} {LDFLAGS} {input} -o {output}", input=objects, output=executable)
-
 
 # -------------------------------------------------------------------
 @build
-class DungeonDive:
+class Jotdown:
     def submodules(self):
         return sh("git submodule update --init --recursive")
 
     def headers(self):
         return Path.cwd().glob("**/*.h")
 
-    def demo_src(self):
-        return Path.cwd() / "src" / "demo.cpp"
+    def test_sources(self, submodules):
+        return Path.cwd().glob("test/*.cpp")
 
-    def demo_obj(self, demo_src, headers, submodules):
-        return compile(demo_src, headers)
+    def tests(self, test_sources):
+        return [compile_test(src) for src in test_sources]
 
     @default
-    def demo_exe(self, demo_obj):
-        return link("demo", demo_obj)
+    def run_tests(self, tests):
+        return (sh("{input}",
+                   input=test,
+                   cwd="test").interactive()
+                for test in tests)

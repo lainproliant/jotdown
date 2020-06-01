@@ -19,7 +19,6 @@ struct Location {
     std::string filename;
     int line, col;
 
-
     static const Location& nowhere() {
         static Location nowhere = {
             "<none>", -1, -1
@@ -31,7 +30,5 @@ struct Location {
 const struct Location NOWHERE = {"<none>", -1, -1};
 
 }
-
-
 
 #endif /* !__JOTDOWN_INTERFACES_H */

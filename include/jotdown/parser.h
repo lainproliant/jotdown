@@ -20,6 +20,7 @@
 #include <istream>
 
 namespace jotdown {
+namespace parser {
 
 // ------------------------------------------------------------------
 class ParserError : public JotdownError {
@@ -71,7 +72,7 @@ public:
     virtual ~Token() { }
 
     static const std::string& type_name(Type type) {
-        static std::string names[] = {
+        static const std::string names[] = {
             "NONE",
             "TEXT",
             "REF",
@@ -719,9 +720,11 @@ class ParseBegin : public ParseState {
 };
 
 // ------------------------------------------------------------------
+typedef moonlight::gen::Iterator<token_t> Iterator;
+
+// ------------------------------------------------------------------
 class Parser {
 public:
-    typedef moonlight::gen::Iterator<token_t> Iterator;
 
     Parser(std::istream& input, const std::string& filename = "<input>")
     : ctx({
@@ -758,6 +761,7 @@ private:
     ParseState::Machine machine;
 };
 
+}
 }
 
 #endif /* !__JOTDOWN_PARSER_H */
