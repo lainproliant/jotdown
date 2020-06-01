@@ -75,6 +75,12 @@ public:
         return *(_current++);
     }
 
+    void advance(size_t offset = 1) {
+        for (size_t x = 0; x < offset; x++) {
+            get();
+        }
+    }
+
 private:
     parser::Iterator _current;
     const parser::Iterator _end;
@@ -102,7 +108,45 @@ protected:
 //-------------------------------------------------------------------
 class CompileTextBlock : public CompileState {
 public:
+    CompileTextBlock(TextBlock& text_block,
+                     Token::Type terminal_type = Token::Type::NONE)
+    : _text_block(text_block), _terminal_type(terminal_type) { }
 
+    void run() {
+        auto tk = context().tokens.get();
+
+        switch (tk->type()) {
+        case Token::Type::TEXT:
+            _text_block.add(new Text(tk->content()));
+            break;
+        case Token::Type::HASHTAG:
+            _text_block.add(new Hashtag(tk->content()));
+            break;
+        case Token::Type::ANCHOR:
+            _text_block.add(new Anchor(tk->content()));
+            break;
+        case Token::Type::REF:
+            ingest_ref_token(tk);
+            break;
+        default:
+            if (_terminal_type != Token::Type::NONE) {
+                throw unexpected_token(
+                    tk, "while expecting " + tk->type_name(tk->type()));
+            }
+            pop();
+            break;
+        }
+    }
+
+private:
+    void ingest_ref_token(token_t tk) {
+        std::shared_ptr<parser::RefToken> ref_tk = (
+            dynamic_pointer_cast<parser::RefToken>(tk));
+        _text_block.add(new Ref(ref_tk->link(), ref_tk->text()));
+    }
+
+    TextBlock& _text_block;
+    Token::Type _terminal_type;
 };
 
 //-------------------------------------------------------------------
@@ -120,6 +164,11 @@ public:
         case Token::Type::HASHTAG:
             init_text_block();
             break;
+        case Token::Type::CODE_BLOCK:
+            context().tokens.advance();
+            _section.add(new CodeBlock(tk->content()));
+            break;
+
         default:
             pop();
             break;
@@ -141,26 +190,12 @@ public:
     CompileSectionHeaderText(Section& section) : _section(section) { }
 
     void run() {
-        auto tk = context().tokens.get();
+        if (! header_text_processed) {
+            push<CompileTextBlock>(_section.header(), true);
+            header_text_processed = true;
 
-        switch (tk->type()) {
-        case Token::Type::TEXT:
-            _section.header().add(new Text(tk->content()));
-            break;
-        case Token::Type::HASHTAG:
-            _section.header().add(new Hashtag(tk->content()));
-            break;
-        case Token::Type::ANCHOR:
-            _section.header().add(new Anchor(tk->content()));
-            break;
-        case Token::Type::REF:
-            ingest_ref_token(tk);
-            break;
-        case Token::Type::HEADER_END:
+        } else {
             transition<CompileSection>(_section);
-            break;
-        default:
-            throw unexpected_token(tk, "compiling section header");
         }
     }
 
@@ -171,6 +206,7 @@ private:
         _section.header().add(new Ref(ref_tk->link(), ref_tk->text()));
     }
 
+    bool header_text_processed = false;
     Section& _section;
 };
 
