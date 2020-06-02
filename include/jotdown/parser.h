@@ -58,6 +58,7 @@ public:
         UL_ITEM,
         OL_ITEM,
         LIST_ITEM_END,
+        CODE,
         LANGSPEC,
         CODE_BLOCK,
         NEWLINE,
@@ -77,12 +78,14 @@ public:
             "NONE",
             "TEXT",
             "REF",
+            "ANCHOR",
             "HASHTAG",
             "HEADER_START",
             "HEADER_END",
             "UL_ITEM",
             "OL_ITEM",
             "LIST_ITEM_END",
+            "CODE",
             "LANGSPEC",
             "CODE_BLOCK",
             "NEWLINE",
@@ -96,10 +99,10 @@ public:
 
     std::string repr() const {
         if (content().size() == 0) {
-            return tfm::format("<%s>", type_name(type()));
+            return tfm::format("%s", type_name(type()));
 
         } else {
-            return tfm::format("<%s '%s'>",
+            return tfm::format("%-16s '%s'",
                                type_name(type()), strliteral(content()));
         }
     }
@@ -134,7 +137,7 @@ public:
     }
 
     std::string repr() const {
-        return tfm::format("<%s %d>", type_name(type()), _level);
+        return tfm::format("%s[%d]", type_name(type()), _level);
     }
 
 private:
@@ -159,14 +162,14 @@ public:
 
     std::string repr() const {
         if (_text != content()) {
-            return tfm::format("<%s %s (%s)>", type_name(type()), content(), _text);
+            return tfm::format("%-16s %s (%s)", type_name(type()), content(), _text);
         } else {
-            return tfm::format("<%s %s>", type_name(type()), content());
+            return tfm::format("%-16s %s", type_name(type()), content());
         }
     }
 
 private:
-    const std::string& _text;
+    const std::string _text;
 };
 
 // ------------------------------------------------------------------
@@ -191,7 +194,7 @@ public:
     : ListItemToken(Type::UL_ITEM, level, "- ", loc) { }
 
     std::string repr() const {
-        return tfm::format("<%s %d>", type_name(type()), level());
+        return tfm::format("%s[%d]", type_name(type()), level());
     }
 };
 
@@ -207,7 +210,7 @@ public:
     }
 
     std::string repr() const {
-        return tfm::format("<%s %d '%s'>", type_name(type()), level(), ordinal());
+        return tfm::format("%-16s %s", tfm::format("%s[%d]", type_name(type()), level()), ordinal());
     }
 };
 
@@ -296,11 +299,11 @@ private:
 };
 
 // ------------------------------------------------------------------
-class ParseCode : public ParseState {
+class ParseCodeBlock : public ParseState {
     void run() {
         switch (context().fb.peek()) {
         case EOF:
-            context().push_error("Unterminated code block.");
+            context().push_error("Unexpected end-of-file while parsing code block.");
             pop();
             break;
         case '\n':
@@ -335,7 +338,7 @@ class ParseCodeBlockLangspec : public ParseState {
         case '\n':
             context().push_token(Token::Type::LANGSPEC, sb);
             context().fb.advance();
-            transition<ParseCode>();
+            transition<ParseCodeBlock>();
             break;
 
         case EOF:
@@ -350,6 +353,44 @@ class ParseCodeBlockLangspec : public ParseState {
     }
 
 private:
+    std::string sb;
+};
+
+// ------------------------------------------------------------------
+class ParseCode : public ParseState {
+    void run() {
+        int c = context().fb.peek();
+
+        if (c == '`') {
+            context().fb.advance();
+            digest();
+
+        } else if (c == '\\') {
+            int c2 = context().fb.peek(2);
+            if (c2 == '`') {
+                context().fb.advance();
+                ingest();
+            }
+
+        } else if (c == EOF) {
+            context().push_error("Unexpected end-of-file while parsing inline code.");
+            terminate();
+
+        } else {
+            ingest();
+        }
+    }
+
+private:
+    void ingest() {
+        sb.push_back(context().fb.getc());
+    }
+
+    void digest() {
+        context().push_token(Token::Type::CODE, sb);
+        pop();
+    }
+
     std::string sb;
 };
 
@@ -478,8 +519,14 @@ public:
             }
             break;
 
+        case '`':
+            digest();
+            context().fb.advance();
+            push<ParseCode>();
+            break;
+
         case '\n':
-            new_word = false;
+            new_word = true;
             context().newline = true;
             ingest();
             // fallthrough
@@ -558,6 +605,11 @@ public:
     ParseMaybeOrderedList(int level) : _level(level) { }
 
     void run() {
+        // If another list item existed, it is now finished.
+        if (context().is_ul || context().is_ol) {
+            context().push_token(Token::Type::LIST_ITEM_END);
+        }
+
         // If the given level matches li_text_indent,
         // this should be treated as text contents of a list item
         // instead of a new list item.
@@ -618,6 +670,11 @@ public:
     ParseMaybeUnorderedList(int level) : _level(level) { }
 
     void run() {
+        // If another list item existed, it is now finished.
+        if (context().is_ul || context().is_ol) {
+            context().push_token(Token::Type::LIST_ITEM_END);
+        }
+
         // If the given level matches li_text_indent,
         // this should be treated as text contents of a list item
         // instead of a new list item.
@@ -669,8 +726,10 @@ class ParseLineScan : public ParseState {
             return;
 
         } else if (c == '\n' || c == EOF) {
-            if (context().level != 0) {
+            if (context().is_ul || context().is_ol) {
                 context().push_token(Token::Type::LIST_ITEM_END);
+                context().is_ul = false;
+                context().is_ol = false;
             }
             context().fb.advance();
             context().push_newline();
@@ -707,8 +766,10 @@ class ParseBegin : public ParseState {
             push<ParseMaybeCodeBlock>();
             break;
         case EOF:
-            if (context().level != 0) {
+            if (context().is_ul || context().is_ol) {
                 context().push_token(Token::Type::LIST_ITEM_END);
+                context().is_ul = false;
+                context().is_ol = false;
             }
             context().push_token(Token::Type::END);
             pop();

@@ -122,6 +122,9 @@ public:
         case Token::Type::HASHTAG:
             _text_block.add(new Hashtag(tk->content()));
             break;
+        case Token::Type::CODE:
+            _text_block.add(new Code(tk->content()));
+            break;
         case Token::Type::ANCHOR:
             _text_block.add(new Anchor(tk->content()));
             break;
@@ -129,7 +132,7 @@ public:
             ingest_ref_token(tk);
             break;
         default:
-            if (_terminal_type != Token::Type::NONE) {
+            if (tk->type() != _terminal_type && _terminal_type != Token::Type::NONE) {
                 throw unexpected_token(
                     tk, "while expecting " + tk->type_name(tk->type()));
             }
@@ -150,6 +153,147 @@ private:
 };
 
 //-------------------------------------------------------------------
+class CompileOrderedList;
+class CompileUnorderedList;
+class CompileListBase : public CompileState {
+protected:
+    enum class Result {
+        POP,
+        RETURN,
+        CONTINUE
+    };
+
+    Result _compare_item(token_t tk) {
+        if (last_token != nullptr && last_item != nullptr &&
+            (tk->type() == Token::Type::OL_ITEM || tk->type() == Token::Type::UL_ITEM)) {
+            std::shared_ptr<parser::ListItemToken> li_tk = (
+                dynamic_pointer_cast<parser::ListItemToken>(tk));
+            if (li_tk->level() < last_token->level()) {
+                return Result::POP;
+
+            } else if (li_tk->level() > last_token->level()) {
+                if (li_tk->type() == Token::Type::OL_ITEM) {
+                    auto ordered_list = last_item->add(new OrderedList());
+                    push<CompileOrderedList>(ordered_list);
+                    return Result::RETURN;
+
+                } else {
+                    auto unordered_list = last_item->add(new UnorderedList());
+                    push<CompileUnorderedList>(unordered_list);
+                    return Result::RETURN;
+                }
+            }
+        }
+        return Result::CONTINUE;
+    }
+
+    ListItem* last_item = nullptr;
+    parser::ListItemToken* last_token = nullptr;
+};
+
+//-------------------------------------------------------------------
+class CompileOrderedList : public CompileListBase {
+public:
+    CompileOrderedList(OrderedList& list) : _list(list) { }
+
+    void run() {
+        auto tk = context().tokens.peek();
+
+        switch (_compare_item(tk)) {
+        case Result::POP:
+            pop();
+            return;
+        case Result::RETURN:
+            return;
+        case Result::CONTINUE:
+            break;
+        }
+
+        if (tk->type() == Token::Type::OL_ITEM) {
+            std::shared_ptr<parser::OrderedListItemToken> ol_tk = (
+                dynamic_pointer_cast<parser::OrderedListItemToken>(tk));
+            auto ordered_list_item = _list.add(new OrderedListItem(ol_tk->ordinal()));
+            auto text_block = ordered_list_item.text();
+            context().tokens.advance();
+            last_token = ol_tk.get();
+            last_item = &ordered_list_item;
+            push<CompileTextBlock>(text_block, Token::Type::LIST_ITEM_END);
+
+        } else if (tk->type() == Token::Type::UL_ITEM) {
+            throw unexpected_token(tk, "compiling ordered list at the same level");
+        }
+    }
+
+private:
+    ListItem* last_item = nullptr;
+    parser::ListItemToken* last_token = nullptr;
+    OrderedList& _list;
+};
+
+//-------------------------------------------------------------------
+class CompileUnorderedList : public CompileListBase {
+public:
+    CompileUnorderedList(UnorderedList& list) : _list(list) { }
+
+    void run() {
+        auto tk = context().tokens.peek();
+
+        switch (_compare_item(tk)) {
+        case Result::POP:
+            pop();
+            return;
+        case Result::RETURN:
+            return;
+        case Result::CONTINUE:
+            break;
+        }
+
+        if (tk->type() == Token::Type::UL_ITEM) {
+            std::shared_ptr<parser::UnorderedListItemToken> ul_tk = (
+                dynamic_pointer_cast<parser::UnorderedListItemToken>(tk));
+            auto unordered_list_item = _list.add(new UnorderedListItem());
+            auto text_block = unordered_list_item.text();
+            context().tokens.advance();
+            last_token = ul_tk.get();
+            last_item = &unordered_list_item;
+            push<CompileTextBlock>(text_block, Token::Type::LIST_ITEM_END);
+
+        } else if (tk->type() == Token::Type::OL_ITEM) {
+            throw unexpected_token(tk, "compiling unordered list at the same level");
+        }
+    }
+
+private:
+    UnorderedList& _list;
+};
+
+//-------------------------------------------------------------------
+class CompileTopLevelList : public CompileState {
+public:
+    CompileTopLevelList(Section& parent) : _parent(parent) { }
+
+    void run() {
+        auto tk = context().tokens.peek();
+
+        if (tk->type() == Token::Type::OL_ITEM) {
+            auto ordered_list = _parent.add(new OrderedList());
+            transition<CompileOrderedList>(ordered_list);
+
+        } else if (tk->type() == Token::Type::UL_ITEM) {
+            auto unordered_list = _parent.add(new UnorderedList());
+            transition<CompileUnorderedList>(unordered_list);
+
+        } else {
+            throw unexpected_token(tk, "while parsing top-level list");
+        }
+    }
+
+private:
+    Section& _parent;
+};
+
+//-------------------------------------------------------------------
+class CompileSubSectionHeader;
 class CompileSection : public CompileState {
 public:
     CompileSection(Section& section) : _section(section) { }
@@ -162,11 +306,26 @@ public:
         case Token::Type::TEXT:
         case Token::Type::ANCHOR:
         case Token::Type::HASHTAG:
+        case Token::Type::CODE:
             init_text_block();
             break;
         case Token::Type::CODE_BLOCK:
             context().tokens.advance();
             _section.add(new CodeBlock(tk->content()));
+            break;
+
+        case Token::Type::HEADER_START:
+            if (is_subsection(tk)) {
+                push<CompileSubSectionHeader>(_section);
+
+            } else {
+                pop();
+            }
+            break;
+
+        case Token::Type::OL_ITEM:
+        case Token::Type::UL_ITEM:
+            push<CompileTopLevelList>(_section);
             break;
 
         default:
@@ -176,6 +335,12 @@ public:
     }
 
 private:
+    bool is_subsection(token_t tk) {
+        std::shared_ptr<parser::HeaderStartToken> header_tk = (
+            dynamic_pointer_cast<parser::HeaderStartToken>(tk));
+        return header_tk->level() < _section.level();
+    }
+
     void init_text_block() {
         auto text_block = _section.add(new TextBlock());
         push<CompileTextBlock>(text_block);
@@ -211,7 +376,27 @@ private:
 };
 
 //-------------------------------------------------------------------
-class CompileHeader : public CompileState {
+class CompileSubSection : public CompileState {
+public:
+    CompileSubSection(Section& parent) : _parent(parent) { }
+
+    void run() {
+        token_t tk = context().tokens.get();
+        std::shared_ptr<parser::HeaderStartToken> header_tk = (
+            dynamic_pointer_cast<parser::HeaderStartToken>(tk));
+        Section& section = _parent.add(new Section(
+            header_tk->level()
+        ));
+
+        transition<CompileSectionHeaderText>(section);
+    }
+
+private:
+    Section& _parent;
+};
+
+//-------------------------------------------------------------------
+class CompileTopLevelSection : public CompileState {
 public:
     void run() {
         token_t tk = context().tokens.get();
@@ -230,9 +415,16 @@ class CompileBegin : public CompileState {
     void run() {
         token_t tk = context().tokens.peek();
 
-        switch (tk->type()) {
-        case Token::Type::HEADER_START:
-            push<CompileHeader>();
+        if (tk->type() == Token::Type::HEADER_START) {
+            push<CompileTopLevelSection>();
+
+        } else if (tk->type() == Token::Type::END) {
+            terminate();
+
+        } else {
+            // TODO: Setup level 0 section
+            auto section = context().doc.add(new Section(0));
+            push<CompileSection>(section);
         }
     }
 };
@@ -240,12 +432,14 @@ class CompileBegin : public CompileState {
 //-------------------------------------------------------------------
 class Compiler {
 public:
-    Document compile(parser::Iterator begin, parser::Iterator end) {
+    template<class T>
+    Document compile(T true_begin, T true_end) {
+        auto begin = moonlight::gen::wrap(true_begin, true_end);
+        auto end = moonlight::gen::end<decltype(begin)::value_type>();
+
         Context ctx {
             .tokens = BufferedTokens(begin, end)
         };
-
-        // TODO: Do stuff here!
 
         return ctx.doc;
     }

@@ -36,9 +36,10 @@ class Object {
 public:
     enum class Type {
         NONE,
-        DOCUMENT,
         ANCHOR,
+        CODE,
         CODE_BLOCK,
+        DOCUMENT,
         HASHTAG,
         ORDERED_LIST,
         ORDERED_LIST_ITEM,
@@ -92,9 +93,10 @@ public:
     static const std::string& type_name(Type type) {
         static const std::string names[] = {
             "NONE",
-            "DOCUMENT",
             "ANCHOR",
+            "CODE",
             "CODE_BLOCK",
+            "DOCUMENT",
             "HASHTAG",
             "ORDERED_LIST",
             "ORDERED_LIST_ITEM",
@@ -103,7 +105,7 @@ public:
             "TEXT",
             "TEXT_BLOCK",
             "UNORDERED_LIST",
-            "UNORDERED_LIST_ITEM"
+            "UNORDERED_LIST_ITEM",
             "NUM_TYPES"
         };
 
@@ -258,6 +260,29 @@ private:
 };
 
 //-------------------------------------------------------------------
+class Code : public Object {
+public:
+    Code(const std::string& code) : Object(Type::CODE), _code(code) { }
+
+    const std::string& code() const {
+        return _code;
+    }
+
+    Object* clone() const {
+        return new Code(code());
+    }
+
+    JSON to_json() const {
+        JSON json = Object::to_json();
+        json.set<std::string>("code", code());
+        return json;
+    }
+
+private:
+    std::string _code;
+};
+
+//-------------------------------------------------------------------
 class Ref : public Object {
 public:
     Ref(const std::string& link, const std::string& text = "")
@@ -303,6 +328,11 @@ public:
     Hashtag& add(Hashtag* hashtag) {
         _add(hashtag);
         return *hashtag;
+    }
+
+    Code& add(Code* code) {
+        _add(code);
+        return *code;
     }
 
     Ref& add(Ref* ref) {
@@ -395,6 +425,7 @@ private:
 
 //-------------------------------------------------------------------
 class UnorderedListItem : public ListItem {
+public:
     UnorderedListItem() : ListItem(Type::UNORDERED_LIST_ITEM) { }
 
     Object* clone() const {
