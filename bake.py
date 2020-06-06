@@ -8,6 +8,7 @@
 # --------------------------------------------------------------------
 from pathlib import Path
 from panifex import build, sh, default
+from logging import Logger
 
 # -------------------------------------------------------------------
 sh.env(CC="g++",
