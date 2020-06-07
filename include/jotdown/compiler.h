@@ -52,27 +52,40 @@ public:
     BufferedTokens(parser::Iterator& begin, parser::Iterator& end)
     : _current(begin), _end(end) { }
 
+    token_t get() {
+        token_t tk;
+
+        if (_buffer.size() > 0) {
+            tk = _buffer.front();
+            _buffer.pop_front();
+
+        } else if (_current == _end) {
+            tk = nullptr;
+
+        } else {
+            tk = *(_current++);
+        }
+
+        return tk;
+    }
+
     token_t peek(size_t offset = 1) {
         if (offset == 0) {
             return nullptr;
         }
 
         while (_buffer.size() < offset) {
-            auto tk = get();
+            if (_current == _end) {
+                return nullptr;
+            }
+            auto tk = *(_current++);
             if (tk == nullptr) {
                 return nullptr;
             }
-            _buffer.push_back(get());
+            _buffer.push_back(tk);
         }
 
         return _buffer[offset-1];
-    }
-
-    token_t get() {
-        if (_current == _end) {
-            return nullptr;
-        }
-        return *(_current++);
     }
 
     void advance(size_t offset = 1) {
@@ -98,7 +111,7 @@ class CompileState : public moonlight::automata::State<Context> {
 protected:
     CompilerError unexpected_token(token_t tk, const std::string& doing) {
         return CompilerError(
-            tfm::format("Unexpected '%s' token while %s.",
+            tfm::format("Unexpected '%s' token: %s.",
                         tk->type_name(tk->type()),
                         doing),
             tk->location());
@@ -111,6 +124,10 @@ public:
     CompileTextBlock(TextBlock* text_block,
                      Token::Type terminal_type = Token::Type::NONE)
     : _text_block(text_block), _terminal_type(terminal_type) { }
+
+    const char* name() const {
+        return "TextBlock";
+    }
 
     void run() {
         auto tk = context().tokens.get();
@@ -134,7 +151,7 @@ public:
         default:
             if (tk->type() != _terminal_type && _terminal_type != Token::Type::NONE) {
                 throw unexpected_token(
-                    tk, "while expecting " + tk->type_name(tk->type()));
+                    tk, "expecting " + tk->type_name(_terminal_type));
             }
             pop();
             break;
@@ -164,6 +181,14 @@ protected:
     };
 
     Result _compare_item(token_t tk) {
+        switch(tk->type()) {
+        case Token::Type::OL_ITEM:
+        case Token::Type::UL_ITEM:
+            break;
+        default:
+            return Result::POP;
+        }
+
         if (last_token != nullptr && last_item != nullptr &&
             (tk->type() == Token::Type::OL_ITEM || tk->type() == Token::Type::UL_ITEM)) {
             std::shared_ptr<parser::ListItemToken> li_tk = (
@@ -196,6 +221,10 @@ class CompileOrderedList : public CompileListBase {
 public:
     CompileOrderedList(OrderedList* list) : _list(list) { }
 
+    const char* name() const {
+        return "OrderedList";
+    }
+
     void run() {
         auto tk = context().tokens.peek();
 
@@ -213,7 +242,7 @@ public:
             std::shared_ptr<parser::OrderedListItemToken> ol_tk = (
                 dynamic_pointer_cast<parser::OrderedListItemToken>(tk));
             auto& ordered_list_item = _list->add(new OrderedListItem(ol_tk->ordinal()));
-            auto& text_block = ordered_list_item.text();
+            TextBlock& text_block = ordered_list_item.text();
             context().tokens.advance();
             last_token = ol_tk.get();
             last_item = &ordered_list_item;
@@ -235,6 +264,10 @@ class CompileUnorderedList : public CompileListBase {
 public:
     CompileUnorderedList(UnorderedList* list) : _list(list) { }
 
+    const char* name() const {
+        return "UnorderedList";
+    }
+
     void run() {
         auto tk = context().tokens.peek();
 
@@ -252,7 +285,7 @@ public:
             std::shared_ptr<parser::UnorderedListItemToken> ul_tk = (
                 dynamic_pointer_cast<parser::UnorderedListItemToken>(tk));
             auto& unordered_list_item = _list->add(new UnorderedListItem());
-            auto& text_block = unordered_list_item.text();
+            TextBlock& text_block = unordered_list_item.text();
             context().tokens.advance();
             last_token = ul_tk.get();
             last_item = &unordered_list_item;
@@ -272,6 +305,10 @@ class CompileTopLevelList : public CompileState {
 public:
     CompileTopLevelList(Section* parent) : _parent(parent) { }
 
+    const char* name() const {
+        return "TopLevelList";
+    }
+
     void run() {
         auto tk = context().tokens.peek();
 
@@ -284,7 +321,7 @@ public:
             transition<CompileUnorderedList>(&unordered_list);
 
         } else {
-            throw unexpected_token(tk, "while parsing top-level list");
+            throw unexpected_token(tk, "parsing top-level list");
         }
     }
 
@@ -293,10 +330,41 @@ private:
 };
 
 //-------------------------------------------------------------------
+class CompileCodeBlock : public CompileState {
+public:
+    CompileCodeBlock(Section* section) : _section(section) { }
+
+    const char* name() const {
+        return "CodeBlock";
+    }
+
+    void run() {
+        auto lang_tk = context().tokens.get();
+        if (lang_tk == nullptr || lang_tk->type() != Token::Type::LANGSPEC) {
+            throw unexpected_token(lang_tk, "compiling code block, expected LANGSPEC");
+        }
+        auto code_tk = context().tokens.get();
+        if (code_tk == nullptr || code_tk->type() != Token::Type::CODE_BLOCK) {
+            throw unexpected_token(lang_tk, "compiling code block, expected CODE_BLOCK");
+        }
+
+        _section->add(new CodeBlock(code_tk->content(), lang_tk->content()));
+        pop();
+    }
+
+private:
+    Section* _section;
+};
+
+//-------------------------------------------------------------------
 class CompileSectionHeader;
 class CompileSection : public CompileState {
 public:
     CompileSection(Section* section) : _section(section) { }
+
+    const char* name() const {
+        return "Section";
+    }
 
     void run() {
         auto tk = context().tokens.peek();
@@ -309,9 +377,9 @@ public:
         case Token::Type::CODE:
             init_text_block();
             break;
-        case Token::Type::CODE_BLOCK:
-            context().tokens.advance();
-            _section->add(new CodeBlock(tk->content()));
+
+        case Token::Type::LANGSPEC:
+            push<CompileCodeBlock>(_section);
             break;
 
         case Token::Type::HEADER_START:
@@ -326,6 +394,11 @@ public:
         case Token::Type::OL_ITEM:
         case Token::Type::UL_ITEM:
             push<CompileTopLevelList>(_section);
+            break;
+
+        case Token::Type::NEWLINE:
+            context().tokens.advance();
+            _section->add(new LineBreak());
             break;
 
         default:
@@ -354,6 +427,10 @@ class CompileSectionHeader : public CompileState {
 public:
     CompileSectionHeader(Section* section) : _section(section) { }
 
+    const char* name() const {
+        return "SectionHeader";
+    }
+
     void run() {
         if (! header_text_processed) {
             push<CompileTextBlock>(&(_section->header()), Token::Type::HEADER_END);
@@ -380,6 +457,10 @@ class CompileSubSection : public CompileState {
 public:
     CompileSubSection(Section* parent) : _parent(parent) { }
 
+    const char* name() const {
+        return "SubSection";
+    }
+
     void run() {
         token_t tk = context().tokens.get();
         std::shared_ptr<parser::HeaderStartToken> header_tk = (
@@ -398,6 +479,10 @@ private:
 //-------------------------------------------------------------------
 class CompileTopLevelSection : public CompileState {
 public:
+    const char* name() const {
+        return "TopLevelSection";
+    }
+
     void run() {
         token_t tk = context().tokens.get();
         std::shared_ptr<parser::HeaderStartToken> header_tk = (
@@ -412,6 +497,10 @@ public:
 
 //-------------------------------------------------------------------
 class CompileBegin : public CompileState {
+    const char* name() const {
+        return "Begin";
+    }
+
     void run() {
         token_t tk = context().tokens.peek();
 
@@ -422,7 +511,6 @@ class CompileBegin : public CompileState {
             terminate();
 
         } else {
-            // TODO: Setup level 0 section
             auto& section = context().doc.add(new Section(0));
             push<CompileSection>(&section);
         }
@@ -440,6 +528,39 @@ public:
         Context ctx {
             .tokens = BufferedTokens(begin, end)
         };
+
+
+        auto machine = CompileState::Machine::init<CompileBegin>(ctx);
+#ifdef MOONLIGHT_AUTOMATA_DEBUG
+        machine.add_tracer([](CompileState::Machine::TraceEvent event,
+                              Context& context,
+                              const std::string& event_name,
+                              const std::vector<CompileState::Pointer>& stack,
+                              CompileState::Pointer old_state,
+                              CompileState::Pointer new_state) {
+            std::vector<const char*> stack_names = moonlight::collect::map<const char*>(
+                stack, [](auto state) {
+                    return state->name();
+                }
+            );
+            std::vector<std::string> token_names;
+            for (size_t x = 1;;x++) {
+                auto token = context.tokens.peek(x);
+                if (token != nullptr) {
+                    token_names.push_back(token->type_name(token->type()));
+                } else {
+                    break;
+                }
+            }
+            std::string old_state_name = old_state == nullptr ? "(null)" : old_state->name();
+            std::string new_state_name = new_state == nullptr ? "(null)" : new_state->name();
+            tfm::printf("stack=[%s]\ntokens=[%s]\n%-12s%s -> %s\n",
+                        moonlight::str::join(stack_names, ","),
+                        moonlight::str::join(token_names, ","),
+                        event_name, old_state_name, new_state_name);
+        });
+#endif
+        machine.run_until_complete();
 
         return ctx.doc;
     }

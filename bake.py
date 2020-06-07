@@ -17,6 +17,7 @@ sh.env(CC="g++",
                "-I./moonlight/include",
                "--std=c++2a",
                "-DMOONLIGHT_DEBUG",
+               "-DMOONLIGHT_AUTOMATA_DEBUG",
                "-DMOONLIGHT_ENABLE_STACKTRACE",
                "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION"),
        LDFLAGS=("-rdynamic", "-g", "-ldl"))

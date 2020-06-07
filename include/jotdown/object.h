@@ -35,12 +35,13 @@ public:
 class Object {
 public:
     enum class Type {
-        NONE,
         ANCHOR,
         CODE,
         CODE_BLOCK,
         DOCUMENT,
         HASHTAG,
+        LINE_BREAK,
+        NONE,
         ORDERED_LIST,
         ORDERED_LIST_ITEM,
         REF,
@@ -92,12 +93,13 @@ public:
 
     static const std::string& type_name(Type type) {
         static const std::string names[] = {
-            "NONE",
             "ANCHOR",
             "CODE",
             "CODE_BLOCK",
             "DOCUMENT",
             "HASHTAG",
+            "LINE_BREAK",
+            "NONE",
             "ORDERED_LIST",
             "ORDERED_LIST_ITEM",
             "REF",
@@ -260,6 +262,16 @@ private:
 };
 
 //-------------------------------------------------------------------
+class LineBreak : public Object {
+public:
+    LineBreak() : Object(Type::LINE_BREAK) { }
+
+    Object* clone() const {
+        return new LineBreak();
+    }
+};
+
+//-------------------------------------------------------------------
 class Code : public Object {
 public:
     Code(const std::string& code) : Object(Type::CODE), _code(code) { }
@@ -318,6 +330,8 @@ private:
 class TextBlock : public Container<Object> {
 public:
     friend class Section;
+    friend class OrderedListItem;
+    friend class UnorderedListItem;
     TextBlock() : Container(Type::TEXT_CONTENT) { }
 
     Anchor& add(Anchor* anchor) {
@@ -373,7 +387,7 @@ public:
         return _text_block;
     }
 
-    const TextBlock& text() const {
+    const TextBlock& ctext() const {
         return _text_block;
     }
 
@@ -389,7 +403,7 @@ public:
 
     virtual JSON to_json() const {
         JSON json = Container::to_json();
-        json.set_object("text", text().to_json());
+        json.set_object("text", ctext().to_json());
         return json;
     }
 
@@ -410,6 +424,7 @@ public:
     Object* clone() const {
         auto oli = new OrderedListItem(ordinal());
         oli->_copy_from(*this);
+        oli->text()._copy_from(ctext());
         return oli;
     }
 
@@ -431,6 +446,7 @@ public:
     Object* clone() const {
         auto uli = new UnorderedListItem();
         uli->_copy_from(*this);
+        uli->text()._copy_from(ctext());
         return uli;
     }
 };
@@ -472,14 +488,19 @@ public:
 //-------------------------------------------------------------------
 class CodeBlock : public Object {
 public:
-    CodeBlock(const std::string& code) : Object(Type::CODE_BLOCK), _code(code) { }
+    CodeBlock(const std::string& code, const std::string& language)
+    : Object(Type::CODE_BLOCK), _code(code), _language(language) { }
 
     const std::string& code() const {
         return _code;
     }
 
+    const std::string& language() const {
+        return _language;
+    }
+
     Object* clone() const {
-        return new CodeBlock(code());
+        return new CodeBlock(code(), language());
     }
 
     JSON to_json() const {
@@ -490,6 +511,7 @@ public:
 
 private:
     std::string _code;
+    std::string _language;
 };
 
 //-------------------------------------------------------------------
@@ -527,6 +549,11 @@ public:
     UnorderedList& add(UnorderedList* list) {
         _add(list);
         return *list;
+    }
+
+    LineBreak& add(LineBreak* line_break) {
+        _add(line_break);
+        return *line_break;
     }
 
     Section& add(Section* section) {

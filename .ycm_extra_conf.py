@@ -20,6 +20,7 @@ FLAGS = [
     "-ferror-limit=10000",
     "-DNDEBUG",
     "-DUSE_CLANG_COMPLETER",
+    "-DMOONLIGHT_AUTOMATA_DEBUG",
     "-std=c++2a",
     "-xc++",
 ]

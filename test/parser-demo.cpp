@@ -17,7 +17,6 @@ int main() {
     auto infile = moonlight::file::open_r("README.md");
     jotdown::parser::Parser parser(infile);
     jotdown::compiler::Compiler compiler;
-
     std::vector<jotdown::parser::token_t> tokens;
 
     for (auto iter = parser.begin();
@@ -29,7 +28,7 @@ int main() {
     }
 
     auto doc = compiler.compile(tokens.begin(), tokens.end());
-    std::cout << doc.to_json() << std::endl;
+    std::cout << doc.to_json().to_string(true) << std::endl;
 
     return 0;
 }

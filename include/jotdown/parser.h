@@ -553,8 +553,10 @@ private:
     }
 
     void digest() {
-        context().push_token(Token::Type::TEXT, sb);
-        sb.clear();
+        if (sb.size() > 0) {
+            context().push_token(Token::Type::TEXT, sb);
+            sb.clear();
+        }
     }
 
     std::string sb;
