@@ -15,18 +15,11 @@
 
 int main() {
     auto infile = moonlight::file::open_r("test.md");
-    jotdown::parser::Parser parser(infile);
-    std::vector<jotdown::parser::token_t> tokens;
+    jotdown::parser::Parser parser(infile, "test.md");
+    jotdown::compiler::Compiler compiler;
 
-    for (auto iter = parser.begin();
-         iter != parser.end();
-         iter++) {
-        tokens.push_back(*iter);
-    }
-
-    for (auto tk : tokens) {
-        std::cout << tk->repr() << std::endl;
-    }
+    auto doc = compiler.compile(parser.begin(), parser.end());
+    std::cout << doc.to_json().to_string(true) << std::endl;
 
     return 0;
 }

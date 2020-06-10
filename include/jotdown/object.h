@@ -116,7 +116,7 @@ public:
 
     virtual JSON to_json() const {
         JSON json;
-        json.set<std::string>("__type", type_name(type()));
+        json.set<std::string>("type", type_name(type()));
         return json;
     }
 
@@ -506,6 +506,9 @@ public:
     JSON to_json() const {
         JSON json = Object::to_json();
         json.set<std::string>("code", code());
+        if (_language.size() != 0) {
+            json.set<std::string>("language", language());
+        }
         return json;
     }
 
@@ -557,7 +560,7 @@ public:
     }
 
     Section& add(Section* section) {
-        if (level() <= section->level()) {
+        if (section->level() <= level()) {
             throw ObjectError("Sections must be added to parent sections of upper level.");
         }
         _add(section);
@@ -573,8 +576,8 @@ public:
 
     JSON to_json() const {
         JSON json = Container::to_json();
-        json.set<double>("__level", level());
-        json.set_object("_header", header().to_json());
+        json.set<double>("level", level());
+        json.set_object("header", header().to_json());
         return json;
     }
 

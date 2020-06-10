@@ -17,18 +17,18 @@ sh.env(CC="g++",
                "-I./moonlight/include",
                "--std=c++2a",
                "-DMOONLIGHT_DEBUG",
-               "-DMOONLIGHT_AUTOMATA_DEBUG",
                "-DMOONLIGHT_ENABLE_STACKTRACE",
                "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION"),
        LDFLAGS=("-rdynamic", "-g", "-ldl"))
 
 
 # -------------------------------------------------------------------
-def compile_test(src):
+def compile_test(src, headers):
     return sh(
         "{CC} {CFLAGS} {input} {LDFLAGS} -o {output}",
         input=src,
-        output=Path(src).with_suffix("")
+        output=Path(src).with_suffix(""),
+        includes=headers
     )
 
 # -------------------------------------------------------------------
@@ -43,8 +43,8 @@ class Jotdown:
     def test_sources(self, submodules):
         return Path.cwd().glob("test/*.cpp")
 
-    def tests(self, test_sources):
-        return [compile_test(src) for src in test_sources]
+    def tests(self, test_sources, headers):
+        return [compile_test(src, headers) for src in test_sources]
 
     @default
     def run_tests(self, tests):

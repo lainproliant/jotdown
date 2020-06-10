@@ -125,33 +125,40 @@ public:
                      Token::Type terminal_type = Token::Type::NONE)
     : _text_block(text_block), _terminal_type(terminal_type) { }
 
-    const char* name() const {
+    const char* tracer_name() const {
         return "TextBlock";
     }
 
     void run() {
-        auto tk = context().tokens.get();
+        auto tk = context().tokens.peek();
 
         switch (tk->type()) {
         case Token::Type::TEXT:
+            context().tokens.advance();
             _text_block->add(new Text(tk->content()));
             break;
         case Token::Type::HASHTAG:
+            context().tokens.advance();
             _text_block->add(new Hashtag(tk->content()));
             break;
         case Token::Type::CODE:
+            context().tokens.advance();
             _text_block->add(new Code(tk->content()));
             break;
         case Token::Type::ANCHOR:
+            context().tokens.advance();
             _text_block->add(new Anchor(tk->content()));
             break;
         case Token::Type::REF:
+            context().tokens.advance();
             ingest_ref_token(tk);
             break;
         default:
             if (tk->type() != _terminal_type && _terminal_type != Token::Type::NONE) {
                 throw unexpected_token(
                     tk, "expecting " + tk->type_name(_terminal_type));
+            } else if (tk->type() == _terminal_type) {
+                context().tokens.advance();
             }
             pop();
             break;
@@ -173,47 +180,47 @@ private:
 class CompileOrderedList;
 class CompileUnorderedList;
 class CompileListBase : public CompileState {
-protected:
-    enum class Result {
-        POP,
-        RETURN,
-        CONTINUE
-    };
+    void run() {
+        auto tk = context().tokens.peek();
 
-    Result _compare_item(token_t tk) {
-        switch(tk->type()) {
-        case Token::Type::OL_ITEM:
-        case Token::Type::UL_ITEM:
-            break;
-        default:
-            return Result::POP;
-        }
-
-        if (last_token != nullptr && last_item != nullptr &&
-            (tk->type() == Token::Type::OL_ITEM || tk->type() == Token::Type::UL_ITEM)) {
+        if (tk->type() == Token::Type::UL_ITEM || tk->type() == Token::Type::OL_ITEM) {
             std::shared_ptr<parser::ListItemToken> li_tk = (
                 dynamic_pointer_cast<parser::ListItemToken>(tk));
-            if (li_tk->level() < last_token->level()) {
-                return Result::POP;
+            if (last_token == nullptr ||
+                li_tk->level() == last_token->level()) {
+                context().tokens.advance();
+                _process_list_item(li_tk);
 
-            } else if (li_tk->level() > last_token->level()) {
-                if (li_tk->type() == Token::Type::OL_ITEM) {
-                    auto& ordered_list = last_item->add(new OrderedList());
-                    push<CompileOrderedList>(&ordered_list);
-                    return Result::RETURN;
+            } else if (last_token->level() > li_tk->level()) {
+                pop();
 
-                } else {
-                    auto& unordered_list = last_item->add(new UnorderedList());
-                    push<CompileUnorderedList>(&unordered_list);
-                    return Result::RETURN;
-                }
+            } else {
+                _process_sub_list(li_tk);
             }
+
+        } else {
+            pop();
         }
-        return Result::CONTINUE;
+    }
+
+protected:
+    virtual void _process_list_item(std::shared_ptr<parser::ListItemToken> tk) = 0;
+
+    void _process_sub_list(std::shared_ptr<parser::ListItemToken> tk) {
+        if (tk->type() == Token::Type::OL_ITEM) {
+            OrderedList* new_list = new OrderedList();
+            last_item->add(new_list);
+            push<CompileOrderedList>(new_list);
+
+        } else if (tk->type() == Token::Type::UL_ITEM) {
+            UnorderedList* new_list = new UnorderedList();
+            last_item->add(new_list);
+            push<CompileUnorderedList>(new_list);
+        }
     }
 
     ListItem* last_item = nullptr;
-    parser::ListItemToken* last_token = nullptr;
+    std::shared_ptr<parser::ListItemToken> last_token = nullptr;
 };
 
 //-------------------------------------------------------------------
@@ -221,41 +228,24 @@ class CompileOrderedList : public CompileListBase {
 public:
     CompileOrderedList(OrderedList* list) : _list(list) { }
 
-    const char* name() const {
+    const char* tracer_name() const {
         return "OrderedList";
     }
 
-    void run() {
-        auto tk = context().tokens.peek();
-
-        switch (_compare_item(tk)) {
-        case Result::POP:
-            pop();
-            return;
-        case Result::RETURN:
-            return;
-        case Result::CONTINUE:
-            break;
+    void _process_list_item(std::shared_ptr<parser::ListItemToken> li_tk) {
+        if (li_tk->type() != Token::Type::OL_ITEM) {
+            throw unexpected_token(li_tk, "compiling ordered list at the same level");
         }
+        std::shared_ptr<parser::OrderedListItemToken> oli_tk = (
+            std::dynamic_pointer_cast<parser::OrderedListItemToken>(li_tk));
 
-        if (tk->type() == Token::Type::OL_ITEM) {
-            std::shared_ptr<parser::OrderedListItemToken> ol_tk = (
-                dynamic_pointer_cast<parser::OrderedListItemToken>(tk));
-            auto& ordered_list_item = _list->add(new OrderedListItem(ol_tk->ordinal()));
-            TextBlock& text_block = ordered_list_item.text();
-            context().tokens.advance();
-            last_token = ol_tk.get();
-            last_item = &ordered_list_item;
-            push<CompileTextBlock>(&text_block, Token::Type::LIST_ITEM_END);
-
-        } else if (tk->type() == Token::Type::UL_ITEM) {
-            throw unexpected_token(tk, "compiling ordered list at the same level");
-        }
+        OrderedListItem* oli = new OrderedListItem(oli_tk->ordinal());
+        _list->add(oli);
+        last_item = oli;
+        last_token = li_tk;
+        push<CompileTextBlock>(&oli->text(), Token::Type::LIST_ITEM_END);
     }
 
-private:
-    ListItem* last_item = nullptr;
-    parser::ListItemToken* last_token = nullptr;
     OrderedList* _list;
 };
 
@@ -264,39 +254,21 @@ class CompileUnorderedList : public CompileListBase {
 public:
     CompileUnorderedList(UnorderedList* list) : _list(list) { }
 
-    const char* name() const {
+    const char* tracer_name() const {
         return "UnorderedList";
     }
 
-    void run() {
-        auto tk = context().tokens.peek();
-
-        switch (_compare_item(tk)) {
-        case Result::POP:
-            pop();
-            return;
-        case Result::RETURN:
-            return;
-        case Result::CONTINUE:
-            break;
+    void _process_list_item(std::shared_ptr<parser::ListItemToken> li_tk) {
+        if (li_tk->type() != Token::Type::UL_ITEM) {
+            throw unexpected_token(li_tk, "compiling unordered list at the same level");
         }
-
-        if (tk->type() == Token::Type::UL_ITEM) {
-            std::shared_ptr<parser::UnorderedListItemToken> ul_tk = (
-                dynamic_pointer_cast<parser::UnorderedListItemToken>(tk));
-            auto& unordered_list_item = _list->add(new UnorderedListItem());
-            TextBlock& text_block = unordered_list_item.text();
-            context().tokens.advance();
-            last_token = ul_tk.get();
-            last_item = &unordered_list_item;
-            push<CompileTextBlock>(&text_block, Token::Type::LIST_ITEM_END);
-
-        } else if (tk->type() == Token::Type::OL_ITEM) {
-            throw unexpected_token(tk, "compiling unordered list at the same level");
-        }
+        UnorderedListItem* uli = new UnorderedListItem();
+        _list->add(uli);
+        last_item = uli;
+        last_token = li_tk;
+        push<CompileTextBlock>(&uli->text(), Token::Type::LIST_ITEM_END);
     }
 
-private:
     UnorderedList* _list;
 };
 
@@ -305,7 +277,7 @@ class CompileTopLevelList : public CompileState {
 public:
     CompileTopLevelList(Section* parent) : _parent(parent) { }
 
-    const char* name() const {
+    const char* tracer_name() const {
         return "TopLevelList";
     }
 
@@ -334,7 +306,7 @@ class CompileCodeBlock : public CompileState {
 public:
     CompileCodeBlock(Section* section) : _section(section) { }
 
-    const char* name() const {
+    const char* tracer_name() const {
         return "CodeBlock";
     }
 
@@ -358,11 +330,12 @@ private:
 
 //-------------------------------------------------------------------
 class CompileSectionHeader;
+class CompileSubSection;
 class CompileSection : public CompileState {
 public:
     CompileSection(Section* section) : _section(section) { }
 
-    const char* name() const {
+    const char* tracer_name() const {
         return "Section";
     }
 
@@ -384,7 +357,7 @@ public:
 
         case Token::Type::HEADER_START:
             if (is_subsection(tk)) {
-                push<CompileSectionHeader>(_section);
+                push<CompileSubSection>(_section);
 
             } else {
                 pop();
@@ -401,9 +374,12 @@ public:
             _section->add(new LineBreak());
             break;
 
-        default:
+        case Token::Type::END:
             pop();
             break;
+
+        default:
+            throw unexpected_token(tk, "parsing section");
         }
     }
 
@@ -411,7 +387,7 @@ private:
     bool is_subsection(token_t tk) {
         std::shared_ptr<parser::HeaderStartToken> header_tk = (
             dynamic_pointer_cast<parser::HeaderStartToken>(tk));
-        return header_tk->level() < _section->level();
+        return header_tk->level() > _section->level();
     }
 
     void init_text_block() {
@@ -427,7 +403,7 @@ class CompileSectionHeader : public CompileState {
 public:
     CompileSectionHeader(Section* section) : _section(section) { }
 
-    const char* name() const {
+    const char* tracer_name() const {
         return "SectionHeader";
     }
 
@@ -442,12 +418,6 @@ public:
     }
 
 private:
-    void ingest_ref_token(token_t tk) {
-        std::shared_ptr<parser::RefToken> ref_tk = (
-            dynamic_pointer_cast<parser::RefToken>(tk));
-        _section->header().add(new Ref(ref_tk->link(), ref_tk->text()));
-    }
-
     bool header_text_processed = false;
     Section* _section;
 };
@@ -457,7 +427,7 @@ class CompileSubSection : public CompileState {
 public:
     CompileSubSection(Section* parent) : _parent(parent) { }
 
-    const char* name() const {
+    const char* tracer_name() const {
         return "SubSection";
     }
 
@@ -479,7 +449,7 @@ private:
 //-------------------------------------------------------------------
 class CompileTopLevelSection : public CompileState {
 public:
-    const char* name() const {
+    const char* tracer_name() const {
         return "TopLevelSection";
     }
 
@@ -497,7 +467,7 @@ public:
 
 //-------------------------------------------------------------------
 class CompileBegin : public CompileState {
-    const char* name() const {
+    const char* tracer_name() const {
         return "Begin";
     }
 
@@ -538,9 +508,10 @@ public:
                               const std::vector<CompileState::Pointer>& stack,
                               CompileState::Pointer old_state,
                               CompileState::Pointer new_state) {
+            (void) event;
             std::vector<const char*> stack_names = moonlight::collect::map<const char*>(
                 stack, [](auto state) {
-                    return state->name();
+                    return state->tracer_name();
                 }
             );
             std::vector<std::string> token_names;
@@ -552,8 +523,8 @@ public:
                     break;
                 }
             }
-            std::string old_state_name = old_state == nullptr ? "(null)" : old_state->name();
-            std::string new_state_name = new_state == nullptr ? "(null)" : new_state->name();
+            std::string old_state_name = old_state == nullptr ? "(null)" : old_state->tracer_name();
+            std::string new_state_name = new_state == nullptr ? "(null)" : new_state->tracer_name();
             tfm::printf("stack=[%s]\ntokens=[%s]\n%-12s%s -> %s\n",
                         moonlight::str::join(stack_names, ","),
                         moonlight::str::join(token_names, ","),

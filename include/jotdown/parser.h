@@ -63,7 +63,6 @@ public:
         CODE_BLOCK,
         NEWLINE,
         END,
-        ERROR,
         NUM_TYPES
     };
 
@@ -90,7 +89,6 @@ public:
             "CODE_BLOCK",
             "NEWLINE",
             "END",
-            "ERROR"
             "NUM_TYPES"
         };
 
@@ -119,10 +117,14 @@ public:
         return _location;
     }
 
+    void location(const Location& location) {
+        _location = location;
+    }
+
 private:
     const Type _type;
     const std::string _content;
-    const Location _location;
+    Location _location;
 };
 typedef std::shared_ptr<Token> token_t;
 
@@ -216,41 +218,23 @@ public:
 
 // ------------------------------------------------------------------
 struct Context {
-    moonlight::file::BufferedInput fb;
-    Token::Type terminal = Token::Type::NONE;
-    bool newline = false;
-    int level = 0;
-    bool is_ol = false;
-    bool is_ul = false;
-    int li_text_indent = 0;
+    moonlight::file::BufferedInput input;
     std::deque<token_t> tokens;
 
-    void push_token(Token::Type type, const std::string& content = "") {
-        push_token(make<Token>(type, content));
+    token_t push_token(Token::Type type, const std::string& content = "") {
+        auto tk = make<Token>(type, content);
+        return push_token(tk);
     }
 
-    void push_token(token_t tk) {
+    token_t push_token(token_t tk) {
         tokens.push_back(tk);
+        tk->location(location());
+        return tk;
     }
 
-    void push_terminal() {
-        if (terminal != Token::Type::NONE) {
-            push_token(terminal);
-        }
-        terminal = Token::Type::NONE;
-    }
-
-    void push_error(const std::string& message) {
-        push_token(Token::Type::ERROR, message);
-    }
-
-    void push_newline() {
-        push_token(Token::Type::NEWLINE);
-        level = 0;
-        li_text_indent = 0;
-        is_ul = false;
-        is_ol = false;
-        newline = true;
+    token_t push_token(Token* token) {
+        auto tk = std::shared_ptr<Token>(token);
+        return push_token(tk);
     }
 
     std::optional<token_t> pop_token() {
@@ -265,520 +249,624 @@ struct Context {
 
     Location location() const {
         return {
-            .filename = fb.name(),
-            .line = fb.line(),
-            .col = fb.col()
+            .filename = input.name(),
+            .line = input.line(),
+            .col = input.col()
         };
     }
 
-};
-
-// ------------------------------------------------------------------
-typedef moonlight::automata::State<Context> ParseState;
-
-// ------------------------------------------------------------------
-// We've closed the code block, but other text might be on this line.
-// If anything other than whitespace is on this line, we report
-// an error and move on until the next line.
-// ------------------------------------------------------------------
-class ParsePostCode : public ParseState {
-    void run() {
-        int c = context().fb.getc();
-
-        if (c == '\n' || c == EOF) {
-            pop();
-        } else if (! isspace(c) && ! error_reported) {
-            context().push_error("Invalid content found on the same line after "
-                                 "terminated code block.");
-            error_reported = true;
+    token_t last_token() const {
+        if (tokens.size() > 0) {
+            return tokens[tokens.size()-1];
+        } else {
+            return nullptr;
         }
     }
 
-private:
-    bool error_reported = false;
+    std::string dbg_cursor() {
+        std::string cursor;
+        for (int x = 1; x <= 70 && input.peek(x) != EOF; x++) {
+            cursor.push_back(input.peek(x));
+        }
+        return strliteral(cursor);
+    }
+};
+
+// ------------------------------------------------------------------
+class ParseState : public moonlight::automata::State<Context> {
+protected:
+    ParserError error(const std::string& message) {
+        return ParserError(message, context().location());
+    }
+
+    int scan_para_break() {
+        for (int y = 1;; y++) {
+            int c = context().input.peek(y);
+            if (c == EOF || c == '\n') {
+                return y;
+            } else if (! isspace(c)) {
+                return 0;
+            }
+        }
+    }
+
+    int scan_indent() {
+        int y = 1;
+
+        for (;; y++) {
+            int c = context().input.peek(y);
+            if (!isspace(c) || c == '\n') {
+                break;
+            }
+        }
+
+        return y;
+    }
+
+    int scan_ordered_list(std::string* ord_out = nullptr) {
+        int indent = scan_indent();
+        int c = context().input.peek(indent);
+
+        // Did we find an alphanumeric?
+        if (isalnum(c)) {
+            // Scan forward until we find a period.  If a space follows, we've found
+            // an unordered list.
+            for (int y = indent;; y++) {
+                c = context().input.peek(y);
+                if (c == '\n' || c == EOF) {
+                    break;
+
+                } else if (! isalnum(c) && c != '.') {
+                    break;
+
+                } else if (c == '.') {
+                    int c2 = context().input.peek(y+1);
+                    if (isspace(c2) && c2 != '\n') {
+                        return indent;
+                    } else {
+                        break;
+                    }
+                } else if (ord_out != nullptr) {
+                    ord_out->push_back(c);
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    int scan_unordered_list() {
+        int indent = scan_indent();
+        int c = context().input.peek(indent);
+
+        // Is it a dash?
+        if (c == '-') {
+            // Is the following character a non-newline space?
+            int c2 = context().input.peek(indent+1);
+            if (isspace(c2) && c2 != '\n') {
+                return indent;
+            }
+        }
+
+        return 0;
+    }
 };
 
 // ------------------------------------------------------------------
 class ParseCodeBlock : public ParseState {
+    const char* tracer_name() const {
+        return "CodeBlock";
+    }
+
     void run() {
-        switch (context().fb.peek()) {
-        case EOF:
-            context().push_error("Unexpected end-of-file while parsing code block.");
-            pop();
-            break;
-        case '\n':
-            line_begin = true;
-            ingest();
-            break;
-        default:
-            if (line_begin && context().fb.scan_eq("```")) {
-                context().push_token(Token::Type::CODE_BLOCK, sb);
-                context().fb.advance(3);
-                transition<ParsePostCode>();
-            } else {
-                line_begin = false;
-                ingest();
+        // Skip the three backticks.
+        context().input.advance(3);
+
+        // Scan until a newline to pull the langspec.
+        std::string langspec;
+        for (;;) {
+            int c = context().input.getc();
+            if (c == '\n') {
+                break;
             }
+            langspec.push_back(c);
         }
-    }
 
-private:
-    void ingest() {
-        sb.push_back(context().fb.getc());
-    }
+        langspec = moonlight::str::trim(langspec);
+        context().push_token(Token::Type::LANGSPEC, langspec);
 
-    std::string sb;
-    bool line_begin = true;
-};
-
-// ------------------------------------------------------------------
-class ParseCodeBlockLangspec : public ParseState {
-    void run() {
-        switch (context().fb.peek()) {
-        case '\n':
-            context().push_token(Token::Type::LANGSPEC, sb);
-            context().fb.advance();
-            transition<ParseCodeBlock>();
-            break;
-
-        case EOF:
-            context().push_error("Unterminated code block.");
-            pop();
-            break;
-
-        default:
-            sb.push_back(context().fb.getc());
-            break;
+        std::string code;
+        bool newline = true;
+        for (;;) {
+            if (newline && context().input.scan_eq("```")) {
+                context().input.advance(3);
+                break;
+            }
+            int c = context().input.getc();
+            if (c == '\n') {
+                newline = true;
+            } else if (c == EOF) {
+                throw error("Unexpected end of file while parsing code block.");
+            } else {
+                newline = false;
+            }
+            code.push_back(c);
         }
-    }
 
-private:
-    std::string sb;
+        context().push_token(Token::Type::CODE_BLOCK, code);
+        pop();
+    }
 };
 
 // ------------------------------------------------------------------
 class ParseCode : public ParseState {
+    const char* tracer_name() const {
+        return "Code";
+    }
+
     void run() {
-        int c = context().fb.peek();
-
-        if (c == '`') {
-            context().fb.advance();
-            digest();
-
-        } else if (c == '\\') {
-            int c2 = context().fb.peek(2);
-            if (c2 == '`') {
-                context().fb.advance();
-                ingest();
-            }
-
-        } else if (c == EOF) {
-            context().push_error("Unexpected end-of-file while parsing inline code.");
-            terminate();
-
-        } else {
-            ingest();
+        int c = context().input.getc();
+        if (c != '`') {
+            throw error(tfm::format("Unexpected character '%c' while parsing code.", c));
         }
-    }
 
-private:
-    void ingest() {
-        sb.push_back(context().fb.getc());
-    }
+        std::string code;
 
-    void digest() {
-        context().push_token(Token::Type::CODE, sb);
-        pop();
-    }
+        for (;;) {
+            c = context().input.peek();
 
-    std::string sb;
-};
-
-// ------------------------------------------------------------------
-class ParseRef : public ParseState {
-    void run() {
-        int c = context().fb.peek();
-
-        if (has_link_text) {
-            if (c == '\\') {
-                // If a closing square bracket is contained
-                // in the link text itself, it must be escaped
-                // with a backslash.
-                int c2 = context().fb.peek(2);
-                if (c2 == ']') {
-                    context().fb.advance();
-                    link_text_sb.push_back(context().fb.getc());
-                }
-
-            } else if (c == ']') {
-                context().push_token(make<RefToken>(sb, link_text_sb,
-                                                    context().location()));
-                context().fb.advance();
-                pop();
-
-            } else {
-                link_text_sb.push_back(context().fb.getc());
-            }
-
-        } else if (c == '[') {
-            context().fb.advance();
-            has_link_text = true;
-
-        } else if (c == '\n' || c == EOF || isspace(c)) {
-            context().push_token(make<RefToken>(sb, "", context().location()));
-            pop();
-
-        } else if (ispunct(c)) {
-            // This is the somewhat auduous punctuation case.
-            // Punctuation may be part of the link, but if the
-            // link ends in punctuation followed by a space,
-            // that punctuation shouldn't be included in the
-            // link text itself as it is part of the structure
-            // of the text.
-            // E.g., "This is a sentence ending in a @ref."
-            int c2 = context().fb.peek(2);
-            if (isspace(c2) || c2 == EOF) {
-                // This isn't part of the link, we're done.
-                context().push_token(make<RefToken>(sb, "", context().location()));
-                pop();
-
-            } else {
-                sb.push_back(context().fb.getc());
-            }
-
-        } else {
-            sb.push_back(context().fb.getc());
-        }
-    }
-
-private:
-    bool has_link_text = false;
-    std::string link_text_sb;
-    std::string sb;
-};
-
-// ------------------------------------------------------------------
-class ParseHashtag : public ParseState {
-    void run() {
-        int c = context().fb.peek();
-
-        if (sb.size() == 0 && c == '#') {
-            sb.push_back(c);
-            context().fb.advance();
-
-        } else if (c == '\n' || c == EOF || isspace(c)) {
-            context().push_token(Token::Type::HASHTAG, sb);
-            pop();
-
-        } else if (ispunct(c)) {
-            // See above in ParseRef for context, this is similar logic.
-            int c2 = context().fb.peek(2);
-            if (isspace(c2) || c2 == EOF) {
-                // This isn't part of the hashtag, we're done.
-                context().push_token(Token::Type::HASHTAG, sb);
-                pop();
-
-            } else {
-                sb.push_back(context().fb.getc());
-            }
-
-        } else {
-            sb.push_back(context().fb.getc());
-        }
-    }
-
-private:
-    std::string sb;
-};
-
-// ------------------------------------------------------------------
-class ParseText : public ParseState {
-public:
-    void run() {
-        switch(context().fb.peek()) {
-        case '@':
-            if (new_word && ! isspace(context().fb.peek(2))) {
-                digest();
-                push<ParseRef>();
+            if (c == '`') {
+                context().input.advance();
                 break;
 
+            } else if (c == '\\') {
+                int c2 = context().input.peek(2);
+                if (c2 == '\\' || c2 == '`') {
+                    code.push_back(c2);
+                    context().input.advance(2);
+                } else {
+                    throw error(
+                        tfm::format("Unspported escape sequence '\\%c' while parsing code.", c2));
+                }
+
+            } else if (c == '\n' || c == EOF) {
+                throw error(tfm::format("Unexpected end-of-line while parsing code."));
+
             } else {
-                new_word = false;
-                ingest();
+                context().input.advance();
+                code.push_back(c);
             }
-            break;
-
-        case '#':
-            if (new_word && ! isspace(context().fb.peek(2))) {
-                digest();
-                push<ParseHashtag>();
-
-            } else {
-                new_word = false;
-                ingest();
-            }
-            break;
-
-        case '`':
-            digest();
-            context().fb.advance();
-            push<ParseCode>();
-            break;
-
-        case '\n':
-            new_word = true;
-            context().newline = true;
-            ingest();
-            // fallthrough
-
-        case EOF:
-            digest();
-            context().push_terminal();
-            pop();
-            break;
-
-        default:
-            int c = context().fb.peek();
-            if (isspace(c)) {
-                new_word = true;
-            }
-            ingest();
-            break;
         }
-    }
 
-private:
-    void ingest() {
-        sb.push_back(context().fb.getc());
-    }
-
-    void digest() {
-        if (sb.size() > 0) {
-            context().push_token(Token::Type::TEXT, sb);
-            sb.clear();
-        }
-    }
-
-    std::string sb;
-    bool new_word = true;
-};
-
-// ------------------------------------------------------------------
-class ParseMaybeCodeBlock : public ParseState {
-    void run() {
-        if (context().fb.scan_eq("```")) {
-            context().fb.advance(3);
-            transition<ParseCodeBlockLangspec>();
-        } else {
-            transition<ParseText>();
-        }
+        context().push_token(Token::Type::CODE, code);
+        pop();
     }
 };
 
 // ------------------------------------------------------------------
-class ParseMaybeHeader : public ParseState {
-public:
-    ParseMaybeHeader(int level) : level(level) { }
-
-    void run() {
-        int c = context().fb.peek(level+1);
-
-        if (c == '#') {
-            transition<ParseMaybeHeader>(level+1);
-
-        } else if (isspace(c)) {
-            context().push_token(make<HeaderStartToken>(level));
-            context().terminal = Token::Type::HEADER_END;
-            context().fb.advance(level + 1);
-            transition<ParseText>();
-
-        } else {
-            transition<ParseText>();
-        }
+class ParseLink : public ParseState {
+    const char* tracer_name() const {
+        return "Link";
     }
 
-private:
-    int level;
-};
-
-// ------------------------------------------------------------------
-class ParseMaybeOrderedList : public ParseState {
-public:
-    ParseMaybeOrderedList(int level) : _level(level) { }
-
     void run() {
-        // If another list item existed, it is now finished.
-        if (context().is_ul || context().is_ol) {
-            context().push_token(Token::Type::LIST_ITEM_END);
+        int c = context().input.getc();
+        if (c != '@') {
+            throw error(tfm::format("Unexpected character '%c' while parsing link.", c));
         }
 
-        // If the given level matches li_text_indent,
-        // this should be treated as text contents of a list item
-        // instead of a new list item.
-        if (_level != 0 && _level == context().li_text_indent) {
-            context().fb.advance(context().li_text_indent);
-            transition<ParseText>();
-            return;
-        }
+        std::string link;
+        std::string text;
 
-        // If we are at the same level as an unordered list being parsed,
-        // this should be treated as text belonging to the unordered list
-        // as lists must be homogenous between ordered and unordered.
-        if (_level == context().level && context().is_ul) {
-            context().fb.advance(_level);
-            transition<ParseText>();
-            return;
-        }
+        for (;;) {
+            c = context().input.peek();
 
-        // Scan forward from the first alphanumeric character until we
-        // reach a period.  If the following character is a space,
-        // we can treat this as an ordered list item.
-        int y = 1;
-        for (;; y++) {
-            int c = context().fb.peek(_level + y);
-            if (isalnum(c)) {
-                _ordinal.push_back(c);
-                continue;
+            if (isspace(c) || c == EOF) {
+                text = link;
+                break;
 
-            } else if (c == '.') {
-                int c2 = context().fb.peek(_level + y + 1);
-                if (c2 == ' ' || c2 == '\t') {
+            } else if (c == '\\') {
+                int c2 = context().input.peek(2);
+                if (c2 == '[' || c2 == '\\') {
+                    link.push_back(c2);
+                    context().input.advance(2);
+
+                } else {
+                    throw error(
+                        tfm::format("Unsupported escape sequence '\\%c' while parsing link.", c2));
+                }
+
+            } else if (c == '[') {
+                context().input.advance();
+
+                for (;;) {
+                    int c2 = context().input.peek();
+
+                    if (c2 == ']') {
+                        context().input.advance();
+                        break;
+
+                    } else if (c2 == '\n' || c2 == EOF) {
+                        throw error("Unexpected end-of-line while parsing link text.");
+                    }
+
+                    context().input.advance();
+                    text.push_back(c2);
+                }
+                break;
+
+            } else if (ispunct(c)) {
+                int c2 = context().input.peek(2);
+                if (isspace(c2) || c2 == EOF) {
                     break;
                 }
             }
 
-            context().fb.advance(_level);
-            transition<ParseText>();
-            return;
+            link.push_back(c);
+            context().input.advance();
         }
 
-        context().is_ul = false;
-        context().is_ol = true;
-        context().level = _level;
-        context().li_text_indent = _level + _ordinal.size() + 2;
-        context().push_token(make<OrderedListItemToken>(_level, _ordinal, context().location()));
-        context().fb.advance(context().li_text_indent);
-        transition<ParseText>();
+        context().push_token(new RefToken(link, text, context().location()));
+        pop();
     }
-
-private:
-    std::string _ordinal;
-    int _level;
 };
 
 // ------------------------------------------------------------------
-class ParseMaybeUnorderedList : public ParseState {
+class ParseHashtag : public ParseState {
+    const char* tracer_name() const {
+        return "Hashtag";
+    }
+
+    void run() {
+        int c = context().input.getc();
+
+        if (c != '#') {
+            throw error(tfm::format("Unexpected character '%c' while parsing hashtag.", c));
+        }
+
+        std::string hash;
+
+        for (;;) {
+            c = context().input.peek();
+
+            if (isspace(c) || c == EOF) {
+                break;
+            } else if (ispunct(c)) {
+                int c2 = context().input.peek(2);
+                if (isspace(c2) || c2 == EOF) {
+                    break;
+                }
+            }
+
+            hash.push_back(c);
+            context().input.advance();
+        }
+
+        context().push_token(Token::Type::HASHTAG, hash);
+        pop();
+    }
+};
+
+// ------------------------------------------------------------------
+class ParseAnchor : public ParseState {
+    const char* tracer_name() const {
+        return "Anchor";
+    }
+
+    void run() {
+        int c = context().input.getc();
+
+        if (c != '&') {
+            throw error(tfm::format("Unexpected character '%c' while parsing anchor.", c));
+        }
+
+        std::string anchor;
+
+        for (;;) {
+            c = context().input.peek();
+
+            if (isspace(c) || c == EOF) {
+                break;
+            } else if (ispunct(c)) {
+                int c2 = context().input.peek(2);
+                if (isspace(c2) || c2 == EOF) {
+                    break;
+                }
+            }
+
+            anchor.push_back(c);
+            context().input.advance();
+        }
+
+        context().push_token(Token::Type::ANCHOR, anchor);
+        pop();
+    }
+};
+
+// ------------------------------------------------------------------
+class ParseTextLine : public ParseState {
 public:
-    ParseMaybeUnorderedList(int level) : _level(level) { }
+    ParseTextLine(Token::Type terminal_token = Token::Type::NONE)
+    : terminal_token(terminal_token) { }
 
-    void run() {
-        // If another list item existed, it is now finished.
-        if (context().is_ul || context().is_ol) {
-            context().push_token(Token::Type::LIST_ITEM_END);
-        }
-
-        // If the given level matches li_text_indent,
-        // this should be treated as text contents of a list item
-        // instead of a new list item.
-        if (_level != 0 && _level == context().li_text_indent) {
-            context().fb.advance(_level);
-            transition<ParseText>();
-            return;
-        }
-
-        // If we are at the same level as an ordered list being parsed,
-        // this should be treated as text belonging to the ordered list
-        // as lists must be homogenous between ordered and unordered.
-        if (_level == context().level && context().is_ol) {
-            context().fb.advance(_level);
-            transition<ParseText>();
-            return;
-        }
-
-        // If the character following the initial dash is not a space,
-        // this should not be treated as an unordered list item.
-        if (context().fb.peek(_level+1) != '-' || context().fb.peek(_level+2) != ' ') {
-            context().fb.advance(_level);
-            transition<ParseText>();
-            return;
-        }
-
-        // Skip forward and parse the unordered list item.
-        context().is_ul = true;
-        context().is_ol = false;
-        context().level = _level;
-        context().li_text_indent = _level + 2;
-        context().push_token(make<UnorderedListItemToken>(_level, context().location()));
-        context().fb.advance(context().li_text_indent);
-        transition<ParseText>();
-        return;
+    const char* tracer_name() const {
+        return "TextLine";
     }
 
-private:
-    int _level;
-};
-
-// ------------------------------------------------------------------
-class ParseLineScan : public ParseState {
     void run() {
-        int c = context().fb.peek(x+1);
+        int c = context().input.peek();
 
-        if (isspace(c) && c != '\n') {
-            x++;
-            return;
+        if (scan_taglike('@')) {
+            digest();
+            push<ParseLink>();
+
+        } else if (scan_taglike('#')) {
+            digest();
+            push<ParseHashtag>();
+
+        } else if (scan_taglike('&')) {
+            digest();
+            push<ParseAnchor>();
+
+        } else if (scan_taglike('`', true)) {
+            digest();
+            push<ParseCode>();
 
         } else if (c == '\n' || c == EOF) {
-            if (context().is_ul || context().is_ol) {
-                context().push_token(Token::Type::LIST_ITEM_END);
-                context().is_ul = false;
-                context().is_ol = false;
+            ingest();
+            digest();
+            if (terminal_token != Token::Type::NONE) {
+                context().push_token(terminal_token);
             }
-            context().fb.advance();
-            context().push_newline();
             pop();
-            return;
 
-        } else if (c == '-') {
-            transition<ParseMaybeUnorderedList>(x);
-            return;
-
-        } else if (isalnum(c)) {
-            transition<ParseMaybeOrderedList>(x);
-            return;
+        } else {
+            ingest();
         }
-
-        context().fb.advance(x);
-        transition<ParseText>();
     }
 
 private:
-    int x = 0;
+    void ingest() {
+        int c = context().input.peek();
+        if (c != EOF) {
+            text.push_back(context().input.getc());
+        }
+    }
+
+    void digest() {
+        if (text.size() > 0) {
+            context().push_token(Token::Type::TEXT, text);
+            text.clear();
+        }
+    }
+
+    bool scan_taglike(char start, bool allow_space = false) {
+        int c = context().input.peek();
+        int c2 = context().input.peek(2);
+
+        if (c != start) {
+            return false;
+        }
+
+        if (c2 == start) {
+            context().input.advance();
+            return false;
+        }
+
+        if (c2 == EOF || (!allow_space && isspace(c2))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    std::string text;
+    Token::Type terminal_token;
+};
+
+// ------------------------------------------------------------------
+class ParseSectionHeader : public ParseState {
+    const char* tracer_name() const {
+        return "SectionHeader";
+    }
+
+    void run() {
+        int y = 1;
+
+        // Scan the section level.
+        for (;; y++) {
+            if (context().input.peek(y) != '#') {
+                // Skip the opening space.
+                context().input.advance(y);
+                break;
+            }
+        }
+
+        context().push_token(new HeaderStartToken(y-1, context().location()));
+        transition<ParseTextLine>(Token::Type::HEADER_END);
+    }
+};
+
+// ------------------------------------------------------------------
+struct OrderedListContext {
+    OrderedListItemToken* last_item;
+};
+
+// ------------------------------------------------------------------
+class ParseOrderedListItem : public ParseState {
+public:
+    ParseOrderedListItem(OrderedListContext* ol_context) : ol_context(ol_context) { };
+
+    const char* tracer_name() const {
+        return "OrderedListItem";
+    }
+
+    void run() {
+        if (ol_item == nullptr) {
+            std::string ordinal;
+            int indent = scan_ordered_list(&ordinal);
+            ol_item = new OrderedListItemToken(indent, ordinal, context().location());
+            ol_context->last_item = ol_item;
+            context().push_token(ol_item);
+            li_indent = indent;
+            ord_length = ordinal.size() + 1;
+            context().input.advance(li_indent + ord_length);
+            push<ParseTextLine>();
+
+        } else if (scan_indent() == li_indent + ord_length + 2) {
+            context().input.advance(li_indent + ord_length + 1);
+            push<ParseTextLine>();
+
+        } else {
+            context().push_token(Token::Type::LIST_ITEM_END);
+            pop();
+        }
+    }
+
+private:
+    OrderedListContext* ol_context;
+    OrderedListItemToken* ol_item = nullptr;
+    int li_indent = 0;
+    int ord_length = 0;
+};
+
+// ------------------------------------------------------------------
+class ParseOrderedList : public ParseState {
+    const char* tracer_name() const {
+        return "OrderedList";
+    }
+
+    void run() {
+        int indent = scan_ordered_list();
+
+        if (indent &&
+            (ol_context.last_item == nullptr ||
+             ol_context.last_item->level() == indent)) {
+            push<ParseOrderedListItem>(&ol_context);
+
+        } else {
+            pop();
+        }
+    }
+
+    OrderedListContext ol_context;
+};
+
+// ------------------------------------------------------------------
+struct UnorderedListContext {
+    UnorderedListItemToken* last_item;
+};
+
+// ------------------------------------------------------------------
+class ParseUnorderedListItem : public ParseState {
+public:
+    ParseUnorderedListItem(UnorderedListContext* ul_context) : ul_context(ul_context) { }
+
+    const char* tracer_name() const {
+        return "UnorderedListItem";
+    }
+
+    void run() {
+        if (ul_item == nullptr) {
+            int indent = scan_unordered_list();
+            ul_item = new UnorderedListItemToken(indent);
+            ul_context->last_item = ul_item;
+            context().push_token(ul_item);
+            li_indent = indent;
+            context().input.advance(li_indent + 1);
+            push<ParseTextLine>();
+        } else if (scan_indent() == li_indent + 3) {
+            context().input.advance(li_indent + 2);
+            push<ParseTextLine>();
+        } else {
+            context().push_token(Token::Type::LIST_ITEM_END);
+            pop();
+        }
+    }
+
+private:
+    UnorderedListContext* ul_context;
+    UnorderedListItemToken* ul_item = nullptr;
+    int li_indent = 0;
+};
+
+// ------------------------------------------------------------------
+class ParseUnorderedList : public ParseState {
+    const char* tracer_name() const {
+        return "UnorderedList";
+    }
+
+    void run() {
+        int indent = scan_unordered_list();
+
+        if (indent &&
+            (ul_context.last_item == nullptr ||
+             ul_context.last_item->level() == indent)) {
+            push<ParseUnorderedListItem>(&ul_context);
+
+        } else {
+            pop();
+        }
+    }
+
+    UnorderedListContext ul_context;
+};
+
+// ------------------------------------------------------------------
+class ParseTextBlock : public ParseState {
+    const char* tracer_name() const {
+        return "TextBlock";
+    }
+
+    void run() {
+        int break_length = scan_para_break();
+        if (break_length != 0) {
+            context().input.advance(break_length);
+            pop();
+
+        } else {
+            int c = context().input.peek();
+            if (c == '`' && context().input.scan_eq("```")) {
+                transition<ParseCodeBlock>();
+
+            } else {
+                push<ParseTextLine>();
+            }
+        }
+    }
 };
 
 // ------------------------------------------------------------------
 class ParseBegin : public ParseState {
-    void run() {
-        int c = context().fb.peek();
+    const char* tracer_name() const {
+        return "Begin";
+    }
 
-        switch (c) {
-        case '#':
-            push<ParseMaybeHeader>(0);
-            break;
-        case '`':
-            push<ParseMaybeCodeBlock>();
-            break;
-        case EOF:
-            if (context().is_ul || context().is_ol) {
-                context().push_token(Token::Type::LIST_ITEM_END);
-                context().is_ul = false;
-                context().is_ol = false;
-            }
+    void run() {
+        int c = context().input.peek();
+
+        if (c == '\n') {
+            context().input.advance();
+            context().push_token(Token::Type::NEWLINE);
+
+        } else if (c == '#') {
+            push<ParseSectionHeader>();
+
+        } else if (c == '`' && context().input.scan_eq("```")) {
+            push<ParseCodeBlock>();
+
+        } else if (scan_ordered_list() != 0) {
+            push<ParseOrderedList>();
+
+        } else if (scan_unordered_list() != 0) {
+            push<ParseUnorderedList>();
+
+        } else if (c == EOF) {
             context().push_token(Token::Type::END);
             pop();
-            break;
-        default:
-            push<ParseLineScan>();
-            break;
+
+        } else {
+            push<ParseTextBlock>();
         }
     }
 };
@@ -791,9 +879,31 @@ class Parser {
 public:
     Parser(std::istream& input, const std::string& filename = "<input>")
     : ctx({
-        .fb = moonlight::file::BufferedInput(input, filename)
+        .input = moonlight::file::BufferedInput(input, filename)
     }),
-    machine(ParseState::Machine::init<ParseBegin>(ctx)) { }
+    machine(ParseState::Machine::init<ParseBegin>(ctx)) {
+#ifdef MOONLIGHT_AUTOMATA_DEBUG
+        machine.add_tracer([](ParseState::Machine::TraceEvent event,
+                              Context& context,
+                              const std::string& event_name,
+                              const std::vector<ParseState::Pointer>& stack,
+                              ParseState::Pointer old_state,
+                              ParseState::Pointer new_state) {
+            (void) event;
+            std::vector<const char*> stack_names = moonlight::collect::map<const char*>(
+                stack, [](auto state) {
+                    return state->tracer_name();
+                }
+            );
+            std::string old_state_name = old_state == nullptr ? "(null)" : old_state->tracer_name();
+            std::string new_state_name = new_state == nullptr ? "(null)" : new_state->tracer_name();
+            tfm::printf("cursor=%s\nstack=[%s]\n%-12s%s -> %s\n",
+                        context.dbg_cursor(),
+                        moonlight::str::join(stack_names, ","),
+                        event_name, old_state_name, new_state_name);
+        });
+#endif
+    }
 
     static const Iterator end() {
         return moonlight::gen::end<token_t>();
@@ -828,4 +938,4 @@ private:
 }
 }
 
-#endif /* !__JOTDOWN_PARSER_H */
+#endif /* JOTDOWN_PARSER_H */
