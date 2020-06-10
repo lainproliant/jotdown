@@ -61,12 +61,16 @@ public:
         return _type;
     }
 
-    const Location& location() const {
-        return _location;
+    const Range& range() const {
+        return _range;
     }
 
-    void location(const Location& location) {
-        _location = location;
+    Range& range() {
+        return _range;
+    }
+
+    void range(const Range& range) {
+        _range = range;
     }
 
     bool has_parent() const {
@@ -117,6 +121,9 @@ public:
     virtual JSON to_json() const {
         JSON json;
         json.set<std::string>("type", type_name(type()));
+        if (range().begin != NOWHERE && range().end != NOWHERE) {
+            json.set_object("range", range().to_json());
+        }
         return json;
     }
 
@@ -124,8 +131,8 @@ public:
 
 private:
     Type _type;
-    Location _location = NOWHERE;
     Object* _parent = nullptr;
+    Range _range = {NOWHERE, NOWHERE};
 };
 
 //-------------------------------------------------------------------
@@ -202,7 +209,9 @@ public:
     }
 
     Object* clone() const {
-        return new Anchor(name());
+        auto obj = new Anchor(name());
+        obj->range(range());
+        return obj;
     }
 
     JSON to_json() const {
@@ -225,7 +234,9 @@ public:
     }
 
     Object* clone() const {
-        return new Text(text());
+        auto obj = new Text(text());
+        obj->range(range());
+        return obj;
     }
 
     JSON to_json() const {
@@ -248,7 +259,9 @@ public:
     }
 
     Object* clone() const {
-        return new Hashtag(tag());
+        auto obj = new Hashtag(tag());
+        obj->range(range());
+        return obj;
     }
 
     JSON to_json() const {
@@ -267,7 +280,9 @@ public:
     LineBreak() : Object(Type::LINE_BREAK) { }
 
     Object* clone() const {
-        return new LineBreak();
+        auto obj = new LineBreak();
+        obj->range(range());
+        return obj;
     }
 };
 
@@ -281,7 +296,9 @@ public:
     }
 
     Object* clone() const {
-        return new Code(code());
+        auto obj = new Code(code());
+        obj->range(range());
+        return obj;
     }
 
     JSON to_json() const {
@@ -309,7 +326,9 @@ public:
     }
 
     Object* clone() const {
-        return new Ref(link(), text());
+        auto obj = new Ref(link(), text());
+        obj->range(range());
+        return obj;
     }
 
     JSON to_json() const {
@@ -362,6 +381,7 @@ public:
     Object* clone() const {
         auto textblock = new TextBlock();
         textblock->_copy_from(*this);
+        textblock->range(range());
         return textblock;
     }
 };
@@ -424,7 +444,9 @@ public:
     Object* clone() const {
         auto oli = new OrderedListItem(ordinal());
         oli->_copy_from(*this);
+        oli->range(range());
         oli->text()._copy_from(ctext());
+        oli->text().range(ctext().range());
         return oli;
     }
 
@@ -446,7 +468,9 @@ public:
     Object* clone() const {
         auto uli = new UnorderedListItem();
         uli->_copy_from(*this);
+        uli->range(range());
         uli->text()._copy_from(ctext());
+        uli->text().range(ctext().range());
         return uli;
     }
 };
@@ -464,6 +488,7 @@ public:
     Object* clone() const {
         auto ol = new OrderedList();
         ol->_copy_from(*this);
+        ol->range(range());
         return ol;
     }
 };
@@ -481,6 +506,7 @@ public:
     Object* clone() const {
         auto ul = new UnorderedList();
         ul->_copy_from(*this);
+        ul->range(range());
         return ul;
     }
 };
@@ -500,7 +526,9 @@ public:
     }
 
     Object* clone() const {
-        return new CodeBlock(code(), language());
+        auto obj = new CodeBlock(code(), language());
+        obj->range(range());
+        return obj;
     }
 
     JSON to_json() const {
@@ -570,7 +598,9 @@ public:
     Object* clone() const {
         auto section = new Section(level());
         section->_copy_from(*this);
+        section->range(range());
         section->header()._copy_from(header());
+        section->header().range(header().range());
         return section;
     }
 
@@ -599,6 +629,7 @@ public:
     Object* clone() const {
         auto doc = new Document();
         doc->_copy_from(*this);
+        doc->range(range());
         return doc;
     }
 };

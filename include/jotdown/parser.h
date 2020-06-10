@@ -49,46 +49,47 @@ class Token : public moonlight::file::Writable<Token> {
 public:
     enum class Type {
         NONE,
-        TEXT,
-        REF,
         ANCHOR,
-        HASHTAG,
-        HEADER_START,
-        HEADER_END,
-        UL_ITEM,
-        OL_ITEM,
-        LIST_ITEM_END,
         CODE,
-        LANGSPEC,
         CODE_BLOCK,
-        NEWLINE,
         END,
+        HASHTAG,
+        HEADER_END,
+        HEADER_START,
+        LIST_ITEM_END,
+        NEWLINE,
+        OL_CHECK_ITEM,
+        OL_ITEM,
+        REF,
+        TEXT,
+        UL_CHECK_ITEM,
+        UL_ITEM,
         NUM_TYPES
     };
 
-    Token(Type type, const std::string& content = "",
-          const Location& loc = NOWHERE)
-    : _type(type), _content(content), _location(loc) { }
+    Token(Type type, const std::string& content = "")
+    : _type(type), _content(content) { }
 
     virtual ~Token() { }
 
     static const std::string& type_name(Type type) {
         static const std::string names[] = {
             "NONE",
-            "TEXT",
-            "REF",
             "ANCHOR",
-            "HASHTAG",
-            "HEADER_START",
-            "HEADER_END",
-            "UL_ITEM",
-            "OL_ITEM",
-            "LIST_ITEM_END",
             "CODE",
-            "LANGSPEC",
             "CODE_BLOCK",
-            "NEWLINE",
             "END",
+            "HASHTAG",
+            "HEADER_END",
+            "HEADER_START",
+            "LIST_ITEM_END",
+            "NEWLINE",
+            "OL_CHECK_ITEM",
+            "OL_ITEM",
+            "REF",
+            "TEXT",
+            "UL_CHECK_ITEM",
+            "UL_ITEM",
             "NUM_TYPES"
         };
 
@@ -113,26 +114,56 @@ public:
         return _content;
     }
 
-    const Location& location() const {
-        return _location;
+    const Location& begin() const {
+        return _range.begin;
     }
 
-    void location(const Location& location) {
-        _location = location;
+    const Location& end() const {
+        return _range.end;
+    }
+
+    const Range& range() const {
+        return _range;
+    }
+
+    void range(const Range& range) {
+        _range = range;
+    }
+
+    void begin(const Location& location) {
+        _range.begin = location;
+    }
+
+    void end(const Location& location) {
+        _range.end = location;
     }
 
 private:
     const Type _type;
     const std::string _content;
-    Location _location;
+    Range _range = {NOWHERE, NOWHERE};
 };
 typedef std::shared_ptr<Token> token_t;
 
 // ------------------------------------------------------------------
+class CodeBlockToken : public Token {
+public:
+    CodeBlockToken(const std::string& langspec, const std::string& code)
+    : Token(Type::CODE_BLOCK, code), _langspec(moonlight::str::trim(langspec)) { };
+
+    const std::string& langspec() const {
+        return _langspec;
+    }
+
+private:
+    const std::string _langspec;
+};
+
+// ------------------------------------------------------------------
 class HeaderStartToken : public Token {
 public:
-    HeaderStartToken(int level, const Location& loc = NOWHERE)
-    : Token(Type::HEADER_START, "", loc), _level(level) { }
+    HeaderStartToken(int level)
+    : Token(Type::HEADER_START, ""), _level(level) { }
 
     int level() const {
         return _level;
@@ -150,9 +181,8 @@ private:
 class RefToken : public Token {
 public:
     RefToken(const std::string& link,
-             const std::string& text = "",
-             const Location& loc = NOWHERE)
-    : Token(Type::REF, link, loc), _text(text.size() > 0 ? text : link) { }
+             const std::string& text = "")
+    : Token(Type::REF, link), _text(text.size() > 0 ? text : link) { }
 
     const std::string& link() const {
         return content();
@@ -177,9 +207,8 @@ private:
 // ------------------------------------------------------------------
 class ListItemToken : public Token {
 public:
-    ListItemToken(Type type, int level, const std::string& content = "",
-                  const Location& loc = NOWHERE)
-    : Token(type, content, loc), _level(level) { }
+    ListItemToken(Type type, int level, const std::string& content = "")
+    : Token(type, content), _level(level) { }
 
     int level() const {
         return _level;
@@ -192,8 +221,8 @@ private:
 // ------------------------------------------------------------------
 class UnorderedListItemToken : public ListItemToken {
 public:
-    UnorderedListItemToken(int level, const Location& loc = NOWHERE)
-    : ListItemToken(Type::UL_ITEM, level, "- ", loc) { }
+    UnorderedListItemToken(int level)
+    : ListItemToken(Type::UL_ITEM, level, "- ") { }
 
     std::string repr() const {
         return tfm::format("%s[%d]", type_name(type()), level());
@@ -203,9 +232,8 @@ public:
 // ------------------------------------------------------------------
 class OrderedListItemToken : public ListItemToken {
 public:
-    OrderedListItemToken(int level, const std::string& ordinal,
-                         const Location& loc = NOWHERE)
-    : ListItemToken(Type::OL_ITEM, level, ordinal, loc) { }
+    OrderedListItemToken(int level, const std::string& ordinal)
+    : ListItemToken(Type::OL_ITEM, level, ordinal) { }
 
     const std::string& ordinal() const {
         return content();
@@ -228,7 +256,6 @@ struct Context {
 
     token_t push_token(token_t tk) {
         tokens.push_back(tk);
-        tk->location(location());
         return tk;
     }
 
@@ -359,6 +386,8 @@ class ParseCodeBlock : public ParseState {
     }
 
     void run() {
+        Location begin = context().location();
+
         // Skip the three backticks.
         context().input.advance(3);
 
@@ -373,7 +402,6 @@ class ParseCodeBlock : public ParseState {
         }
 
         langspec = moonlight::str::trim(langspec);
-        context().push_token(Token::Type::LANGSPEC, langspec);
 
         std::string code;
         bool newline = true;
@@ -393,7 +421,9 @@ class ParseCodeBlock : public ParseState {
             code.push_back(c);
         }
 
-        context().push_token(Token::Type::CODE_BLOCK, code);
+        auto tk = context().push_token(new CodeBlockToken(code, langspec));
+        tk->begin(begin);
+        tk->end(context().location());
         pop();
     }
 };
@@ -405,6 +435,8 @@ class ParseCode : public ParseState {
     }
 
     void run() {
+        Location begin = context().location();
+
         int c = context().input.getc();
         if (c != '`') {
             throw error(tfm::format("Unexpected character '%c' while parsing code.", c));
@@ -438,7 +470,9 @@ class ParseCode : public ParseState {
             }
         }
 
-        context().push_token(Token::Type::CODE, code);
+        auto tk = context().push_token(Token::Type::CODE, code);
+        tk->begin(begin);
+        tk->end(context().location());
         pop();
     }
 };
@@ -450,6 +484,7 @@ class ParseLink : public ParseState {
     }
 
     void run() {
+        Location begin = context().location();
         int c = context().input.getc();
         if (c != '@') {
             throw error(tfm::format("Unexpected character '%c' while parsing link.", c));
@@ -506,7 +541,9 @@ class ParseLink : public ParseState {
             context().input.advance();
         }
 
-        context().push_token(new RefToken(link, text, context().location()));
+        auto tk = context().push_token(new RefToken(link, text));
+        tk->begin(begin);
+        tk->end(context().location());
         pop();
     }
 };
@@ -518,6 +555,8 @@ class ParseHashtag : public ParseState {
     }
 
     void run() {
+        Location begin = context().location();
+
         int c = context().input.getc();
 
         if (c != '#') {
@@ -542,7 +581,9 @@ class ParseHashtag : public ParseState {
             context().input.advance();
         }
 
-        context().push_token(Token::Type::HASHTAG, hash);
+        auto tk = context().push_token(Token::Type::HASHTAG, hash);
+        tk->begin(begin);
+        tk->end(context().location());
         pop();
     }
 };
@@ -554,6 +595,8 @@ class ParseAnchor : public ParseState {
     }
 
     void run() {
+        Location begin = context().location();
+
         int c = context().input.getc();
 
         if (c != '&') {
@@ -578,7 +621,9 @@ class ParseAnchor : public ParseState {
             context().input.advance();
         }
 
-        context().push_token(Token::Type::ANCHOR, anchor);
+        auto tk = context().push_token(Token::Type::ANCHOR, anchor);
+        tk->begin(begin);
+        tk->end(context().location());
         pop();
     }
 };
@@ -586,8 +631,9 @@ class ParseAnchor : public ParseState {
 // ------------------------------------------------------------------
 class ParseTextLine : public ParseState {
 public:
-    ParseTextLine(Token::Type terminal_token = Token::Type::NONE)
-    : terminal_token(terminal_token) { }
+    ParseTextLine(Token::Type terminal_token = Token::Type::NONE,
+                  token_t token_to_end = nullptr)
+    : terminal_token(terminal_token), token_to_end(token_to_end) { }
 
     const char* tracer_name() const {
         return "TextLine";
@@ -616,7 +662,12 @@ public:
             ingest();
             digest();
             if (terminal_token != Token::Type::NONE) {
-                context().push_token(terminal_token);
+                auto tk = context().push_token(terminal_token);
+                tk->begin(context().location());
+                tk->end(tk->begin());
+                if (token_to_end != nullptr) {
+                    token_to_end->end(context().location());
+                }
             }
             pop();
 
@@ -629,26 +680,32 @@ private:
     void ingest() {
         int c = context().input.peek();
         if (c != EOF) {
+            if (text.size() == 0) {
+                begin = context().location();
+            }
             text.push_back(context().input.getc());
         }
     }
 
     void digest() {
         if (text.size() > 0) {
-            context().push_token(Token::Type::TEXT, text);
+            auto tk = context().push_token(Token::Type::TEXT, text);
+            tk->begin(begin);
+            tk->end(context().location());
+            begin = NOWHERE;
             text.clear();
         }
     }
 
-    bool scan_taglike(char start, bool allow_space = false) {
+    bool scan_taglike(char symbol, bool allow_space = false) {
         int c = context().input.peek();
         int c2 = context().input.peek(2);
 
-        if (c != start) {
+        if (c != symbol) {
             return false;
         }
 
-        if (c2 == start) {
+        if (c2 == symbol) {
             context().input.advance();
             return false;
         }
@@ -662,6 +719,8 @@ private:
 
     std::string text;
     Token::Type terminal_token;
+    token_t token_to_end;
+    Location begin = NOWHERE;
 };
 
 // ------------------------------------------------------------------
@@ -671,6 +730,8 @@ class ParseSectionHeader : public ParseState {
     }
 
     void run() {
+        Location begin = context().location();
+
         int y = 1;
 
         // Scan the section level.
@@ -682,8 +743,9 @@ class ParseSectionHeader : public ParseState {
             }
         }
 
-        context().push_token(new HeaderStartToken(y-1, context().location()));
-        transition<ParseTextLine>(Token::Type::HEADER_END);
+        auto tk = context().push_token(new HeaderStartToken(y-1));
+        tk->begin(begin);
+        transition<ParseTextLine>(Token::Type::HEADER_END, tk);
     }
 };
 
@@ -705,12 +767,14 @@ public:
         if (ol_item == nullptr) {
             std::string ordinal;
             int indent = scan_ordered_list(&ordinal);
-            ol_item = new OrderedListItemToken(indent, ordinal, context().location());
+            ol_item = new OrderedListItemToken(indent, ordinal);
             ol_context->last_item = ol_item;
-            context().push_token(ol_item);
+            auto tk = context().push_token(ol_item);
             li_indent = indent;
             ord_length = ordinal.size() + 1;
-            context().input.advance(li_indent + ord_length);
+            context().input.advance(li_indent);
+            tk->begin(context().location());
+            context().input.advance(ord_length);
             push<ParseTextLine>();
 
         } else if (scan_indent() == li_indent + ord_length + 2) {
@@ -718,7 +782,10 @@ public:
             push<ParseTextLine>();
 
         } else {
-            context().push_token(Token::Type::LIST_ITEM_END);
+            ol_item->end(context().location());
+            auto tk = context().push_token(Token::Type::LIST_ITEM_END);
+            tk->begin(context().location());
+            tk->end(tk->begin());
             pop();
         }
     }
@@ -771,15 +838,20 @@ public:
             int indent = scan_unordered_list();
             ul_item = new UnorderedListItemToken(indent);
             ul_context->last_item = ul_item;
-            context().push_token(ul_item);
+            auto tk = context().push_token(ul_item);
             li_indent = indent;
-            context().input.advance(li_indent + 1);
+            context().input.advance(li_indent);
+            tk->begin(context().location());
+            context().input.advance();
             push<ParseTextLine>();
         } else if (scan_indent() == li_indent + 3) {
             context().input.advance(li_indent + 2);
             push<ParseTextLine>();
         } else {
-            context().push_token(Token::Type::LIST_ITEM_END);
+            ul_item->end(context().location());
+            auto tk = context().push_token(Token::Type::LIST_ITEM_END);
+            tk->begin(context().location());
+            tk->end(tk->begin());
             pop();
         }
     }
@@ -846,8 +918,10 @@ class ParseBegin : public ParseState {
         int c = context().input.peek();
 
         if (c == '\n') {
+            auto tk = context().push_token(Token::Type::NEWLINE);
+            tk->begin(context().location());
             context().input.advance();
-            context().push_token(Token::Type::NEWLINE);
+            tk->end(context().location());
 
         } else if (c == '#') {
             push<ParseSectionHeader>();
@@ -862,7 +936,9 @@ class ParseBegin : public ParseState {
             push<ParseUnorderedList>();
 
         } else if (c == EOF) {
-            context().push_token(Token::Type::END);
+            auto tk = context().push_token(Token::Type::END);
+            tk->begin(context().location());
+            tk->end(tk->begin());
             pop();
 
         } else {

@@ -11,8 +11,11 @@
 #define __JOTDOWN_INTERFACES_H
 
 #include <string>
+#include "moonlight/json.h"
 
 namespace jotdown {
+
+using JSON = moonlight::json::Wrapper;
 
 // ------------------------------------------------------------------
 struct Location {
@@ -25,9 +28,46 @@ struct Location {
         };
         return nowhere;
     }
+
+    bool operator==(const Location& other) const {
+        return (
+            filename == other.filename &&
+            line == other.line &&
+            col == other.col
+        );
+    }
+
+    bool operator!=(const Location& other) const {
+        return ! operator==(other);
+    }
+
+    JSON to_json() const {
+        JSON json;
+        json.set<std::string>("filename", filename);
+        json.set<float>("line", line);
+        json.set<float>("col", col);
+        return json;
+    }
 };
 
 const struct Location NOWHERE = {"<none>", -1, -1};
+
+//-------------------------------------------------------------------
+struct Range {
+    Location begin;
+    Location end;
+
+    JSON to_json() const {
+        JSON json, begin_json, end_json;
+        begin_json.set<float>("line", begin.line);
+        begin_json.set<float>("col", begin.col);
+        end_json.set<float>("line", end.line);
+        end_json.set<float>("col", end.col);
+        json.set_object("begin", begin_json);
+        json.set_object("end", end_json);
+        return json;
+    }
+};
 
 }
 

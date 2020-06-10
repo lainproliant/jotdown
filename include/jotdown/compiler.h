@@ -114,7 +114,7 @@ protected:
             tfm::format("Unexpected '%s' token: %s.",
                         tk->type_name(tk->type()),
                         doing),
-            tk->location());
+            tk->begin());
     }
 };
 
@@ -132,22 +132,26 @@ public:
     void run() {
         auto tk = context().tokens.peek();
 
+        if (_text_block->range().begin == NOWHERE) {
+            _text_block->range().begin = tk->begin();
+        }
+
         switch (tk->type()) {
         case Token::Type::TEXT:
             context().tokens.advance();
-            _text_block->add(new Text(tk->content()));
+            _text_block->add(new Text(tk->content())).range(tk->range());
             break;
         case Token::Type::HASHTAG:
             context().tokens.advance();
-            _text_block->add(new Hashtag(tk->content()));
+            _text_block->add(new Hashtag(tk->content())).range(tk->range());
             break;
         case Token::Type::CODE:
             context().tokens.advance();
-            _text_block->add(new Code(tk->content()));
+            _text_block->add(new Code(tk->content())).range(tk->range());
             break;
         case Token::Type::ANCHOR:
             context().tokens.advance();
-            _text_block->add(new Anchor(tk->content()));
+            _text_block->add(new Anchor(tk->content())).range(tk->range());
             break;
         case Token::Type::REF:
             context().tokens.advance();
@@ -157,8 +161,13 @@ public:
             if (tk->type() != _terminal_type && _terminal_type != Token::Type::NONE) {
                 throw unexpected_token(
                     tk, "expecting " + tk->type_name(_terminal_type));
+
             } else if (tk->type() == _terminal_type) {
                 context().tokens.advance();
+                _text_block->range().end = tk->end();
+
+            } else {
+                _text_block->range().end = tk->begin();
             }
             pop();
             break;
@@ -169,7 +178,9 @@ private:
     void ingest_ref_token(token_t tk) {
         std::shared_ptr<parser::RefToken> ref_tk = (
             dynamic_pointer_cast<parser::RefToken>(tk));
-        _text_block->add(new Ref(ref_tk->link(), ref_tk->text()));
+        auto& obj = _text_block->add(
+            new Ref(ref_tk->link(), ref_tk->text()));
+        obj.range(tk->range());
     }
 
     TextBlock* _text_block;
@@ -180,6 +191,9 @@ private:
 class CompileOrderedList;
 class CompileUnorderedList;
 class CompileListBase : public CompileState {
+public:
+    CompileListBase(List* list) : list(list) { }
+
     void run() {
         auto tk = context().tokens.peek();
 
@@ -199,6 +213,7 @@ class CompileListBase : public CompileState {
             }
 
         } else {
+            list->range().end = last_token->end();
             pop();
         }
     }
@@ -210,15 +225,18 @@ protected:
         if (tk->type() == Token::Type::OL_ITEM) {
             OrderedList* new_list = new OrderedList();
             last_item->add(new_list);
+            new_list->range().begin = tk->begin();
             push<CompileOrderedList>(new_list);
 
         } else if (tk->type() == Token::Type::UL_ITEM) {
             UnorderedList* new_list = new UnorderedList();
+            new_list->range().begin = tk->begin();
             last_item->add(new_list);
             push<CompileUnorderedList>(new_list);
         }
     }
 
+    List* list;
     ListItem* last_item = nullptr;
     std::shared_ptr<parser::ListItemToken> last_token = nullptr;
 };
@@ -226,7 +244,8 @@ protected:
 //-------------------------------------------------------------------
 class CompileOrderedList : public CompileListBase {
 public:
-    CompileOrderedList(OrderedList* list) : _list(list) { }
+    CompileOrderedList(OrderedList* list)
+    : CompileListBase(list), _list(list) { }
 
     const char* tracer_name() const {
         return "OrderedList";
@@ -240,6 +259,7 @@ public:
             std::dynamic_pointer_cast<parser::OrderedListItemToken>(li_tk));
 
         OrderedListItem* oli = new OrderedListItem(oli_tk->ordinal());
+        oli->range(oli_tk->range());
         _list->add(oli);
         last_item = oli;
         last_token = li_tk;
@@ -252,7 +272,8 @@ public:
 //-------------------------------------------------------------------
 class CompileUnorderedList : public CompileListBase {
 public:
-    CompileUnorderedList(UnorderedList* list) : _list(list) { }
+    CompileUnorderedList(UnorderedList* list)
+    : CompileListBase(list), _list(list) { }
 
     const char* tracer_name() const {
         return "UnorderedList";
@@ -263,6 +284,7 @@ public:
             throw unexpected_token(li_tk, "compiling unordered list at the same level");
         }
         UnorderedListItem* uli = new UnorderedListItem();
+        uli->range(li_tk->range());
         _list->add(uli);
         last_item = uli;
         last_token = li_tk;
@@ -286,10 +308,12 @@ public:
 
         if (tk->type() == Token::Type::OL_ITEM) {
             auto& ordered_list = _parent->add(new OrderedList());
+            ordered_list.range().begin = tk->begin();
             transition<CompileOrderedList>(&ordered_list);
 
         } else if (tk->type() == Token::Type::UL_ITEM) {
             auto& unordered_list = _parent->add(new UnorderedList());
+            unordered_list.range().begin = tk->begin();
             transition<CompileUnorderedList>(&unordered_list);
 
         } else {
@@ -311,16 +335,17 @@ public:
     }
 
     void run() {
-        auto lang_tk = context().tokens.get();
-        if (lang_tk == nullptr || lang_tk->type() != Token::Type::LANGSPEC) {
-            throw unexpected_token(lang_tk, "compiling code block, expected LANGSPEC");
+        auto tk = context().tokens.get();
+        if (tk == nullptr || tk->type() != Token::Type::CODE_BLOCK) {
+            throw unexpected_token(tk, "compiling code block, expected CODE_BLOCK");
         }
-        auto code_tk = context().tokens.get();
-        if (code_tk == nullptr || code_tk->type() != Token::Type::CODE_BLOCK) {
-            throw unexpected_token(lang_tk, "compiling code block, expected CODE_BLOCK");
-        }
+        std::shared_ptr<parser::CodeBlockToken> code_tk = (
+            std::dynamic_pointer_cast<parser::CodeBlockToken>(tk)
+        );
 
-        _section->add(new CodeBlock(code_tk->content(), lang_tk->content()));
+        auto& obj = _section->add(
+            new CodeBlock(code_tk->content(), code_tk->langspec()));
+        obj.range(tk->range());
         pop();
     }
 
@@ -351,7 +376,7 @@ public:
             init_text_block();
             break;
 
-        case Token::Type::LANGSPEC:
+        case Token::Type::CODE_BLOCK:
             push<CompileCodeBlock>(_section);
             break;
 
@@ -360,6 +385,7 @@ public:
                 push<CompileSubSection>(_section);
 
             } else {
+                _section->range().end = tk->begin();
                 pop();
             }
             break;
@@ -371,10 +397,11 @@ public:
 
         case Token::Type::NEWLINE:
             context().tokens.advance();
-            _section->add(new LineBreak());
+            _section->add(new LineBreak()).range(tk->range());
             break;
 
         case Token::Type::END:
+            _section->range().end = tk->end();
             pop();
             break;
 
@@ -438,6 +465,7 @@ public:
         Section& section = _parent->add(new Section(
             header_tk->level()
         ));
+        section.range().begin = tk->begin();
 
         transition<CompileSectionHeader>(&section);
     }
@@ -460,6 +488,7 @@ public:
         Section& section = context().doc.add(new Section(
             header_tk->level()
         ));
+        section.range().begin = tk->begin();
 
         transition<CompileSectionHeader>(&section);
     }
@@ -474,14 +503,20 @@ class CompileBegin : public CompileState {
     void run() {
         token_t tk = context().tokens.peek();
 
+        if (context().doc.range().begin == NOWHERE) {
+            context().doc.range().begin = tk->begin();
+        }
+
         if (tk->type() == Token::Type::HEADER_START) {
             push<CompileTopLevelSection>();
 
         } else if (tk->type() == Token::Type::END) {
+            context().doc.range().end = tk->end();
             terminate();
 
         } else {
             auto& section = context().doc.add(new Section(0));
+            section.range().begin = tk->begin();
             push<CompileSection>(&section);
         }
     }
