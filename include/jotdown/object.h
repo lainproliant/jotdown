@@ -168,6 +168,12 @@ public:
         }));
     }
 
+    void remove(std::shared_ptr<T> obj) {
+        _contents.erase(std::remove_if(_contents.begin(), _contents.end(), [&](auto& obj_uniq) {
+            return obj_uniq == obj;
+        }));
+    }
+
     iterator begin() {
         return _contents.begin();
     }

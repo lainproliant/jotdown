@@ -9,7 +9,8 @@ def relative(filename):
 # --------------------------------------------------------------------
 INCLUDES = [".",
             "./include",
-            "./moonlight/include"]
+            "./moonlight/include",
+            "./pybind11/include"]
 
 # --------------------------------------------------------------------
 FLAGS = [

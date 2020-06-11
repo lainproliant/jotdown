@@ -7,14 +7,14 @@
 # Distributed under terms of the MIT license.
 # --------------------------------------------------------------------
 from pathlib import Path
-from panifex import build, sh, default
-from logging import Logger
+from panifex import build, sh, default, seq
 
 # -------------------------------------------------------------------
 sh.env(CC="g++",
        CFLAGS=("-g",
                "-I./include",
                "-I./moonlight/include",
+               "-I./pybind11/include",
                "--std=c++2a",
                "-DMOONLIGHT_DEBUG",
                "-DMOONLIGHT_ENABLE_STACKTRACE",
@@ -23,7 +23,7 @@ sh.env(CC="g++",
 
 
 # -------------------------------------------------------------------
-def compile_test(src, headers):
+def compile_app(src, headers):
     return sh(
         "{CC} {CFLAGS} {input} {LDFLAGS} -o {output}",
         input=src,
@@ -38,17 +38,35 @@ class Jotdown:
         return sh("git submodule update --init --recursive")
 
     def headers(self):
-        return Path.cwd().glob("**/*.h")
+        return Path.cwd().glob("include/jotdown/*.h")
+
+    def demo_sources(self, submodules):
+        return Path.cwd().glob("demo/*.cpp")
+
+    def demos(self, demo_sources, headers):
+        return [compile_app(src, headers) for src in demo_sources]
+
+    def pybind11_tests(self, submodules):
+        return seq(
+            sh("mkdir -p {output}", output='pybind11-test-build'),
+            sh("cmake ../pybind11", cwd='pybind11-test-build'),
+            sh("make check -j 4", cwd='pybind11-test-build').interactive())
 
     def test_sources(self, submodules):
         return Path.cwd().glob("test/*.cpp")
 
     def tests(self, test_sources, headers):
-        return [compile_test(src, headers) for src in test_sources]
+        return [compile_app(src, headers) for src in test_sources]
 
-    @default
     def run_tests(self, tests):
         return (sh("{input}",
                    input=test,
-                   cwd="test").interactive()
+                   cwd="test")
                 for test in tests)
+
+    @default
+    def common(self, demos, tests):
+        pass
+
+    def all(self, common, pybind11_tests):
+        pass
