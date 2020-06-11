@@ -19,7 +19,7 @@ not limited to:
 - #hashtags.
 - Deeply
   1. Nested
-    - [ ] Lists
+    - [] Lists
       - of
         1. different
           9. types.

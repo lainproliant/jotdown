@@ -263,6 +263,10 @@ public:
         _list->add(oli);
         last_item = oli;
         last_token = li_tk;
+        if (context().tokens.peek()->type() == Token::Type::STATUS) {
+            auto tk = context().tokens.get();
+            oli->status(tk->content());
+        }
         push<CompileTextBlock>(&oli->text(), Token::Type::LIST_ITEM_END);
     }
 
@@ -288,6 +292,10 @@ public:
         _list->add(uli);
         last_item = uli;
         last_token = li_tk;
+        if (context().tokens.peek()->type() == Token::Type::STATUS) {
+            auto tk = context().tokens.get();
+            uli->status(tk->content());
+        }
         push<CompileTextBlock>(&uli->text(), Token::Type::LIST_ITEM_END);
     }
 

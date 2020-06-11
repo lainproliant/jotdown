@@ -25,6 +25,11 @@ using jotdown::NOWHERE;
 
 typedef moonlight::json::Wrapper JSON;
 
+//-------------------------------------------------------------------'
+struct Config {
+    int list_indent;
+};
+
 //-------------------------------------------------------------------
 class ObjectError : public moonlight::core::Exception {
 public:
@@ -46,6 +51,7 @@ public:
         ORDERED_LIST_ITEM,
         REF,
         SECTION,
+        STATUS,
         TEXT,
         TEXT_CONTENT,
         UNORDERED_LIST,
@@ -108,6 +114,7 @@ public:
             "ORDERED_LIST_ITEM",
             "REF",
             "SECTION",
+            "STATUS",
             "TEXT",
             "TEXT_BLOCK",
             "UNORDERED_LIST",
@@ -116,6 +123,13 @@ public:
         };
 
         return names[(unsigned int)type];
+    }
+
+    static Config& config() {
+        static Config config {
+            .list_indent = 2
+        };
+        return config;
     }
 
     virtual JSON to_json() const {
@@ -128,6 +142,7 @@ public:
     }
 
     virtual Object* clone() const = 0;
+    virtual std::string to_jotdown() const = 0;
 
 private:
     Type _type;
@@ -143,9 +158,6 @@ private:
 
 public:
     Container(Type type) : Object(type) { }
-    Container(const Container<T>& other) : Object(other) {
-        _copy_from(other);
-    }
 
     typedef typename decltype(_contents)::iterator iterator;
     typedef typename decltype(_contents)::const_iterator const_iterator;
@@ -220,6 +232,10 @@ public:
         return json;
     }
 
+    std::string to_jotdown() const {
+        return tfm::format("&%s", name());
+    }
+
 private:
     std::string _name;
 };
@@ -243,6 +259,10 @@ public:
         JSON json = Object::to_json();
         json.set<std::string>("text", text());
         return json;
+    }
+
+    std::string to_jotdown() const {
+        return _text;
     }
 
 private:
@@ -270,6 +290,10 @@ public:
         return json;
     }
 
+    std::string to_jotdown() const {
+        return tfm::format("#%s", tag());
+    }
+
 private:
     std::string _tag;
 };
@@ -283,6 +307,10 @@ public:
         auto obj = new LineBreak();
         obj->range(range());
         return obj;
+    }
+
+    std::string to_jotdown() const {
+        return "\n";
     }
 };
 
@@ -305,6 +333,17 @@ public:
         JSON json = Object::to_json();
         json.set<std::string>("code", code());
         return json;
+    }
+
+    std::string to_jotdown() const {
+        std::ostringstream sb;
+        for (auto c : _code) {
+            if (c == '`') {
+                sb << '\\';
+            }
+            sb << c;
+        }
+        return tfm::format("`%s`", sb.str());
     }
 
 private:
@@ -338,6 +377,28 @@ public:
             json.set<std::string>("text", text());
         }
         return json;
+    }
+
+    std::string to_jotdown() const {
+        std::ostringstream sb;
+        sb << "@";
+        for (auto c : link()) {
+            if (c == '[' || c == '\\') {
+                sb << '\\';
+            }
+            sb << c;
+        }
+        if (link() != text()) {
+            sb << "[";
+            for (auto c : text()) {
+                if (c == ']' || c == '\\') {
+                    sb << '\\';
+                }
+                sb << c;
+            }
+            sb << "]";
+        }
+        return sb.str();
     }
 
 private:
@@ -384,10 +445,17 @@ public:
         textblock->range(range());
         return textblock;
     }
+
+    std::string to_jotdown() const {
+        std::ostringstream sb;
+        for (auto obj : contents()) {
+            sb << obj->to_jotdown();
+        }
+        return sb.str();
+    }
 };
 
 //-------------------------------------------------------------------
-class List;
 class ListItem;
 class OrderedList;
 class UnorderedList;
@@ -396,12 +464,22 @@ class UnorderedList;
 class List : public Container<ListItem> {
 public:
     List(Type type) : Container(type) { }
+
+    std::string to_jotdown() const {
+        std::stringstream sb;
+        for (auto obj : contents()) {
+            sb << std::static_pointer_cast<Object>(obj)->to_jotdown();
+        }
+        return sb.str();
+    }
 };
 
 //-------------------------------------------------------------------
 class ListItem : public Container<List> {
 public:
     ListItem(Type type) : Container(type) { }
+
+    virtual std::string crown() const = 0;
 
     TextBlock& text() {
         return _text_block;
@@ -421,14 +499,78 @@ public:
         return *list;
     }
 
+    const std::string& status() const {
+        return _status;
+    }
+
+    void status(const std::string& status) {
+        _status = status;
+    }
+
     virtual JSON to_json() const {
         JSON json = Container::to_json();
         json.set_object("text", ctext().to_json());
+        if (status().size() > 0) {
+            json.set<std::string>("status", status());
+        }
         return json;
+    }
+
+    std::string to_jotdown() const {
+        std::ostringstream sb;
+
+        // Create the crown and first line of text.
+        sb << crown() << " ";
+        size_t y = 0;
+        if (status().size() > 0) {
+            sb << "[" << status() << "]";
+        }
+        for (; y < ctext().contents().size(); y++) {
+            auto obj = ctext().contents()[y];
+            if (obj->type() == Object::Type::TEXT) {
+                std::shared_ptr<Text> text_obj = (
+                    std::dynamic_pointer_cast<Text>(obj));
+                if (text_obj->text().ends_with("\n")) {
+                    sb << obj->to_jotdown();
+                    y++;
+                    break;
+                }
+            }
+            sb << obj->to_jotdown();
+        }
+
+        // Any further lines of text are indented to match the crown.
+        std::ostringstream sb_addl_text;
+        for (; y < ctext().contents().size(); y++) {
+            auto obj = ctext().contents()[y];
+            sb_addl_text << obj->to_jotdown();
+        }
+        std::string addl_text = sb_addl_text.str();
+        if (addl_text.size() > 0) {
+            for (auto line : moonlight::str::split(addl_text, "\n")) {
+                sb << std::string(crown().size() + 1, ' ') << line << "\n";
+            }
+        }
+
+        // Collect and indent the text from the children.
+        std::ostringstream sb_contents_jd;
+        for (auto obj : contents()) {
+            sb_contents_jd << obj->to_jotdown();
+        }
+        std::string contents_jd = sb_contents_jd.str();
+        if (contents_jd.size() > 0) {
+            for (auto line : moonlight::str::split(contents_jd, "\n")) {
+                sb << std::string(config().list_indent, ' ') << line << "\n";
+            }
+        }
+
+        // Done!
+        return sb.str();
     }
 
 private:
     TextBlock _text_block;
+    std::string _status;
 };
 
 //-------------------------------------------------------------------
@@ -439,6 +581,10 @@ public:
 
     const std::string& ordinal() const {
         return _ordinal;
+    }
+
+    std::string crown() const {
+        return ordinal() + ".";
     }
 
     Object* clone() const {
@@ -464,6 +610,10 @@ private:
 class UnorderedListItem : public ListItem {
 public:
     UnorderedListItem() : ListItem(Type::UNORDERED_LIST_ITEM) { }
+
+    std::string crown() const {
+        return "-";
+    }
 
     Object* clone() const {
         auto uli = new UnorderedListItem();
@@ -540,6 +690,18 @@ public:
         return json;
     }
 
+    std::string to_jotdown() const {
+        std::ostringstream sb;
+        sb << "```";
+        if (language().size() > 0) {
+            sb << " " << language();
+        }
+        sb << "\n";
+        sb << code();
+        sb << "```\n";
+        return sb.str();
+    }
+
 private:
     std::string _code;
     std::string _language;
@@ -611,6 +773,16 @@ public:
         return json;
     }
 
+    std::string to_jotdown() const {
+        std::stringstream sb;
+        sb << std::string(level(), '#') << " ";
+        sb << header().to_jotdown();
+        for (auto obj : contents()) {
+            sb << obj->to_jotdown();
+        }
+        return sb.str();
+    }
+
 private:
     int _level;
     TextBlock _header;
@@ -631,6 +803,14 @@ public:
         doc->_copy_from(*this);
         doc->range(range());
         return doc;
+    }
+
+    std::string to_jotdown() const {
+        std::stringstream sb;
+        for (auto obj : contents()) {
+            sb << obj->to_jotdown();
+        }
+        return sb.str();
     }
 };
 

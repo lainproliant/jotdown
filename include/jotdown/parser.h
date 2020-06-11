@@ -58,11 +58,10 @@ public:
         HEADER_START,
         LIST_ITEM_END,
         NEWLINE,
-        OL_CHECK_ITEM,
         OL_ITEM,
         REF,
+        STATUS,
         TEXT,
-        UL_CHECK_ITEM,
         UL_ITEM,
         NUM_TYPES
     };
@@ -84,11 +83,10 @@ public:
             "HEADER_START",
             "LIST_ITEM_END",
             "NEWLINE",
-            "OL_CHECK_ITEM",
             "OL_ITEM",
             "REF",
+            "STATUS",
             "TEXT",
-            "UL_CHECK_ITEM",
             "UL_ITEM",
             "NUM_TYPES"
         };
@@ -330,6 +328,10 @@ protected:
         return y;
     }
 
+    int scan_newline() {
+        return context().input.peek() == '\n';
+    }
+
     int scan_ordered_list(std::string* ord_out = nullptr) {
         int indent = scan_indent();
         int c = context().input.peek(indent);
@@ -377,6 +379,25 @@ protected:
 
         return 0;
     }
+
+    bool scan_status(std::string* status_out = nullptr) {
+        int c = context().input.peek();
+
+        if (c == '[') {
+            for (int y = 2;; y++) {
+                int c2 = context().input.peek(y);
+                if (c2 == ']') {
+                    return y > 2;
+                } else if (c2 == EOF || c2 == '\n') {
+                    break;
+                } else if (status_out != nullptr) {
+                    status_out->push_back(c2);
+                }
+            }
+        }
+
+        return false;
+    }
 };
 
 // ------------------------------------------------------------------
@@ -407,7 +428,7 @@ class ParseCodeBlock : public ParseState {
         bool newline = true;
         for (;;) {
             if (newline && context().input.scan_eq("```")) {
-                context().input.advance(3);
+                context().input.advance(4);
                 break;
             }
             int c = context().input.getc();
@@ -421,7 +442,7 @@ class ParseCodeBlock : public ParseState {
             code.push_back(c);
         }
 
-        auto tk = context().push_token(new CodeBlockToken(code, langspec));
+        auto tk = context().push_token(new CodeBlockToken(langspec, code));
         tk->begin(begin);
         tk->end(context().location());
         pop();
@@ -631,9 +652,10 @@ class ParseAnchor : public ParseState {
 // ------------------------------------------------------------------
 class ParseTextLine : public ParseState {
 public:
-    ParseTextLine(Token::Type terminal_token = Token::Type::NONE,
+    ParseTextLine(bool allow_status = false,
+                  Token::Type terminal_token = Token::Type::NONE,
                   token_t token_to_end = nullptr)
-    : terminal_token(terminal_token), token_to_end(token_to_end) { }
+    : allow_status(allow_status), terminal_token(terminal_token), token_to_end(token_to_end) { }
 
     const char* tracer_name() const {
         return "TextLine";
@@ -641,6 +663,16 @@ public:
 
     void run() {
         int c = context().input.peek();
+
+        if (! status_scanned && allow_status && scan_status()) {
+            std::string status;
+            status_scanned = true;
+            scan_status(&status);
+            auto tk = context().push_token(Token::Type::STATUS, status);
+            tk->begin(context().location());
+            context().input.advance(status.size() + 2);
+            tk->end(context().location());
+        }
 
         if (scan_taglike('@')) {
             digest();
@@ -718,6 +750,8 @@ private:
     }
 
     std::string text;
+    bool status_scanned = false;
+    bool allow_status;
     Token::Type terminal_token;
     token_t token_to_end;
     Location begin = NOWHERE;
@@ -745,7 +779,7 @@ class ParseSectionHeader : public ParseState {
 
         auto tk = context().push_token(new HeaderStartToken(y-1));
         tk->begin(begin);
-        transition<ParseTextLine>(Token::Type::HEADER_END, tk);
+        transition<ParseTextLine>(false, Token::Type::HEADER_END, tk);
     }
 };
 
@@ -775,10 +809,13 @@ public:
             context().input.advance(li_indent);
             tk->begin(context().location());
             context().input.advance(ord_length);
-            push<ParseTextLine>();
+            push<ParseTextLine>(true);
 
-        } else if (scan_indent() == li_indent + ord_length + 2) {
-            context().input.advance(li_indent + ord_length + 1);
+        } else if (scan_indent() == li_indent + ord_length + 2 ||
+                   (!scan_newline() &&
+                    !scan_ordered_list() &&
+                    !scan_unordered_list())) {
+            context().input.advance(scan_indent() - 1);
             push<ParseTextLine>();
 
         } else {
@@ -843,9 +880,12 @@ public:
             context().input.advance(li_indent);
             tk->begin(context().location());
             context().input.advance();
-            push<ParseTextLine>();
-        } else if (scan_indent() == li_indent + 3) {
-            context().input.advance(li_indent + 2);
+            push<ParseTextLine>(true);
+        } else if (scan_indent() == li_indent + 3 ||
+                   (!scan_newline() &&
+                    !scan_ordered_list() &&
+                    !scan_unordered_list())) {
+            context().input.advance(scan_indent() - 1);
             push<ParseTextLine>();
         } else {
             ul_item->end(context().location());
@@ -893,7 +933,7 @@ class ParseTextBlock : public ParseState {
     void run() {
         int break_length = scan_para_break();
         if (break_length != 0) {
-            context().input.advance(break_length);
+            context().input.advance(break_length - 1);
             pop();
 
         } else {
