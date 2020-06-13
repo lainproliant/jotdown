@@ -6,20 +6,32 @@
 #
 # Distributed under terms of the MIT license.
 # --------------------------------------------------------------------
+import shlex
+import subprocess
 from pathlib import Path
-from panifex import build, sh, default, seq
+from panifex import build, default, seq, sh
+
 
 # -------------------------------------------------------------------
+INCLUDES = [
+    "-I./include",
+    "-I./moonlight/include",
+    "-I./pybind11/include",
+]
+
 sh.env(CC="g++",
        CFLAGS=("-g",
-               "-I./include",
-               "-I./moonlight/include",
-               "-I./pybind11/include",
+               *INCLUDES,
                "--std=c++2a",
                "-DMOONLIGHT_DEBUG",
                "-DMOONLIGHT_ENABLE_STACKTRACE",
                "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION"),
        LDFLAGS=("-rdynamic", "-g", "-ldl"))
+
+
+# --------------------------------------------------------------------
+def check(cmd):
+    return subprocess.check_output(shlex.split(cmd)).decode('utf-8').strip()
 
 
 # -------------------------------------------------------------------
@@ -30,6 +42,18 @@ def compile_app(src, headers):
         output=Path(src).with_suffix(""),
         includes=headers
     )
+
+
+# -------------------------------------------------------------------
+def compile_pybind11_module(src, headers):
+    return sh(
+        "{CC} -O3 -Wall -shared -std=c++2a -fPIC {flags} {input} -o {output}",
+        input=src,
+        output="jotdown%s" % check("python3-config --extension-suffix"),
+        flags=INCLUDES + shlex.split(check("python3 -m pybind11 --includes")),
+        includes=headers
+    )
+
 
 # -------------------------------------------------------------------
 @build
@@ -63,6 +87,12 @@ class Jotdown:
                    input=test,
                    cwd="test")
                 for test in tests)
+
+    def pymodule_src(self):
+        return Path.cwd().glob("python/src/*.cpp")
+
+    def pymodule(self, pymodule_src, headers):
+        return compile_pybind11_module(pymodule_src, headers)
 
     @default
     def common(self, demos, tests):

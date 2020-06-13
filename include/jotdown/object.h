@@ -37,7 +37,11 @@ public:
 };
 
 //-------------------------------------------------------------------
-class Object {
+class Object;
+typedef std::shared_ptr<Object> obj_t;
+typedef std::shared_ptr<const Object> cobj_t;
+
+class Object : public std::enable_shared_from_this<Object> {
 public:
     enum class Type {
         ANCHOR,
@@ -83,22 +87,16 @@ public:
         return _parent != nullptr;
     }
 
-    Object& parent() {
-        if (! has_parent()) {
-            throw ObjectError("Object has no parent.");
-        }
-        return *_parent;
+    obj_t parent() {
+        return _parent;
     }
 
-    const Object& parent() const {
-        if (! has_parent()) {
-            throw ObjectError("Object has no parent.");
-        }
-        return *_parent;
+    cobj_t parent() const {
+        return std::const_pointer_cast<Object>(_parent);
     }
 
-    void parent(Object* object) {
-        _parent = object;
+    void parent(obj_t obj) {
+        _parent = obj;
     }
 
     static const std::string& type_name(Type type) {
@@ -141,20 +139,19 @@ public:
         return json;
     }
 
-    virtual Object* clone() const = 0;
+    virtual obj_t clone() const = 0;
     virtual std::string to_jotdown() const = 0;
 
 private:
     Type _type;
-    Object* _parent = nullptr;
+    obj_t _parent = nullptr;
     Range _range = {NOWHERE, NOWHERE};
 };
 
 //-------------------------------------------------------------------
-template<class T>
 class Container : public Object {
 private:
-    std::vector<std::shared_ptr<T>> _contents;
+    std::vector<obj_t> _contents;
 
 public:
     Container(Type type) : Object(type) { }
@@ -162,13 +159,7 @@ public:
     typedef typename decltype(_contents)::iterator iterator;
     typedef typename decltype(_contents)::const_iterator const_iterator;
 
-    void remove(const T& obj) {
-        _contents.erase(std::remove_if(_contents.begin(), _contents.end(), [&](auto& obj_uniq) {
-            return obj_uniq.get() == &obj;
-        }));
-    }
-
-    void remove(std::shared_ptr<T> obj) {
+    void remove(obj_t obj) {
         _contents.erase(std::remove_if(_contents.begin(), _contents.end(), [&](auto& obj_uniq) {
             return obj_uniq == obj;
         }));
@@ -190,7 +181,7 @@ public:
         return _contents.end();
     }
 
-    const std::vector<std::shared_ptr<T>>& contents() const {
+    const std::vector<obj_t>& contents() const {
         return _contents;
     }
 
@@ -205,14 +196,14 @@ public:
     }
 
 protected:
-    void _add(T* obj) {
-        _contents.push_back(std::shared_ptr<T>(obj));
-        obj->parent(this);
+    void _add(obj_t obj) {
+        _contents.push_back(obj);
+        obj->parent(shared_from_this());
     }
 
-    void _copy_from(const Container<T>& other) {
-        for (auto& obj : other.contents()) {
-            _add((T*)obj->clone());
+    void _copy_from(std::shared_ptr<const Container> other) {
+        for (auto& obj : other->contents()) {
+            _add(obj->clone());
         }
     }
 };
@@ -226,8 +217,8 @@ public:
         return _name;
     }
 
-    Object* clone() const {
-        auto obj = new Anchor(name());
+    obj_t clone() const {
+        auto obj = make<Anchor>(name());
         obj->range(range());
         return obj;
     }
@@ -255,8 +246,8 @@ public:
         return _text;
     }
 
-    Object* clone() const {
-        auto obj = new Text(text());
+    obj_t clone() const {
+        auto obj = make<Text>(text());
         obj->range(range());
         return obj;
     }
@@ -284,8 +275,8 @@ public:
         return _tag;
     }
 
-    Object* clone() const {
-        auto obj = new Hashtag(tag());
+    obj_t clone() const {
+        auto obj = make<Hashtag>(tag());
         obj->range(range());
         return obj;
     }
@@ -309,8 +300,8 @@ class LineBreak : public Object {
 public:
     LineBreak() : Object(Type::LINE_BREAK) { }
 
-    Object* clone() const {
-        auto obj = new LineBreak();
+    obj_t clone() const {
+        auto obj = make<LineBreak>();
         obj->range(range());
         return obj;
     }
@@ -329,8 +320,8 @@ public:
         return _code;
     }
 
-    Object* clone() const {
-        auto obj = new Code(code());
+    obj_t clone() const {
+        auto obj = make<Code>(code());
         obj->range(range());
         return obj;
     }
@@ -370,8 +361,8 @@ public:
         return _text;
     }
 
-    Object* clone() const {
-        auto obj = new Ref(link(), text());
+    obj_t clone() const {
+        auto obj = make<Ref>(link(), text());
         obj->range(range());
         return obj;
     }
@@ -413,41 +404,41 @@ private:
 };
 
 //-------------------------------------------------------------------
-class TextBlock : public Container<Object> {
+class TextBlock : public Container {
 public:
     friend class Section;
     friend class OrderedListItem;
     friend class UnorderedListItem;
     TextBlock() : Container(Type::TEXT_CONTENT) { }
 
-    Anchor& add(Anchor* anchor) {
+    std::shared_ptr<Anchor> add(std::shared_ptr<Anchor> anchor) {
         _add(anchor);
-        return *anchor;
+        return anchor;
     }
 
-    Hashtag& add(Hashtag* hashtag) {
+    std::shared_ptr<Hashtag> add(std::shared_ptr<Hashtag> hashtag) {
         _add(hashtag);
-        return *hashtag;
+        return hashtag;
     }
 
-    Code& add(Code* code) {
+    std::shared_ptr<Code> add(std::shared_ptr<Code> code) {
         _add(code);
-        return *code;
+        return code;
     }
 
-    Ref& add(Ref* ref) {
+    std::shared_ptr<Ref> add(std::shared_ptr<Ref> ref) {
         _add(ref);
-        return *ref;
+        return ref;
     }
 
-    Text& add(Text* text) {
+    std::shared_ptr<Text> add(std::shared_ptr<Text> text) {
         _add(text);
-        return *text;
+        return text;
     }
 
-    Object* clone() const {
-        auto textblock = new TextBlock();
-        textblock->_copy_from(*this);
+    obj_t clone() const {
+        auto textblock = make<TextBlock>();
+        textblock->_copy_from(std::static_pointer_cast<const Container>(shared_from_this()));
         textblock->range(range());
         return textblock;
     }
@@ -467,7 +458,7 @@ class OrderedList;
 class UnorderedList;
 
 //-------------------------------------------------------------------
-class List : public Container<ListItem> {
+class List : public Container {
 public:
     List(Type type) : Container(type) { }
 
@@ -481,28 +472,28 @@ public:
 };
 
 //-------------------------------------------------------------------
-class ListItem : public Container<List> {
+class ListItem : public Container {
 public:
     ListItem(Type type) : Container(type) { }
 
     virtual std::string crown() const = 0;
 
-    TextBlock& text() {
+    std::shared_ptr<TextBlock> text() {
         return _text_block;
     }
 
-    const TextBlock& ctext() const {
+    std::shared_ptr<const TextBlock> ctext() const {
         return _text_block;
     }
 
-    OrderedList& add(OrderedList* list) {
-        _add((List*)list);
-        return *list;
+    std::shared_ptr<OrderedList> add(std::shared_ptr<OrderedList> list) {
+        _add(std::static_pointer_cast<List>(list));
+        return list;
     }
 
-    UnorderedList& add(UnorderedList* list) {
-        _add((List*)list);
-        return *list;
+    std::shared_ptr<UnorderedList> add(std::shared_ptr<UnorderedList> list) {
+        _add(std::static_pointer_cast<List>(list));
+        return list;
     }
 
     const std::string& status() const {
@@ -515,7 +506,7 @@ public:
 
     virtual JSON to_json() const {
         JSON json = Container::to_json();
-        json.set_object("text", ctext().to_json());
+        json.set_object("text", ctext()->to_json());
         if (status().size() > 0) {
             json.set<std::string>("status", status());
         }
@@ -531,8 +522,8 @@ public:
         if (status().size() > 0) {
             sb << "[" << status() << "]";
         }
-        for (; y < ctext().contents().size(); y++) {
-            auto obj = ctext().contents()[y];
+        for (; y < ctext()->contents().size(); y++) {
+            auto obj = ctext()->contents()[y];
             if (obj->type() == Object::Type::TEXT) {
                 std::shared_ptr<Text> text_obj = (
                     std::dynamic_pointer_cast<Text>(obj));
@@ -547,8 +538,8 @@ public:
 
         // Any further lines of text are indented to match the crown.
         std::ostringstream sb_addl_text;
-        for (; y < ctext().contents().size(); y++) {
-            auto obj = ctext().contents()[y];
+        for (; y < ctext()->contents().size(); y++) {
+            auto obj = ctext()->contents()[y];
             sb_addl_text << obj->to_jotdown();
         }
         std::string addl_text = sb_addl_text.str();
@@ -575,7 +566,7 @@ public:
     }
 
 private:
-    TextBlock _text_block;
+    std::shared_ptr<TextBlock> _text_block = make<TextBlock>();
     std::string _status;
 };
 
@@ -593,12 +584,12 @@ public:
         return ordinal() + ".";
     }
 
-    Object* clone() const {
-        auto oli = new OrderedListItem(ordinal());
-        oli->_copy_from(*this);
+    obj_t clone() const {
+        auto oli = make<OrderedListItem>(ordinal());
+        oli->_copy_from(std::static_pointer_cast<const ListItem>(shared_from_this()));
         oli->range(range());
-        oli->text()._copy_from(ctext());
-        oli->text().range(ctext().range());
+        oli->text()->_copy_from(std::static_pointer_cast<const Container>(ctext()));
+        oli->text()->range(ctext()->range());
         return oli;
     }
 
@@ -621,12 +612,12 @@ public:
         return "-";
     }
 
-    Object* clone() const {
-        auto uli = new UnorderedListItem();
-        uli->_copy_from(*this);
+    obj_t clone() const {
+        auto uli = make<UnorderedListItem>();
+        uli->_copy_from(std::static_pointer_cast<const ListItem>(shared_from_this()));
         uli->range(range());
-        uli->text()._copy_from(ctext());
-        uli->text().range(ctext().range());
+        uli->text()->_copy_from(std::static_pointer_cast<const Container>(ctext()));
+        uli->text()->range(ctext()->range());
         return uli;
     }
 };
@@ -636,14 +627,14 @@ class OrderedList : public List {
 public:
     OrderedList() : List(Type::ORDERED_LIST) { }
 
-    OrderedListItem& add(OrderedListItem* item) {
+    std::shared_ptr<OrderedListItem> add(std::shared_ptr<OrderedListItem> item) {
         _add(item);
-        return *item;
+        return item;
     }
 
-    Object* clone() const {
-        auto ol = new OrderedList();
-        ol->_copy_from(*this);
+    obj_t clone() const {
+        auto ol = make<OrderedList>();
+        ol->_copy_from(std::static_pointer_cast<const List>(shared_from_this()));
         ol->range(range());
         return ol;
     }
@@ -654,14 +645,14 @@ class UnorderedList : public List {
 public:
     UnorderedList() : List(Type::UNORDERED_LIST) { }
 
-    UnorderedListItem& add(UnorderedListItem* item) {
+    std::shared_ptr<UnorderedListItem> add(std::shared_ptr<UnorderedListItem> item) {
         _add(item);
-        return *item;
+        return item;
     }
 
-    Object* clone() const {
-        auto ul = new UnorderedList();
-        ul->_copy_from(*this);
+    obj_t clone() const {
+        auto ul = make<UnorderedList>();
+        ul->_copy_from(std::static_pointer_cast<const List>(shared_from_this()));
         ul->range(range());
         return ul;
     }
@@ -681,8 +672,8 @@ public:
         return _language;
     }
 
-    Object* clone() const {
-        auto obj = new CodeBlock(code(), language());
+    obj_t clone() const {
+        auto obj = make<CodeBlock>(code(), language());
         obj->range(range());
         return obj;
     }
@@ -714,7 +705,7 @@ private:
 };
 
 //-------------------------------------------------------------------
-class Section : public Container<Object> {
+class Section : public Container {
 public:
     Section(int level = 0) : Container(Type::SECTION), _level(level) { }
 
@@ -722,67 +713,67 @@ public:
         return _level;
     }
 
-    TextBlock& header() {
+    std::shared_ptr<TextBlock> header() {
         return _header;
     }
 
-    const TextBlock& header() const {
+    std::shared_ptr<const TextBlock> header() const {
         return _header;
     }
 
-    CodeBlock& add(CodeBlock* code_block) {
+    std::shared_ptr<CodeBlock> add(std::shared_ptr<CodeBlock> code_block) {
         _add(code_block);
-        return *code_block;
+        return code_block;
     }
 
-    TextBlock& add(TextBlock* text_block) {
+    std::shared_ptr<TextBlock> add(std::shared_ptr<TextBlock> text_block) {
         _add(text_block);
-        return *text_block;
+        return text_block;
     }
 
-    OrderedList& add(OrderedList* list) {
+    std::shared_ptr<OrderedList> add(std::shared_ptr<OrderedList> list) {
         _add(list);
-        return *list;
+        return list;
     }
 
-    UnorderedList& add(UnorderedList* list) {
+    std::shared_ptr<UnorderedList> add(std::shared_ptr<UnorderedList> list) {
         _add(list);
-        return *list;
+        return list;
     }
 
-    LineBreak& add(LineBreak* line_break) {
+    std::shared_ptr<LineBreak> add(std::shared_ptr<LineBreak> line_break) {
         _add(line_break);
-        return *line_break;
+        return line_break;
     }
 
-    Section& add(Section* section) {
+    std::shared_ptr<Section> add(std::shared_ptr<Section> section) {
         if (section->level() <= level()) {
             throw ObjectError("Sections must be added to parent sections of upper level.");
         }
         _add(section);
-        return *section;
+        return section;
     }
 
-    Object* clone() const {
-        auto section = new Section(level());
-        section->_copy_from(*this);
+    obj_t clone() const {
+        auto section = make<Section>(level());
+        section->_copy_from(std::static_pointer_cast<const Section>(shared_from_this()));
         section->range(range());
-        section->header()._copy_from(header());
-        section->header().range(header().range());
+        section->header()->_copy_from(std::static_pointer_cast<const Container>(header()));
+        section->header()->range(header()->range());
         return section;
     }
 
     JSON to_json() const {
         JSON json = Container::to_json();
         json.set<double>("level", level());
-        json.set_object("header", header().to_json());
+        json.set_object("header", header()->to_json());
         return json;
     }
 
     std::string to_jotdown() const {
         std::stringstream sb;
         sb << std::string(level(), '#') << " ";
-        sb << header().to_jotdown();
+        sb << header()->to_jotdown();
         for (auto obj : contents()) {
             sb << obj->to_jotdown();
         }
@@ -791,22 +782,22 @@ public:
 
 private:
     int _level;
-    TextBlock _header;
+    std::shared_ptr<TextBlock> _header = make<TextBlock>();
 };
 
 //-------------------------------------------------------------------
-class Document : public Container<Section> {
+class Document : public Container {
 public:
     Document() : Container(Type::DOCUMENT) { }
 
-    Section& add(Section* section) {
+    std::shared_ptr<Section> add(std::shared_ptr<Section> section) {
         _add(section);
-        return *section;
+        return section;
     }
 
-    Object* clone() const {
-        auto doc = new Document();
-        doc->_copy_from(*this);
+    obj_t clone() const {
+        auto doc = make<Document>();
+        doc->_copy_from(std::static_pointer_cast<const Container>(shared_from_this()));
         doc->range(range());
         return doc;
     }

@@ -1,4 +1,12 @@
 import os
+import subprocess
+import shlex
+
+
+# --------------------------------------------------------------------
+def python_config(*args):
+    result = subprocess.check_output(['python-config', *args]).decode('utf-8')
+    return shlex.split(result)
 
 
 # --------------------------------------------------------------------
@@ -9,8 +17,8 @@ def relative(filename):
 # --------------------------------------------------------------------
 INCLUDES = [".",
             "./include",
-            "./moonlight/include",
-            "./pybind11/include"]
+            "./python/include",
+            "./moonlight/include"]
 
 # --------------------------------------------------------------------
 FLAGS = [
@@ -32,7 +40,7 @@ SOURCE_EXTENSIONS = [".cpp", ".c", ".h"]
 
 # --------------------------------------------------------------------
 def Settings(filename, **kwargs):
-    flags = [*FLAGS]
+    flags = [*FLAGS, *python_config("--includes")]
     for include in INCLUDES:
         flags.append("-I")
         flags.append(relative(include))

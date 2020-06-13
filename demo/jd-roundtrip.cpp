@@ -14,7 +14,7 @@
 #include "moonlight/core.h"
 #include "moonlight/cli.h"
 
-jotdown::object::Document load(std::istream& input, const std::string& name = "<input>") {
+std::shared_ptr<jotdown::object::Document> load(std::istream& input, const std::string& name = "<input>") {
     jotdown::parser::Parser parser(input, name);
     jotdown::compiler::Compiler compiler;
     return compiler.compile(parser.begin(), parser.end());
@@ -22,7 +22,7 @@ jotdown::object::Document load(std::istream& input, const std::string& name = "<
 
 int main(int argc, char** argv) {
     auto cmd = moonlight::cli::parse(argc, argv);
-    jotdown::object::Document doc;
+    std::shared_ptr<jotdown::object::Document> doc;
 
     if (cmd.args().size() != 1) {
         doc = load(std::cin);
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
         auto infile = moonlight::file::open_r(cmd.args()[0]);
         doc = load(infile);
     }
-    std::cout << doc.to_jotdown();
+    std::cout << doc->to_jotdown();
 
     return 0;
 }

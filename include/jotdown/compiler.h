@@ -102,7 +102,7 @@ private:
 
 //-------------------------------------------------------------------
 struct Context {
-    Document doc;
+    std::shared_ptr<Document> doc;
     BufferedTokens tokens;
 };
 
@@ -121,7 +121,7 @@ protected:
 //-------------------------------------------------------------------
 class CompileTextBlock : public CompileState {
 public:
-    CompileTextBlock(TextBlock* text_block,
+    CompileTextBlock(std::shared_ptr<TextBlock> text_block,
                      Token::Type terminal_type = Token::Type::NONE)
     : _text_block(text_block), _terminal_type(terminal_type) { }
 
@@ -139,19 +139,19 @@ public:
         switch (tk->type()) {
         case Token::Type::TEXT:
             context().tokens.advance();
-            _text_block->add(new Text(tk->content())).range(tk->range());
+            _text_block->add(make<Text>(tk->content()))->range(tk->range());
             break;
         case Token::Type::HASHTAG:
             context().tokens.advance();
-            _text_block->add(new Hashtag(tk->content())).range(tk->range());
+            _text_block->add(make<Hashtag>(tk->content()))->range(tk->range());
             break;
         case Token::Type::CODE:
             context().tokens.advance();
-            _text_block->add(new Code(tk->content())).range(tk->range());
+            _text_block->add(make<Code>(tk->content()))->range(tk->range());
             break;
         case Token::Type::ANCHOR:
             context().tokens.advance();
-            _text_block->add(new Anchor(tk->content())).range(tk->range());
+            _text_block->add(make<Anchor>(tk->content()))->range(tk->range());
             break;
         case Token::Type::REF:
             context().tokens.advance();
@@ -178,12 +178,12 @@ private:
     void ingest_ref_token(token_t tk) {
         std::shared_ptr<parser::RefToken> ref_tk = (
             dynamic_pointer_cast<parser::RefToken>(tk));
-        auto& obj = _text_block->add(
-            new Ref(ref_tk->link(), ref_tk->text()));
-        obj.range(tk->range());
+        auto obj = _text_block->add(
+            make<Ref>(ref_tk->link(), ref_tk->text()));
+        obj->range(tk->range());
     }
 
-    TextBlock* _text_block;
+    std::shared_ptr<TextBlock> _text_block;
     Token::Type _terminal_type;
 };
 
@@ -192,7 +192,7 @@ class CompileOrderedList;
 class CompileUnorderedList;
 class CompileListBase : public CompileState {
 public:
-    CompileListBase(List* list) : list(list) { }
+    CompileListBase(std::shared_ptr<List> list) : list(list) { }
 
     void run() {
         auto tk = context().tokens.peek();
@@ -223,28 +223,28 @@ protected:
 
     void _process_sub_list(std::shared_ptr<parser::ListItemToken> tk) {
         if (tk->type() == Token::Type::OL_ITEM) {
-            OrderedList* new_list = new OrderedList();
+            auto new_list = make<OrderedList>();
             last_item->add(new_list);
             new_list->range().begin = tk->begin();
             push<CompileOrderedList>(new_list);
 
         } else if (tk->type() == Token::Type::UL_ITEM) {
-            UnorderedList* new_list = new UnorderedList();
+            auto new_list = make<UnorderedList>();
             new_list->range().begin = tk->begin();
             last_item->add(new_list);
             push<CompileUnorderedList>(new_list);
         }
     }
 
-    List* list;
-    ListItem* last_item = nullptr;
+    std::shared_ptr<List> list;
+    std::shared_ptr<ListItem> last_item = nullptr;
     std::shared_ptr<parser::ListItemToken> last_token = nullptr;
 };
 
 //-------------------------------------------------------------------
 class CompileOrderedList : public CompileListBase {
 public:
-    CompileOrderedList(OrderedList* list)
+    CompileOrderedList(std::shared_ptr<OrderedList> list)
     : CompileListBase(list), _list(list) { }
 
     const char* tracer_name() const {
@@ -258,7 +258,7 @@ public:
         std::shared_ptr<parser::OrderedListItemToken> oli_tk = (
             std::dynamic_pointer_cast<parser::OrderedListItemToken>(li_tk));
 
-        OrderedListItem* oli = new OrderedListItem(oli_tk->ordinal());
+        auto oli = make<OrderedListItem>(oli_tk->ordinal());
         oli->range(oli_tk->range());
         _list->add(oli);
         last_item = oli;
@@ -267,16 +267,16 @@ public:
             auto tk = context().tokens.get();
             oli->status(tk->content());
         }
-        push<CompileTextBlock>(&oli->text(), Token::Type::LIST_ITEM_END);
+        push<CompileTextBlock>(oli->text(), Token::Type::LIST_ITEM_END);
     }
 
-    OrderedList* _list;
+    std::shared_ptr<OrderedList> _list;
 };
 
 //-------------------------------------------------------------------
 class CompileUnorderedList : public CompileListBase {
 public:
-    CompileUnorderedList(UnorderedList* list)
+    CompileUnorderedList(std::shared_ptr<UnorderedList> list)
     : CompileListBase(list), _list(list) { }
 
     const char* tracer_name() const {
@@ -287,7 +287,7 @@ public:
         if (li_tk->type() != Token::Type::UL_ITEM) {
             throw unexpected_token(li_tk, "compiling unordered list at the same level");
         }
-        UnorderedListItem* uli = new UnorderedListItem();
+        auto uli = make<UnorderedListItem>();
         uli->range(li_tk->range());
         _list->add(uli);
         last_item = uli;
@@ -296,16 +296,16 @@ public:
             auto tk = context().tokens.get();
             uli->status(tk->content());
         }
-        push<CompileTextBlock>(&uli->text(), Token::Type::LIST_ITEM_END);
+        push<CompileTextBlock>(uli->text(), Token::Type::LIST_ITEM_END);
     }
 
-    UnorderedList* _list;
+    std::shared_ptr<UnorderedList> _list;
 };
 
 //-------------------------------------------------------------------
 class CompileTopLevelList : public CompileState {
 public:
-    CompileTopLevelList(Section* parent) : _parent(parent) { }
+    CompileTopLevelList(std::shared_ptr<Section> parent) : _parent(parent) { }
 
     const char* tracer_name() const {
         return "TopLevelList";
@@ -315,14 +315,14 @@ public:
         auto tk = context().tokens.peek();
 
         if (tk->type() == Token::Type::OL_ITEM) {
-            auto& ordered_list = _parent->add(new OrderedList());
-            ordered_list.range().begin = tk->begin();
-            transition<CompileOrderedList>(&ordered_list);
+            auto ordered_list = _parent->add(make<OrderedList>());
+            ordered_list->range().begin = tk->begin();
+            transition<CompileOrderedList>(ordered_list);
 
         } else if (tk->type() == Token::Type::UL_ITEM) {
-            auto& unordered_list = _parent->add(new UnorderedList());
-            unordered_list.range().begin = tk->begin();
-            transition<CompileUnorderedList>(&unordered_list);
+            auto unordered_list = _parent->add(make<UnorderedList>());
+            unordered_list->range().begin = tk->begin();
+            transition<CompileUnorderedList>(unordered_list);
 
         } else {
             throw unexpected_token(tk, "parsing top-level list");
@@ -330,13 +330,13 @@ public:
     }
 
 private:
-    Section* _parent;
+    std::shared_ptr<Section> _parent;
 };
 
 //-------------------------------------------------------------------
 class CompileCodeBlock : public CompileState {
 public:
-    CompileCodeBlock(Section* section) : _section(section) { }
+    CompileCodeBlock(std::shared_ptr<Section> section) : _section(section) { }
 
     const char* tracer_name() const {
         return "CodeBlock";
@@ -351,14 +351,14 @@ public:
             std::dynamic_pointer_cast<parser::CodeBlockToken>(tk)
         );
 
-        auto& obj = _section->add(
-            new CodeBlock(code_tk->content(), code_tk->langspec()));
-        obj.range(tk->range());
+        auto obj = _section->add(
+            make<CodeBlock>(code_tk->content(), code_tk->langspec()));
+        obj->range(tk->range());
         pop();
     }
 
 private:
-    Section* _section;
+    std::shared_ptr<Section> _section;
 };
 
 //-------------------------------------------------------------------
@@ -366,7 +366,7 @@ class CompileSectionHeader;
 class CompileSubSection;
 class CompileSection : public CompileState {
 public:
-    CompileSection(Section* section) : _section(section) { }
+    CompileSection(std::shared_ptr<Section> section) : _section(section) { }
 
     const char* tracer_name() const {
         return "Section";
@@ -405,7 +405,7 @@ public:
 
         case Token::Type::NEWLINE:
             context().tokens.advance();
-            _section->add(new LineBreak()).range(tk->range());
+            _section->add(make<LineBreak>())->range(tk->range());
             break;
 
         case Token::Type::END:
@@ -426,17 +426,17 @@ private:
     }
 
     void init_text_block() {
-        auto& text_block = _section->add(new TextBlock());
-        push<CompileTextBlock>(&text_block);
+        auto text_block = _section->add(make<TextBlock>());
+        push<CompileTextBlock>(text_block);
     }
 
-    Section* _section;
+    std::shared_ptr<Section> _section;
 };
 
 //-------------------------------------------------------------------
 class CompileSectionHeader : public CompileState {
 public:
-    CompileSectionHeader(Section* section) : _section(section) { }
+    CompileSectionHeader(std::shared_ptr<Section> section) : _section(section) { }
 
     const char* tracer_name() const {
         return "SectionHeader";
@@ -444,7 +444,7 @@ public:
 
     void run() {
         if (! header_text_processed) {
-            push<CompileTextBlock>(&(_section->header()), Token::Type::HEADER_END);
+            push<CompileTextBlock>(_section->header(), Token::Type::HEADER_END);
             header_text_processed = true;
 
         } else {
@@ -454,13 +454,13 @@ public:
 
 private:
     bool header_text_processed = false;
-    Section* _section;
+    std::shared_ptr<Section> _section;
 };
 
 //-------------------------------------------------------------------
 class CompileSubSection : public CompileState {
 public:
-    CompileSubSection(Section* parent) : _parent(parent) { }
+    CompileSubSection(std::shared_ptr<Section> parent) : _parent(parent) { }
 
     const char* tracer_name() const {
         return "SubSection";
@@ -470,16 +470,16 @@ public:
         token_t tk = context().tokens.get();
         std::shared_ptr<parser::HeaderStartToken> header_tk = (
             dynamic_pointer_cast<parser::HeaderStartToken>(tk));
-        Section& section = _parent->add(new Section(
+        auto section = _parent->add(make<Section>(
             header_tk->level()
         ));
-        section.range().begin = tk->begin();
+        section->range().begin = tk->begin();
 
-        transition<CompileSectionHeader>(&section);
+        transition<CompileSectionHeader>(section);
     }
 
 private:
-    Section* _parent;
+    std::shared_ptr<Section> _parent;
 };
 
 //-------------------------------------------------------------------
@@ -493,12 +493,12 @@ public:
         token_t tk = context().tokens.get();
         std::shared_ptr<parser::HeaderStartToken> header_tk = (
             dynamic_pointer_cast<parser::HeaderStartToken>(tk));
-        Section& section = context().doc.add(new Section(
+        auto section = context().doc->add(make<Section>(
             header_tk->level()
         ));
-        section.range().begin = tk->begin();
+        section->range().begin = tk->begin();
 
-        transition<CompileSectionHeader>(&section);
+        transition<CompileSectionHeader>(section);
     }
 };
 
@@ -511,21 +511,21 @@ class CompileBegin : public CompileState {
     void run() {
         token_t tk = context().tokens.peek();
 
-        if (context().doc.range().begin == NOWHERE) {
-            context().doc.range().begin = tk->begin();
+        if (context().doc->range().begin == NOWHERE) {
+            context().doc->range().begin = tk->begin();
         }
 
         if (tk->type() == Token::Type::HEADER_START) {
             push<CompileTopLevelSection>();
 
         } else if (tk->type() == Token::Type::END) {
-            context().doc.range().end = tk->end();
+            context().doc->range().end = tk->end();
             terminate();
 
         } else {
-            auto& section = context().doc.add(new Section(0));
-            section.range().begin = tk->begin();
-            push<CompileSection>(&section);
+            auto section = context().doc->add(make<Section>(0));
+            section->range().begin = tk->begin();
+            push<CompileSection>(section);
         }
     }
 };
@@ -534,11 +534,12 @@ class CompileBegin : public CompileState {
 class Compiler {
 public:
     template<class T>
-    Document compile(T true_begin, T true_end) {
+    std::shared_ptr<Document> compile(T true_begin, T true_end) {
         auto begin = moonlight::gen::wrap(true_begin, true_end);
         auto end = moonlight::gen::end<typename T::value_type>();
 
         Context ctx {
+            .doc = make<Document>(),
             .tokens = BufferedTokens(begin, end)
         };
 

@@ -1,1 +1,4 @@
 .mypy_cache
+*.egg-info
+*.eggs
+python/dist
