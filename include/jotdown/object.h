@@ -44,13 +44,13 @@ typedef std::shared_ptr<const Object> cobj_t;
 class Object : public std::enable_shared_from_this<Object> {
 public:
     enum class Type {
+        NONE,
         ANCHOR,
         CODE,
         CODE_BLOCK,
         DOCUMENT,
         HASHTAG,
         LINE_BREAK,
-        NONE,
         ORDERED_LIST,
         ORDERED_LIST_ITEM,
         REF,
@@ -101,20 +101,20 @@ public:
 
     static const std::string& type_name(Type type) {
         static const std::string names[] = {
+            "NONE",
             "ANCHOR",
             "CODE",
             "CODE_BLOCK",
             "DOCUMENT",
             "HASHTAG",
             "LINE_BREAK",
-            "NONE",
             "ORDERED_LIST",
             "ORDERED_LIST_ITEM",
             "REF",
             "SECTION",
             "STATUS",
             "TEXT",
-            "TEXT_BLOCK",
+            "TEXT_CONTENT",
             "UNORDERED_LIST",
             "UNORDERED_LIST_ITEM",
             "NUM_TYPES"
@@ -404,12 +404,12 @@ private:
 };
 
 //-------------------------------------------------------------------
-class TextBlock : public Container {
+class TextContent : public Container {
 public:
     friend class Section;
     friend class OrderedListItem;
     friend class UnorderedListItem;
-    TextBlock() : Container(Type::TEXT_CONTENT) { }
+    TextContent() : Container(Type::TEXT_CONTENT) { }
 
     std::shared_ptr<Anchor> add(std::shared_ptr<Anchor> anchor) {
         _add(anchor);
@@ -437,7 +437,7 @@ public:
     }
 
     obj_t clone() const {
-        auto textblock = make<TextBlock>();
+        auto textblock = make<TextContent>();
         textblock->_copy_from(std::static_pointer_cast<const Container>(shared_from_this()));
         textblock->range(range());
         return textblock;
@@ -478,11 +478,11 @@ public:
 
     virtual std::string crown() const = 0;
 
-    std::shared_ptr<TextBlock> text() {
+    std::shared_ptr<TextContent> text() {
         return _text_block;
     }
 
-    std::shared_ptr<const TextBlock> ctext() const {
+    std::shared_ptr<const TextContent> ctext() const {
         return _text_block;
     }
 
@@ -566,7 +566,7 @@ public:
     }
 
 private:
-    std::shared_ptr<TextBlock> _text_block = make<TextBlock>();
+    std::shared_ptr<TextContent> _text_block = make<TextContent>();
     std::string _status;
 };
 
@@ -713,11 +713,11 @@ public:
         return _level;
     }
 
-    std::shared_ptr<TextBlock> header() {
+    std::shared_ptr<TextContent> header() {
         return _header;
     }
 
-    std::shared_ptr<const TextBlock> header() const {
+    std::shared_ptr<const TextContent> header() const {
         return _header;
     }
 
@@ -726,7 +726,7 @@ public:
         return code_block;
     }
 
-    std::shared_ptr<TextBlock> add(std::shared_ptr<TextBlock> text_block) {
+    std::shared_ptr<TextContent> add(std::shared_ptr<TextContent> text_block) {
         _add(text_block);
         return text_block;
     }
@@ -782,7 +782,7 @@ public:
 
 private:
     int _level;
-    std::shared_ptr<TextBlock> _header = make<TextBlock>();
+    std::shared_ptr<TextContent> _header = make<TextContent>();
 };
 
 //-------------------------------------------------------------------

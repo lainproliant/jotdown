@@ -119,39 +119,39 @@ protected:
 };
 
 //-------------------------------------------------------------------
-class CompileTextBlock : public CompileState {
+class CompileTextContent : public CompileState {
 public:
-    CompileTextBlock(std::shared_ptr<TextBlock> text_block,
+    CompileTextContent(std::shared_ptr<TextContent> text_content,
                      Token::Type terminal_type = Token::Type::NONE)
-    : _text_block(text_block), _terminal_type(terminal_type) { }
+    : _text_content(text_content), _terminal_type(terminal_type) { }
 
     const char* tracer_name() const {
-        return "TextBlock";
+        return "TextContent";
     }
 
     void run() {
         auto tk = context().tokens.peek();
 
-        if (_text_block->range().begin == NOWHERE) {
-            _text_block->range().begin = tk->begin();
+        if (_text_content->range().begin == NOWHERE) {
+            _text_content->range().begin = tk->begin();
         }
 
         switch (tk->type()) {
         case Token::Type::TEXT:
             context().tokens.advance();
-            _text_block->add(make<Text>(tk->content()))->range(tk->range());
+            _text_content->add(make<Text>(tk->content()))->range(tk->range());
             break;
         case Token::Type::HASHTAG:
             context().tokens.advance();
-            _text_block->add(make<Hashtag>(tk->content()))->range(tk->range());
+            _text_content->add(make<Hashtag>(tk->content()))->range(tk->range());
             break;
         case Token::Type::CODE:
             context().tokens.advance();
-            _text_block->add(make<Code>(tk->content()))->range(tk->range());
+            _text_content->add(make<Code>(tk->content()))->range(tk->range());
             break;
         case Token::Type::ANCHOR:
             context().tokens.advance();
-            _text_block->add(make<Anchor>(tk->content()))->range(tk->range());
+            _text_content->add(make<Anchor>(tk->content()))->range(tk->range());
             break;
         case Token::Type::REF:
             context().tokens.advance();
@@ -164,10 +164,10 @@ public:
 
             } else if (tk->type() == _terminal_type) {
                 context().tokens.advance();
-                _text_block->range().end = tk->end();
+                _text_content->range().end = tk->end();
 
             } else {
-                _text_block->range().end = tk->begin();
+                _text_content->range().end = tk->begin();
             }
             pop();
             break;
@@ -178,12 +178,12 @@ private:
     void ingest_ref_token(token_t tk) {
         std::shared_ptr<parser::RefToken> ref_tk = (
             dynamic_pointer_cast<parser::RefToken>(tk));
-        auto obj = _text_block->add(
+        auto obj = _text_content->add(
             make<Ref>(ref_tk->link(), ref_tk->text()));
         obj->range(tk->range());
     }
 
-    std::shared_ptr<TextBlock> _text_block;
+    std::shared_ptr<TextContent> _text_content;
     Token::Type _terminal_type;
 };
 
@@ -267,7 +267,7 @@ public:
             auto tk = context().tokens.get();
             oli->status(tk->content());
         }
-        push<CompileTextBlock>(oli->text(), Token::Type::LIST_ITEM_END);
+        push<CompileTextContent>(oli->text(), Token::Type::LIST_ITEM_END);
     }
 
     std::shared_ptr<OrderedList> _list;
@@ -296,7 +296,7 @@ public:
             auto tk = context().tokens.get();
             uli->status(tk->content());
         }
-        push<CompileTextBlock>(uli->text(), Token::Type::LIST_ITEM_END);
+        push<CompileTextContent>(uli->text(), Token::Type::LIST_ITEM_END);
     }
 
     std::shared_ptr<UnorderedList> _list;
@@ -381,7 +381,7 @@ public:
         case Token::Type::ANCHOR:
         case Token::Type::HASHTAG:
         case Token::Type::CODE:
-            init_text_block();
+            init_text_content();
             break;
 
         case Token::Type::CODE_BLOCK:
@@ -425,9 +425,9 @@ private:
         return header_tk->level() > _section->level();
     }
 
-    void init_text_block() {
-        auto text_block = _section->add(make<TextBlock>());
-        push<CompileTextBlock>(text_block);
+    void init_text_content() {
+        auto text_content = _section->add(make<TextContent>());
+        push<CompileTextContent>(text_content);
     }
 
     std::shared_ptr<Section> _section;
@@ -444,7 +444,7 @@ public:
 
     void run() {
         if (! header_text_processed) {
-            push<CompileTextBlock>(_section->header(), Token::Type::HEADER_END);
+            push<CompileTextContent>(_section->header(), Token::Type::HEADER_END);
             header_text_processed = true;
 
         } else {
