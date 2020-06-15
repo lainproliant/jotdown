@@ -25,7 +25,7 @@ using jotdown::NOWHERE;
 
 typedef moonlight::json::Wrapper JSON;
 
-//-------------------------------------------------------------------'
+//-------------------------------------------------------------------
 struct Config {
     int list_indent;
 };
@@ -55,7 +55,6 @@ public:
         ORDERED_LIST_ITEM,
         REF,
         SECTION,
-        STATUS,
         TEXT,
         TEXT_CONTENT,
         UNORDERED_LIST,
@@ -112,7 +111,6 @@ public:
             "ORDERED_LIST_ITEM",
             "REF",
             "SECTION",
-            "STATUS",
             "TEXT",
             "TEXT_CONTENT",
             "UNORDERED_LIST",
@@ -159,12 +157,6 @@ public:
     typedef typename decltype(_contents)::iterator iterator;
     typedef typename decltype(_contents)::const_iterator const_iterator;
 
-    void remove(obj_t obj) {
-        _contents.erase(std::remove_if(_contents.begin(), _contents.end(), [&](auto& obj_uniq) {
-            return obj_uniq == obj;
-        }));
-    }
-
     iterator begin() {
         return _contents.begin();
     }
@@ -183,6 +175,16 @@ public:
 
     const std::vector<obj_t>& contents() const {
         return _contents;
+    }
+
+    void contents(const std::vector<obj_t>& contents) {
+        for (auto obj : _contents) {
+            obj->parent(nullptr);
+        }
+        _contents = contents;
+        for (auto obj : contents) {
+            obj->parent(shared_from_this());
+        }
     }
 
     JSON to_json() const {
@@ -715,6 +717,10 @@ public:
 
     std::shared_ptr<TextContent> header() {
         return _header;
+    }
+
+    void header(std::shared_ptr<TextContent> header) {
+        _header = header;
     }
 
     std::shared_ptr<const TextContent> header() const {

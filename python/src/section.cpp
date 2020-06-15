@@ -1,0 +1,87 @@
+/*
+ * section.cpp
+ *
+ * Author: Lain Musgrove (lain.proliant@gmail.com)
+ * Date: Saturday June 14, 2020
+ *
+ * Distributed under terms of the MIT license.
+ */
+
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
+#include "pybind11/operators.h"
+#include "jotdown/python/declarators.h"
+#include "jotdown/object.h"
+
+#include <functional>
+
+namespace py = pybind11;
+
+namespace jotdown {
+namespace python {
+
+//-------------------------------------------------------------------
+shared_class<object::Section> declare_section(
+    py::module& m,
+    shared_class<object::Container>& container) {
+
+    auto section = shared_class<object::Section>(m, "Section", container)
+    .def_property(
+        "header",
+        [](const object::Section& self) {
+            return self.header();
+        },
+        [](object::Section& self, std::shared_ptr<object::TextContent> header) {
+            self.header(header);
+        })
+    .def("add", [](object::Section& self, std::shared_ptr<object::CodeBlock> code_block) {
+        return self.add(code_block);
+    })
+    .def("add", [](object::Section& self, std::shared_ptr<object::TextContent> text_content) {
+        return self.add(text_content);
+    })
+    .def("add", [](object::Section& self, std::shared_ptr<object::OrderedList> ol) {
+        return self.add(ol);
+    })
+    .def("add", [](object::Section& self, std::shared_ptr<object::UnorderedList> ul) {
+        return self.add(ul);
+    })
+    .def("add", [](object::Section& self, std::shared_ptr<object::LineBreak> line_break) {
+        return self.add(line_break);
+    })
+    .def("add", [](object::Section& self, std::shared_ptr<object::Section> section) {
+        return self.add(section);
+    });
+
+    return section;
+}
+
+//-------------------------------------------------------------------
+shared_class<object::List> declare_list(
+    py::module& m,
+    shared_class<object::Container>& container) {
+    return shared_class<object::List>(m, "List", container);
+}
+
+//-------------------------------------------------------------------
+shared_class<object::ListItem> declare_list_item(py::module& m, obj_class& obj) {
+    auto li = shared_class<object::ListItem>(m, "ListItem", obj)
+    .def("add", [](object::ListItem& li, std::shared_ptr<object::OrderedList> ol) {
+        li.add(ol);
+    })
+    .def("add", [](object::ListItem& li, std::shared_ptr<object::UnorderedList> ul) {
+        li.add(ul);
+    })
+    .def_property(
+        "status",
+        [](const object::ListItem& li) {
+            return li.status();
+        },
+        [](object::ListItem& li, const std::string& status) {
+            li.status(status);
+        });
+    return li;
+}
+
+}
+}
