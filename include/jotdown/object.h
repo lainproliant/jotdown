@@ -484,6 +484,11 @@ public:
         return _text_block;
     }
 
+    void text(std::shared_ptr<TextContent> text) {
+        _text_block = text;
+        text->parent(shared_from_this());
+    }
+
     std::shared_ptr<const TextContent> ctext() const {
         return _text_block;
     }
@@ -721,6 +726,7 @@ public:
 
     void header(std::shared_ptr<TextContent> header) {
         _header = header;
+        _header->parent(shared_from_this());
     }
 
     std::shared_ptr<const TextContent> header() const {

@@ -35,6 +35,15 @@ shared_class<object::ListItem> declare_list_item(py::module& m, obj_class& obj) 
         li.add(ul);
     })
     .def_property(
+        "text",
+        [](const object::ListItem& li) {
+            return li.ctext();
+        },
+        [](object::ListItem& li, std::shared_ptr<object::TextContent> text) {
+            li.text(text);
+        }
+    )
+    .def_property(
         "status",
         [](const object::ListItem& li) {
             return li.status();

@@ -56,32 +56,5 @@ shared_class<object::Section> declare_section(
     return section;
 }
 
-//-------------------------------------------------------------------
-shared_class<object::List> declare_list(
-    py::module& m,
-    shared_class<object::Container>& container) {
-    return shared_class<object::List>(m, "List", container);
-}
-
-//-------------------------------------------------------------------
-shared_class<object::ListItem> declare_list_item(py::module& m, obj_class& obj) {
-    auto li = shared_class<object::ListItem>(m, "ListItem", obj)
-    .def("add", [](object::ListItem& li, std::shared_ptr<object::OrderedList> ol) {
-        li.add(ol);
-    })
-    .def("add", [](object::ListItem& li, std::shared_ptr<object::UnorderedList> ul) {
-        li.add(ul);
-    })
-    .def_property(
-        "status",
-        [](const object::ListItem& li) {
-            return li.status();
-        },
-        [](object::ListItem& li, const std::string& status) {
-            li.status(status);
-        });
-    return li;
-}
-
 }
 }

@@ -15,11 +15,12 @@ from panifex import build, default, seq, sh
 # -------------------------------------------------------------------
 INCLUDES = [
     "-I./include",
+    "-I./python/include",
     "-I./moonlight/include",
     "-I./pybind11/include",
 ]
 
-sh.env(CC="g++",
+sh.env(CC="clang++",
        CFLAGS=("-g",
                *INCLUDES,
                "--std=c++2a",
@@ -47,7 +48,7 @@ def compile_app(src, headers):
 # -------------------------------------------------------------------
 def compile_pybind11_module(src, headers):
     return sh(
-        "{CC} -O3 -Wall -shared -std=c++2a -fPIC {flags} {input} -o {output}",
+        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {input} -o {output}",
         input=src,
         output="jotdown%s" % check("python3-config --extension-suffix"),
         flags=INCLUDES + shlex.split(check("python3 -m pybind11 --includes")),

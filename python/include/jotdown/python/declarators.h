@@ -74,7 +74,7 @@ shared_class<object::Hashtag> declare_hashtag(py::module& m, obj_class& obj);
 shared_class<object::LineBreak> declare_line_break(py::module& m, obj_class& obj);
 shared_class<object::Code> declare_code(py::module& m, obj_class& obj);
 shared_class<object::Ref> declare_ref(py::module& m, obj_class& obj);
-shared_class<object::CodeBlock> declare_code_block(py::module& m);
+shared_class<object::CodeBlock> declare_code_block(py::module& m, obj_class& obj);
 
 
 //-------------------------------------------------------------------

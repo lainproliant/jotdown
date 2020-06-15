@@ -26,7 +26,7 @@ std::shared_ptr<Document> load(const std::string& filename) {
     return compiler.compile(parser.begin(), parser.end());
 }
 
-void save(std::shared_ptr<Document> doc, const std::string& filename) {
+void save(std::shared_ptr<const Document> doc, const std::string& filename) {
     auto outfile = moonlight::file::open_w(filename);
     outfile << doc->to_jotdown();
 }
