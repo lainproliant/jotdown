@@ -26,9 +26,10 @@ shared_class<object::OrderedList> declare_ordered_list(
     shared_class<object::List>& list) {
 
     auto ol = shared_class<object::OrderedList>(m, "OrderedList", list)
-    .def("add", [](object::OrderedList& self, std::shared_ptr<object::OrderedListItem> oli) {
-        self.add(oli);
-    });
+        .def(py::init<>())
+        .def("add", [](object::OrderedList& self, std::shared_ptr<object::OrderedListItem> oli) {
+            return self.add(oli);
+        });
     return ol;
 }
 
@@ -37,7 +38,17 @@ shared_class<object::OrderedListItem> declare_ordered_list_item(
     py::module& m,
     shared_class<object::ListItem>& li) {
 
-    return shared_class<object::OrderedListItem>(m, "OrderedListItem", li);
+    auto oli = shared_class<object::OrderedListItem>(m, "OrderedListItem", li)
+    .def(py::init([](const std::string& ordinal) {
+        return object::OrderedListItem::create(ordinal);
+    }), py::arg("ordinal"))
+        .def("__repr__", [](const object::OrderedListItem& self) {
+            return tfm::format("%s<%s, %s>",
+                               self.type_name(self.type()),
+                               self.ordinal(),
+                               self.ctext()->to_json().to_string());
+        });
+    return oli;
 }
 
 }

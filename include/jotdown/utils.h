@@ -19,7 +19,7 @@
 
 namespace jotdown {
 
-std::string strliteral(const std::string& str) {
+inline std::string strliteral(const std::string& str) {
     static const std::map<char, std::string> ESCAPE_SEQUENCES = {
         {'\a', "\\a"},
         {'\b', "\\b"},

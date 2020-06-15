@@ -26,6 +26,9 @@ shared_class<object::Section> declare_section(
     shared_class<object::Container>& container) {
 
     auto section = shared_class<object::Section>(m, "Section", container)
+    .def(py::init([](int level) {
+        return object::Section::create(level);
+    }), py::arg("level") = 0)
     .def_property(
         "header",
         [](const object::Section& self) {
@@ -51,6 +54,12 @@ shared_class<object::Section> declare_section(
     })
     .def("add", [](object::Section& self, std::shared_ptr<object::Section> section) {
         return self.add(section);
+    })
+    .def("__repr__", [](const object::Section& self) {
+        return tfm::format("%s<%d, %s>",
+                           self.type_name(self.type()),
+                           self.level(),
+                           self.header()->to_json().to_string());
     });
 
     return section;

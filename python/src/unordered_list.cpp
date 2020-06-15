@@ -26,9 +26,11 @@ shared_class<object::UnorderedList> declare_unordered_list(
     shared_class<object::List>& list) {
 
     auto ul = shared_class<object::UnorderedList>(m, "UnorderedList", list)
-    .def("add", [](object::UnorderedList& self, std::shared_ptr<object::UnorderedListItem> uli) {
-        self.add(uli);
-    });
+        .def(py::init<>())
+        .def("add", [](object::UnorderedList& self,
+                       std::shared_ptr<object::UnorderedListItem> uli) {
+            return self.add(uli);
+        });
     return ul;
 }
 
@@ -37,7 +39,12 @@ shared_class<object::UnorderedListItem> declare_unordered_list_item(
     py::module& m,
     shared_class<object::ListItem>& li) {
 
-    return shared_class<object::UnorderedListItem>(m, "UnorderedListItem", li);
+    auto uli = shared_class<object::UnorderedListItem>(
+        m, "UnorderedListItem", li)
+        .def(py::init([]() {
+            return object::UnorderedListItem::create();
+        }));
+    return uli;
 }
 
 }

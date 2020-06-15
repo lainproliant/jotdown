@@ -78,7 +78,7 @@ shared_class<object::CodeBlock> declare_code_block(py::module& m, obj_class& obj
 
 
 //-------------------------------------------------------------------
-// Textblock declarator: textblock.cpp
+// Text Content declarator: text_content.cpp
 shared_class<object::TextContent> declare_text_content(
     py::module& m,
     shared_class<object::Container>& container);

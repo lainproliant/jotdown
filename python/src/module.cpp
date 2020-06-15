@@ -31,7 +31,7 @@ PYBIND11_MODULE(jotdown, m) {
     // Simple object declarators: simple.cpp
     auto anchor = declare_anchor(m, obj);
     auto text = declare_text(m, obj);
-    auto hashtag = declare_text(m, obj);
+    auto hashtag = declare_hashtag(m, obj);
     auto line_break = declare_line_break(m, obj);
     auto code = declare_code(m, obj);
     auto ref = declare_ref(m, obj);
@@ -50,7 +50,7 @@ PYBIND11_MODULE(jotdown, m) {
 
     // Unordered List declarators: unordered_list.cpp
     auto ul = declare_unordered_list(m, list);
-    auto uli = declare_ordered_list_item(m, li);
+    auto uli = declare_unordered_list_item(m, li);
 
     // Section declarator: section.cpp
     auto section = declare_section(m, container);

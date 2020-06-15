@@ -36,11 +36,21 @@ void declare_object_error(py::module& m) {
 //-------------------------------------------------------------------
 py::class_<Location> declare_location(py::module& m) {
     auto location = py::class_<Location>(m, "Location")
+        .def(py::init([]() {
+            return NOWHERE;
+        }))
+        .def(py::init([](const std::string& filename,
+                         int line, int col) {
+            return (Location){filename, line, col};
+        }), py::arg("filename"), py::arg("line"), py::arg("col"))
         .def_readwrite("filename", &Location::filename)
         .def_readwrite("line", &Location::line)
         .def_readwrite("col", &Location::col)
         .def("__repr__", [](const Location& self) {
-            return tfm::format("Location%s", self.to_json().to_string());
+            return tfm::format("Location<'%s' %d:%d>",
+                               self.filename,
+                               self.line,
+                               self.col);
         })
         .def("__hash__", [](const Location& self) {
             size_t hash;
@@ -60,14 +70,27 @@ py::class_<Location> declare_location(py::module& m) {
 //-------------------------------------------------------------------
 py::class_<Range> declare_range(py::module& m) {
     auto range = py::class_<Range>(m, "Range")
+        .def(py::init([]() {
+            return (Range){NOWHERE, NOWHERE};
+        }))
+        .def(py::init([](const Location& begin,
+                         const Location& end) {
+            return (Range){begin, end};
+        }), py::arg("begin"), py::arg("end"))
         .def_readwrite("begin", &Range::begin)
         .def_readwrite("end", &Range::end)
-        .def(py::self == py::self)
         .def("__repr__", [](const Range& self) {
-            return tfm::format("Range%s", self.to_json().to_string());
+            return tfm::format("Range<%d:%d, %d:%d>",
+                               self.begin.line,
+                               self.begin.col,
+                               self.end.line,
+                               self.end.col);
         })
         .def("to_json", [](const Range& self) {
             return json_to_dict(self.to_json());
+        })
+        .def("__eq__", [](const Range& self, const Range& other) {
+            return self == other;
         });
     return range;
 }
@@ -104,13 +127,10 @@ obj_class declare_object(py::module& m) {
         [](object::Object& self, const Range& range) {
             self.range(range);
         });
-    object.def_property(
+    object.def_property_readonly(
         "parent",
         [](const object::Object& self) {
             return self.parent();
-        },
-        [](object::Object& self, object::obj_t parent) {
-            self.parent(parent);
         });
     object.def_static("type_name", [](object::Object::Type type) {
         return object::Object::type_name(type);
@@ -133,7 +153,7 @@ obj_class declare_object(py::module& m) {
         return obj.to_jotdown();
     });
     object.def("__repr__", [](const object::Object& obj) {
-        return tfm::format("%s%s", obj.type_name(obj.type()), obj.to_json());
+        return tfm::format("%s", obj.type_name(obj.type()));
     });
 
     return object;

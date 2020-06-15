@@ -51,7 +51,7 @@ def compile_pybind11_module(src, headers):
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {input} -o {output}",
         input=src,
         output="jotdown%s" % check("python3-config --extension-suffix"),
-        flags=INCLUDES + shlex.split(check("python3 -m pybind11 --includes")),
+        flags=INCLUDES + shlex.split(check("python-config --includes")),
         includes=headers
     )
 

@@ -67,6 +67,10 @@ struct Range {
         json.set_object("end", end_json);
         return json;
     }
+
+    bool operator==(const Range& other) const {
+        return begin == other.begin && end == other.end;
+    }
 };
 
 }

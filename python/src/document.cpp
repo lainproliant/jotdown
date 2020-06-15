@@ -27,6 +27,7 @@ shared_class<object::Document> declare_document(
     shared_class<object::Container>& container) {
 
     auto document = shared_class<object::Document>(m, "Document", container)
+        .def(py::init<>())
         .def("add", [](object::Document& document,
                        std::shared_ptr<object::Section> section) {
             document.add(section);

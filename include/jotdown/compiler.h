@@ -258,7 +258,7 @@ public:
         std::shared_ptr<parser::OrderedListItemToken> oli_tk = (
             std::dynamic_pointer_cast<parser::OrderedListItemToken>(li_tk));
 
-        auto oli = make<OrderedListItem>(oli_tk->ordinal());
+        auto oli = OrderedListItem::create(oli_tk->ordinal());
         oli->range(oli_tk->range());
         _list->add(oli);
         last_item = oli;
@@ -287,7 +287,7 @@ public:
         if (li_tk->type() != Token::Type::UL_ITEM) {
             throw unexpected_token(li_tk, "compiling unordered list at the same level");
         }
-        auto uli = make<UnorderedListItem>();
+        auto uli = UnorderedListItem::create();
         uli->range(li_tk->range());
         _list->add(uli);
         last_item = uli;
@@ -470,7 +470,7 @@ public:
         token_t tk = context().tokens.get();
         std::shared_ptr<parser::HeaderStartToken> header_tk = (
             dynamic_pointer_cast<parser::HeaderStartToken>(tk));
-        auto section = _parent->add(make<Section>(
+        auto section = _parent->add(Section::create(
             header_tk->level()
         ));
         section->range().begin = tk->begin();
@@ -493,7 +493,7 @@ public:
         token_t tk = context().tokens.get();
         std::shared_ptr<parser::HeaderStartToken> header_tk = (
             dynamic_pointer_cast<parser::HeaderStartToken>(tk));
-        auto section = context().doc->add(make<Section>(
+        auto section = context().doc->add(Section::create(
             header_tk->level()
         ));
         section->range().begin = tk->begin();
@@ -523,7 +523,7 @@ class CompileBegin : public CompileState {
             terminate();
 
         } else {
-            auto section = context().doc->add(make<Section>(0));
+            auto section = context().doc->add(Section::create());
             section->range().begin = tk->begin();
             push<CompileSection>(section);
         }

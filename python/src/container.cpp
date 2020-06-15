@@ -21,14 +21,24 @@ namespace jotdown {
 namespace python {
 
 //-------------------------------------------------------------------
-shared_class<object::Container> declare_container(py::module& m, obj_class& obj) {
+shared_class<object::Container> declare_container(
+    py::module& m, obj_class& obj) {
     auto container = shared_class<object::Container>(m, "Container", obj)
-        .def_property("contents", [](const object::Container& self) {
+        .def_property_readonly("contents", [](const object::Container& self) {
             return self.contents();
-        },
-        [](object::Container& self, const std::vector<object::obj_t>& contents) {
-            self.contents(contents);
-        });
+        })
+    .def("clear", [](object::Container& self) {
+        self.clear();
+    })
+    .def("remove", [](object::Container& self, object::obj_t obj) {
+        self.remove(obj);
+    }, py::arg("obj"))
+    .def("shift_up", [](object::Container& self, object::cobj_t obj) {
+        self.shift_up(obj);
+    }, py::arg("obj"))
+    .def("shift_down", [](object::Container& self, object::cobj_t obj) {
+        self.shift_down(obj);
+    }, py::arg("obj"));
 
     return container;
 }

@@ -38,8 +38,11 @@ public:
 
 //-------------------------------------------------------------------
 class Object;
+class Container;
 typedef std::shared_ptr<Object> obj_t;
 typedef std::shared_ptr<const Object> cobj_t;
+typedef std::shared_ptr<Container> container_t;
+typedef std::shared_ptr<const Container> ccontainer_t;
 
 class Object : public std::enable_shared_from_this<Object> {
 public:
@@ -86,35 +89,35 @@ public:
         return _parent != nullptr;
     }
 
-    obj_t parent() {
+    container_t parent() {
         return _parent;
     }
 
-    cobj_t parent() const {
-        return std::const_pointer_cast<Object>(_parent);
+    ccontainer_t parent() const {
+        return std::const_pointer_cast<Container>(_parent);
     }
 
-    void parent(obj_t obj) {
+    void parent(container_t obj) {
         _parent = obj;
     }
 
     static const std::string& type_name(Type type) {
         static const std::string names[] = {
             "NONE",
-            "ANCHOR",
-            "CODE",
-            "CODE_BLOCK",
-            "DOCUMENT",
-            "HASHTAG",
-            "LINE_BREAK",
-            "ORDERED_LIST",
-            "ORDERED_LIST_ITEM",
-            "REF",
-            "SECTION",
-            "TEXT",
-            "TEXT_CONTENT",
-            "UNORDERED_LIST",
-            "UNORDERED_LIST_ITEM",
+            "Anchor",
+            "Code",
+            "CodeBlock",
+            "Document",
+            "Hashtag",
+            "LineBreak",
+            "OrderedList",
+            "OrderedListItem",
+            "Ref",
+            "Section",
+            "Text",
+            "TextContent",
+            "UnorderedList",
+            "UnorderedListItem",
             "NUM_TYPES"
         };
 
@@ -142,7 +145,7 @@ public:
 
 private:
     Type _type;
-    obj_t _parent = nullptr;
+    container_t _parent = nullptr;
     Range _range = {NOWHERE, NOWHERE};
 };
 
@@ -177,14 +180,46 @@ public:
         return _contents;
     }
 
-    void contents(const std::vector<obj_t>& contents) {
+    void shift_up(cobj_t obj) {
+        auto iter = std::find(_contents.begin(), _contents.end(), obj);
+        if (iter == _contents.end()) {
+            throw ObjectError("Object does not exist in this container.");
+        }
+        if (iter == _contents.begin()) {
+            throw ObjectError("Object is already the first in the container.");
+        }
+        std::iter_swap(std::prev(iter), iter);
+    }
+
+    void shift_down(cobj_t obj) {
+        auto iter = std::find(_contents.begin(), _contents.end(), obj);
+        if (iter == _contents.end()) {
+            throw ObjectError("Object does not exist in this container.");
+        }
+        if (std::next(iter) == _contents.end()) {
+            throw ObjectError("Object is already the last in the container.");
+        }
+        std::iter_swap(std::next(iter), iter);
+    }
+
+    void remove(obj_t obj) {
+        auto iter = std::find(_contents.begin(), _contents.end(), obj);
+        if (iter == _contents.end()) {
+            throw ObjectError("Object is not in the container.");
+        }
+        _contents.erase(iter);
+        if ((*iter)->has_parent() && (*iter)->parent() == shared_from_this()) {
+            (*iter)->parent(nullptr);
+        }
+    }
+
+    void clear() {
         for (auto obj : _contents) {
-            obj->parent(nullptr);
+            if (obj->has_parent() && obj->parent() == shared_from_this()) {
+                obj->parent(nullptr);
+            }
         }
-        _contents = contents;
-        for (auto obj : contents) {
-            obj->parent(shared_from_this());
-        }
+        _contents.clear();
     }
 
     JSON to_json() const {
@@ -199,8 +234,11 @@ public:
 
 protected:
     void _add(obj_t obj) {
+        if (obj->has_parent()) {
+            obj->parent()->remove(obj);
+        }
         _contents.push_back(obj);
-        obj->parent(shared_from_this());
+        obj->parent(std::static_pointer_cast<Container>(shared_from_this()));
     }
 
     void _copy_from(std::shared_ptr<const Container> other) {
@@ -450,7 +488,11 @@ public:
         for (auto obj : contents()) {
             sb << obj->to_jotdown();
         }
-        return sb.str();
+        auto str = sb.str();
+        if (! str.ends_with('\n')) {
+            str.push_back('\n');
+        }
+        return str;
     }
 };
 
@@ -476,8 +518,6 @@ public:
 //-------------------------------------------------------------------
 class ListItem : public Container {
 public:
-    ListItem(Type type) : Container(type) { }
-
     virtual std::string crown() const = 0;
 
     std::shared_ptr<TextContent> text() {
@@ -485,8 +525,11 @@ public:
     }
 
     void text(std::shared_ptr<TextContent> text) {
+        if (_text_block != nullptr && _text_block->has_parent() && _text_block->parent() == shared_from_this()) {
+            _text_block->parent(nullptr);
+        }
         _text_block = text;
-        text->parent(shared_from_this());
+        text->parent(std::static_pointer_cast<Container>(shared_from_this()));
     }
 
     std::shared_ptr<const TextContent> ctext() const {
@@ -572,16 +615,26 @@ public:
         return sb.str();
     }
 
+protected:
+    ListItem(Object::Type type) : Container(type) { }
+
+    static void init(std::shared_ptr<ListItem> item) {
+        item->text(make<TextContent>());
+    }
+
 private:
-    std::shared_ptr<TextContent> _text_block = make<TextContent>();
+    std::shared_ptr<TextContent> _text_block = nullptr;
     std::string _status;
 };
 
 //-------------------------------------------------------------------
 class OrderedListItem : public ListItem {
 public:
-    OrderedListItem(const std::string& ordinal)
-    : ListItem(Type::ORDERED_LIST_ITEM), _ordinal(ordinal) { }
+    static std::shared_ptr<OrderedListItem> create(const std::string& ordinal) {
+        auto oli = std::shared_ptr<OrderedListItem>(new OrderedListItem(ordinal));
+        ListItem::init(oli);
+        return oli;
+    }
 
     const std::string& ordinal() const {
         return _ordinal;
@@ -592,7 +645,7 @@ public:
     }
 
     obj_t clone() const {
-        auto oli = make<OrderedListItem>(ordinal());
+        auto oli = OrderedListItem::create(ordinal());
         oli->_copy_from(std::static_pointer_cast<const ListItem>(shared_from_this()));
         oli->range(range());
         oli->text()->_copy_from(std::static_pointer_cast<const Container>(ctext()));
@@ -607,26 +660,36 @@ public:
     }
 
 private:
+    OrderedListItem(const std::string& ordinal)
+    : ListItem(Type::ORDERED_LIST_ITEM), _ordinal(ordinal) { }
+
     std::string _ordinal;
 };
 
 //-------------------------------------------------------------------
 class UnorderedListItem : public ListItem {
 public:
-    UnorderedListItem() : ListItem(Type::UNORDERED_LIST_ITEM) { }
+    static std::shared_ptr<UnorderedListItem> create() {
+        auto uli = std::shared_ptr<UnorderedListItem>(new UnorderedListItem());
+        ListItem::init(uli);
+        return uli;
+    }
 
     std::string crown() const {
         return "-";
     }
 
     obj_t clone() const {
-        auto uli = make<UnorderedListItem>();
+        auto uli = UnorderedListItem::create();
         uli->_copy_from(std::static_pointer_cast<const ListItem>(shared_from_this()));
         uli->range(range());
         uli->text()->_copy_from(std::static_pointer_cast<const Container>(ctext()));
         uli->text()->range(ctext()->range());
         return uli;
     }
+
+private:
+    UnorderedListItem() : ListItem(Type::UNORDERED_LIST_ITEM) { }
 };
 
 //-------------------------------------------------------------------
@@ -702,6 +765,9 @@ public:
         }
         sb << "\n";
         sb << code();
+        if (! code().ends_with('\n')) {
+            sb << '\n';
+        }
         sb << "```\n";
         return sb.str();
     }
@@ -714,7 +780,11 @@ private:
 //-------------------------------------------------------------------
 class Section : public Container {
 public:
-    Section(int level = 0) : Container(Type::SECTION), _level(level) { }
+    static std::shared_ptr<Section> create(int level = 0) {
+        auto section = std::shared_ptr<Section>(new Section(level));
+        section->header(make<TextContent>());
+        return section;
+    }
 
     int level() const {
         return _level;
@@ -725,8 +795,11 @@ public:
     }
 
     void header(std::shared_ptr<TextContent> header) {
+        if (_header != nullptr && _header->has_parent() && _header->parent() == shared_from_this()) {
+            _header->parent(nullptr);
+        }
         _header = header;
-        _header->parent(shared_from_this());
+        _header->parent(std::static_pointer_cast<Container>(shared_from_this()));
     }
 
     std::shared_ptr<const TextContent> header() const {
@@ -767,7 +840,7 @@ public:
     }
 
     obj_t clone() const {
-        auto section = make<Section>(level());
+        auto section = Section::create(level());
         section->_copy_from(std::static_pointer_cast<const Section>(shared_from_this()));
         section->range(range());
         section->header()->_copy_from(std::static_pointer_cast<const Container>(header()));
@@ -793,8 +866,10 @@ public:
     }
 
 private:
+    Section(int level = 0) : Container(Type::SECTION), _level(level) { }
+
     int _level;
-    std::shared_ptr<TextContent> _header = make<TextContent>();
+    std::shared_ptr<TextContent> _header = nullptr;
 };
 
 //-------------------------------------------------------------------
