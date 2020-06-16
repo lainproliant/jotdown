@@ -89,7 +89,7 @@ class Jotdown:
                    cwd="test")
                 for test in tests)
 
-    def pymodule_src(self):
+    def pymodule_src(self, submodules):
         return Path.cwd().glob("python/src/*.cpp")
 
     def pymodule(self, pymodule_src, headers):
