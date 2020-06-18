@@ -39,10 +39,13 @@ public:
 //-------------------------------------------------------------------
 class Object;
 class Container;
+class TextContent;
 typedef std::shared_ptr<Object> obj_t;
 typedef std::shared_ptr<const Object> cobj_t;
 typedef std::shared_ptr<Container> container_t;
 typedef std::shared_ptr<const Container> ccontainer_t;
+typedef std::shared_ptr<TextContent> text_t;
+typedef std::shared_ptr<const TextContent> ctext_t;
 
 class Object : public std::enable_shared_from_this<Object> {
 public:
@@ -93,12 +96,28 @@ public:
         return _parent;
     }
 
-    ccontainer_t parent() const {
+    ccontainer_t cparent() const {
         return std::const_pointer_cast<Container>(_parent);
     }
 
     void parent(container_t obj) {
         _parent = obj;
+    }
+
+    bool has_label() const {
+        return label() != nullptr;
+    }
+
+    virtual text_t label() const {
+        return nullptr;
+    }
+
+    virtual ctext_t clabel() const {
+        return nullptr;
+    }
+
+    virtual bool is_container() const {
+        return false;
     }
 
     static const std::string& type_name(Type type) {
@@ -142,6 +161,7 @@ public:
 
     virtual obj_t clone() const = 0;
     virtual std::string to_jotdown() const = 0;
+    virtual std::string to_search_string() const = 0;
 
 private:
     Type _type;
@@ -159,6 +179,10 @@ public:
 
     typedef typename decltype(_contents)::iterator iterator;
     typedef typename decltype(_contents)::const_iterator const_iterator;
+
+    bool is_container() const {
+        return true;
+    }
 
     iterator begin() {
         return _contents.begin();
@@ -232,6 +256,14 @@ public:
         return json;
     }
 
+    std::string to_search_string() const {
+        std::ostringstream sb;
+        for (auto obj : contents()) {
+            sb << obj->to_search_string();
+        }
+        return sb.str();
+    }
+
 protected:
     void _add(obj_t obj) {
         if (obj->has_parent()) {
@@ -273,6 +305,10 @@ public:
         return tfm::format("&%s", name());
     }
 
+    std::string to_search_string() const {
+        return name();
+    }
+
 private:
     std::string _name;
 };
@@ -300,6 +336,10 @@ public:
 
     std::string to_jotdown() const {
         return _text;
+    }
+
+    std::string to_search_string() const {
+        return make_search_string(text());
     }
 
 private:
@@ -331,6 +371,10 @@ public:
         return tfm::format("#%s", tag());
     }
 
+    std::string to_search_string() const {
+        return tag();
+    }
+
 private:
     std::string _tag;
 };
@@ -347,6 +391,10 @@ public:
     }
 
     std::string to_jotdown() const {
+        return "\n";
+    }
+
+    std::string to_search_string() const {
         return "\n";
     }
 };
@@ -381,6 +429,10 @@ public:
             sb << c;
         }
         return tfm::format("`%s`", sb.str());
+    }
+
+    std::string to_search_string() const {
+        return to_jotdown();
     }
 
 private:
@@ -436,6 +488,10 @@ public:
             sb << "]";
         }
         return sb.str();
+    }
+
+    std::string to_search_string() const {
+        return text();
     }
 
 private:
@@ -536,6 +592,14 @@ public:
         return _text_block;
     }
 
+    text_t label() const {
+        return _text_block;
+    }
+
+    ctext_t clabel() const {
+        return _text_block;
+    }
+
     std::shared_ptr<OrderedList> add(std::shared_ptr<OrderedList> list) {
         _add(std::static_pointer_cast<List>(list));
         return list;
@@ -612,6 +676,18 @@ public:
         }
 
         // Done!
+        return sb.str();
+    }
+
+    std::string to_search_string() const {
+        std::ostringstream sb;
+
+        sb << crown() << " ";
+        if (status().size() > 0) {
+            sb << "[" << status() << "]" << " ";
+        }
+
+        sb << ctext()->to_search_string();
         return sb.str();
     }
 
@@ -772,6 +848,10 @@ public:
         return sb.str();
     }
 
+    std::string to_search_string() const {
+        return code();
+    }
+
 private:
     std::string _code;
     std::string _language;
@@ -802,7 +882,15 @@ public:
         _header->parent(std::static_pointer_cast<Container>(shared_from_this()));
     }
 
-    std::shared_ptr<const TextContent> header() const {
+    std::shared_ptr<const TextContent> cheader() const {
+        return _header;
+    }
+
+    text_t label() const {
+        return _header;
+    }
+
+    ctext_t clabel() const {
         return _header;
     }
 
@@ -843,26 +931,30 @@ public:
         auto section = Section::create(level());
         section->_copy_from(std::static_pointer_cast<const Section>(shared_from_this()));
         section->range(range());
-        section->header()->_copy_from(std::static_pointer_cast<const Container>(header()));
-        section->header()->range(header()->range());
+        section->header()->_copy_from(std::static_pointer_cast<const Container>(cheader()));
+        section->header()->range(cheader()->range());
         return section;
     }
 
     JSON to_json() const {
         JSON json = Container::to_json();
         json.set<double>("level", level());
-        json.set_object("header", header()->to_json());
+        json.set_object("header", cheader()->to_json());
         return json;
     }
 
     std::string to_jotdown() const {
         std::stringstream sb;
         sb << std::string(level(), '#') << " ";
-        sb << header()->to_jotdown();
+        sb << cheader()->to_jotdown();
         for (auto obj : contents()) {
             sb << obj->to_jotdown();
         }
         return sb.str();
+    }
+
+    std::string to_search_string() const {
+        return cheader()->to_search_string();
     }
 
 private:

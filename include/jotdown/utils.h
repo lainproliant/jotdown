@@ -19,6 +19,24 @@
 
 namespace jotdown {
 
+// ------------------------------------------------------------------
+inline std::string make_search_string(const std::string& src) {
+    std::string str;
+
+    for (char c : src) {
+        if (isspace(c)) {
+            if (str.size() == 0 || !isspace(str.back())) {
+                str.push_back(' ');
+            }
+        } else {
+            str.push_back(c);
+        }
+    }
+
+    return str;
+}
+
+// ------------------------------------------------------------------
 inline std::string strliteral(const std::string& str) {
     static const std::map<char, std::string> ESCAPE_SEQUENCES = {
         {'\a', "\\a"},

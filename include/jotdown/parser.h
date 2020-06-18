@@ -45,7 +45,7 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Token : public moonlight::file::Writable<Token> {
+class Token {
 public:
     enum class Type {
         NONE,
