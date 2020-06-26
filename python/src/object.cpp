@@ -130,7 +130,7 @@ obj_class declare_object(py::module& m) {
     object.def_property_readonly(
         "parent",
         [](const object::Object& self) {
-            return self.parent();
+            return self.cparent();
         });
     object.def_static("type_name", [](object::Object::Type type) {
         return object::Object::type_name(type);

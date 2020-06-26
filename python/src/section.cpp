@@ -32,7 +32,7 @@ shared_class<object::Section> declare_section(
     .def_property(
         "header",
         [](const object::Section& self) {
-            return self.header();
+            return self.cheader();
         },
         [](object::Section& self, std::shared_ptr<object::TextContent> header) {
             self.header(header);
@@ -59,7 +59,7 @@ shared_class<object::Section> declare_section(
         return tfm::format("%s<%d, %s>",
                            self.type_name(self.type()),
                            self.level(),
-                           self.header()->to_json().to_string());
+                           self.cheader()->to_jotdown());
     });
 
     return section;

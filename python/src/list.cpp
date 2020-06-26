@@ -71,9 +71,13 @@ shared_class<object::ListItem> declare_list_item(
                 li.status(status);
             })
         .def("__repr__", [](const object::ListItem& self) {
-            return tfm::format("%s<%s>",
-                               self.type_name(self.type()),
-                               self.ctext()->to_json().to_string());
+            std::ostringstream sb;
+            sb << self.type_name(self.type()) << "<" << self.crown();
+            if (self.status().size() > 0) {
+                sb << " [" << self.status() << "]";
+            }
+            sb << self.ctext()->to_jotdown();
+            return sb.str();
         });
     return li;
 }

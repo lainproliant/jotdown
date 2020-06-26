@@ -293,7 +293,7 @@ struct Context {
         for (int x = 1; x <= 70 && input.peek(x) != EOF; x++) {
             cursor.push_back(input.peek(x));
         }
-        return strliteral(cursor);
+        return tfm::format("\"%s\"", strliteral(cursor));
     }
 };
 
@@ -328,8 +328,9 @@ protected:
         return y;
     }
 
-    int scan_newline() {
-        return context().input.peek() == '\n';
+    int scan_end_of_line() {
+        int c = context().input.peek();
+        return c == '\n' || c == EOF;
     }
 
     int scan_ordered_list(std::string* ord_out = nullptr) {
@@ -711,6 +712,7 @@ public:
 private:
     void ingest() {
         int c = context().input.peek();
+        last_char = c;
         if (c != EOF) {
             if (text.size() == 0) {
                 begin = context().location();
@@ -730,6 +732,10 @@ private:
     }
 
     bool scan_taglike(char symbol, bool allow_space = false) {
+        if (! isspace(last_char) || last_char == 0) {
+            return false;
+        }
+
         int c = context().input.peek();
         int c2 = context().input.peek(2);
 
@@ -754,6 +760,7 @@ private:
     bool allow_status;
     Token::Type terminal_token;
     token_t token_to_end;
+    char last_char = 0;
     Location begin = NOWHERE;
 };
 
@@ -812,7 +819,7 @@ public:
             push<ParseTextLine>(true);
 
         } else if (scan_indent() == li_indent + ord_length + 2 ||
-                   (!scan_newline() &&
+                   (!scan_end_of_line() &&
                     !scan_ordered_list() &&
                     !scan_unordered_list())) {
             context().input.advance(scan_indent() - 1);
@@ -882,7 +889,7 @@ public:
             context().input.advance();
             push<ParseTextLine>(true);
         } else if (scan_indent() == li_indent + 3 ||
-                   (!scan_newline() &&
+                   (!scan_end_of_line() &&
                     !scan_ordered_list() &&
                     !scan_unordered_list())) {
             context().input.advance(scan_indent() - 1);

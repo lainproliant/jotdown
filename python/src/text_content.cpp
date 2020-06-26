@@ -51,7 +51,7 @@ shared_class<object::TextContent> declare_text_content(
         .def("__repr__", [](const object::TextContent& self) {
             return tfm::format("%s<%s>",
                                self.type_name(self.type()),
-                               self.to_json().to_string());
+                               strliteral(self.to_jotdown()));
         });
 
     return text_content;
