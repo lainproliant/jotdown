@@ -96,8 +96,5 @@ class Jotdown:
         return compile_pybind11_module(pymodule_src, headers)
 
     @default
-    def common(self, demos, tests):
-        pass
-
-    def all(self, common, pybind11_tests):
+    def all(self, tests, demos, pymodule):
         pass
