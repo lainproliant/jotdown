@@ -11,6 +11,7 @@
 #define __JOTDOWN_QUERY_H
 
 #include <regex>
+#include <unordered_set>
 #include "jotdown/error.h"
 #include "jotdown/interfaces.h"
 #include "jotdown/object.h"
@@ -53,6 +54,8 @@ class Selector {
 public:
     virtual ~Selector() { }
 
+    virtual Selector* clone() const = 0;
+
     virtual std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
         std::copy_if(objects.begin(), objects.end(), results.begin(), [&](auto obj) {
@@ -71,6 +74,10 @@ public:
 class TypeSelector : public Selector {
 public:
     TypeSelector(Type type = Type::NONE) : _type(type) { }
+
+    Selector* clone() const {
+        return new TypeSelector(type());
+    }
 
     Type type() const {
         return _type;
@@ -92,6 +99,11 @@ private:
 class RegexSelector : public Selector {
 public:
     RegexSelector(const std::string& regex) : _regex(regex) { }
+    RegexSelector(const std::regex& regex) : _regex(regex) { }
+
+    Selector* clone() const {
+        return new RegexSelector(_regex);
+    }
 
     bool choose(obj_t obj) const {
         if (obj->has_label()) {
@@ -114,6 +126,10 @@ class OffsetSelector : public Selector {
 public:
     OffsetSelector(int offset) : _offset(offset) { }
 
+    Selector* clone() const {
+        return new OffsetSelector(offset());
+    }
+
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         auto result = moonlight::splice::at(objects, offset());
         if (result.has_value()) {
@@ -132,9 +148,41 @@ private:
 };
 
 // ------------------------------------------------------------------
+class InverseSelector : public Selector {
+public:
+    InverseSelector(const Selector* base) : _base(base) { }
+
+    Selector* clone() const {
+        return new InverseSelector(base().clone());
+    }
+
+    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
+        std::unordered_set<obj_t> selected_set;
+        std::vector<obj_t> unselected_objects;
+        auto selected_objects = base().select(objects);
+        selected_set.insert(selected_objects.begin(), selected_objects.end());
+        std::copy_if(objects.begin(), objects.end(), unselected_objects.begin(), [&](auto obj) {
+            return selected_set.find(obj) == selected_set.end();
+        });
+        return unselected_objects;
+    }
+
+private:
+    const Selector& base() const {
+        return *_base;
+    }
+
+    std::unique_ptr<const Selector> _base;
+};
+
+// ------------------------------------------------------------------
 class RecursiveSelector : public Selector {
 public:
     RecursiveSelector(const Selector* base) : _base(base) { }
+
+    RecursiveSelector* clone() const {
+        return new RecursiveSelector(base().clone());
+    }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
@@ -174,6 +222,10 @@ private:
 // ------------------------------------------------------------------
 class LabelSelector : public Selector {
 public:
+    Selector* clone() const {
+        return new LabelSelector();
+    }
+
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
 
@@ -190,6 +242,10 @@ public:
 // ------------------------------------------------------------------
 class ContentsSelector : public Selector {
 public:
+    Selector* clone() const {
+        return new ContentsSelector();
+    }
+
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
         for (auto obj : objects) {
@@ -205,38 +261,11 @@ public:
 // ------------------------------------------------------------------
 class Query : public Selector {
 public:
-    Query by(const Selector* selector) const {
-        Query query = *this;
-        query.selectors.emplace_back(selector);
-        return query;
-    }
+    Query() { }
+    Query(const std::vector<selector_t>& selectors) : _selectors(selectors) { }
 
-    Query by_type(Type type) const {
-        return by(new TypeSelector(type));
-    }
-
-    Query by_regex(const std::string& regex) const {
-        return by(new RegexSelector(regex));
-    }
-
-    Query at(int offset) const {
-        return by(new OffsetSelector(offset));
-    }
-
-    Query labels() const {
-        return by(new LabelSelector());
-    }
-
-    Query contents() const {
-        return by(new ContentsSelector());
-    }
-
-    Query recursive(const Query& other) {
-        return by(new RecursiveSelector(new Query(other)));
-    }
-
-    std::vector<obj_t> run(std::shared_ptr<const object::Container> container) {
-        return select(container->contents());
+    Selector* clone() const {
+        return new Query(selectors());
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
@@ -247,7 +276,7 @@ private:
     std::vector<obj_t> cycle(const std::vector<obj_t>& initial_objects) const {
         std::vector<obj_t> objects = initial_objects;
         std::vector<selector_t> stack;
-        std::reverse_copy(selectors.begin(), selectors.end(), stack.begin());
+        std::reverse_copy(selectors().begin(), selectors().end(), stack.begin());
 
         while (stack.size() > 0 && objects.size() > 0) {
             auto selector = stack.back();
@@ -258,7 +287,12 @@ private:
         return objects;
     }
 
-    std::vector<selector_t> selectors;
+private:
+    const std::vector<selector_t>& selectors() const {
+        return _selectors;
+    }
+
+    std::vector<selector_t> _selectors;
 };
 
 // ------------------------------------------------------------------

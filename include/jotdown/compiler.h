@@ -192,7 +192,7 @@ class CompileOrderedList;
 class CompileUnorderedList;
 class CompileListBase : public CompileState {
 public:
-    CompileListBase(std::shared_ptr<List> list) : list(list) { }
+    CompileListBase(std::shared_ptr<List> list, int level) : list(list), level(level) { }
 
     void run() {
         auto tk = context().tokens.peek();
@@ -226,26 +226,27 @@ protected:
             auto new_list = make<OrderedList>();
             last_item->add(new_list);
             new_list->range().begin = tk->begin();
-            push<CompileOrderedList>(new_list);
+            push<CompileOrderedList>(new_list, level + 1);
 
         } else if (tk->type() == Token::Type::UL_ITEM) {
             auto new_list = make<UnorderedList>();
             new_list->range().begin = tk->begin();
             last_item->add(new_list);
-            push<CompileUnorderedList>(new_list);
+            push<CompileUnorderedList>(new_list, level + 1);
         }
     }
 
     std::shared_ptr<List> list;
     std::shared_ptr<ListItem> last_item = nullptr;
     std::shared_ptr<parser::ListItemToken> last_token = nullptr;
+    int level;
 };
 
 //-------------------------------------------------------------------
 class CompileOrderedList : public CompileListBase {
 public:
-    CompileOrderedList(std::shared_ptr<OrderedList> list)
-    : CompileListBase(list), _list(list) { }
+    CompileOrderedList(std::shared_ptr<OrderedList> list, int level = 1)
+    : CompileListBase(list, level), _list(list) { }
 
     const char* tracer_name() const {
         return "OrderedList";
@@ -259,6 +260,7 @@ public:
             std::dynamic_pointer_cast<parser::OrderedListItemToken>(li_tk));
 
         auto oli = OrderedListItem::create(oli_tk->ordinal());
+        oli->level(level);
         oli->range(oli_tk->range());
         _list->add(oli);
         last_item = oli;
@@ -276,8 +278,8 @@ public:
 //-------------------------------------------------------------------
 class CompileUnorderedList : public CompileListBase {
 public:
-    CompileUnorderedList(std::shared_ptr<UnorderedList> list)
-    : CompileListBase(list), _list(list) { }
+    CompileUnorderedList(std::shared_ptr<UnorderedList> list, int level = 1)
+    : CompileListBase(list, level), _list(list) { }
 
     const char* tracer_name() const {
         return "UnorderedList";
@@ -288,6 +290,7 @@ public:
             throw unexpected_token(li_tk, "compiling unordered list at the same level");
         }
         auto uli = UnorderedListItem::create();
+        uli->level(level);
         uli->range(li_tk->range());
         _list->add(uli);
         last_item = uli;

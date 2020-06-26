@@ -569,6 +569,17 @@ public:
         }
         return sb.str();
     }
+
+    int level() const {
+        return _level;
+    }
+
+    void level(int level) {
+        _level = level;
+    }
+
+private:
+    int _level = 1;
 };
 
 //-------------------------------------------------------------------
@@ -588,6 +599,14 @@ public:
         text->parent(std::static_pointer_cast<Container>(shared_from_this()));
     }
 
+    int level() const {
+        return _level;
+    }
+
+    void level(int level) {
+        _level = level;
+    }
+
     std::shared_ptr<const TextContent> ctext() const {
         return _text_block;
     }
@@ -602,11 +621,13 @@ public:
 
     std::shared_ptr<OrderedList> add(std::shared_ptr<OrderedList> list) {
         _add(std::static_pointer_cast<List>(list));
+        std::static_pointer_cast<List>(list)->level(level() + 1);
         return list;
     }
 
     std::shared_ptr<UnorderedList> add(std::shared_ptr<UnorderedList> list) {
         _add(std::static_pointer_cast<List>(list));
+        std::static_pointer_cast<List>(list)->level(level() + 1);
         return list;
     }
 
@@ -701,6 +722,7 @@ protected:
 private:
     std::shared_ptr<TextContent> _text_block = nullptr;
     std::string _status;
+    int _level = 1;
 };
 
 //-------------------------------------------------------------------
@@ -775,6 +797,7 @@ public:
 
     std::shared_ptr<OrderedListItem> add(std::shared_ptr<OrderedListItem> item) {
         _add(item);
+        item->level(level());
         return item;
     }
 
@@ -793,6 +816,7 @@ public:
 
     std::shared_ptr<UnorderedListItem> add(std::shared_ptr<UnorderedListItem> item) {
         _add(item);
+        item->level(level());
         return item;
     }
 

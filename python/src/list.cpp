@@ -25,7 +25,11 @@ shared_class<object::List> declare_list(
     py::module& m,
     shared_class<object::Container>& container) {
 
-    return shared_class<object::List>(m, "List", container);
+    auto list = shared_class<object::List>(m, "List", container)
+        .def_property_readonly("level", [](const object::List& list) {
+            return list.level();
+        });
+    return list;
 }
 
 //-------------------------------------------------------------------
@@ -50,6 +54,12 @@ shared_class<object::ListItem> declare_list_item(
             [](object::ListItem& li,
                std::shared_ptr<object::TextContent> text) {
                 li.text(text);
+            }
+        )
+        .def_property_readonly(
+            "level",
+            [](const object::ListItem& li) {
+                return li.level();
             }
         )
         .def_property(
