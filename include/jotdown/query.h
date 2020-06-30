@@ -12,6 +12,7 @@
 
 #include <regex>
 #include <unordered_set>
+#include <vector>
 #include "jotdown/error.h"
 #include "jotdown/interfaces.h"
 #include "jotdown/object.h"
@@ -47,14 +48,13 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Selector;
-typedef std::shared_ptr<const Selector> selector_t;
-
 class Selector {
 public:
     virtual ~Selector() { }
 
-    virtual Selector* clone() const = 0;
+    virtual Selector* clone() const {
+        return new Selector();
+    }
 
     virtual std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
@@ -68,192 +68,237 @@ public:
         (void) obj;
         return true;
     }
+
+private:
+    std::vector<obj_t> objects;
 };
 
 // ------------------------------------------------------------------
 class TypeSelector : public Selector {
 public:
-    TypeSelector(Type type = Type::NONE) : _type(type) { }
+    TypeSelector(Type type) : type(type) { }
 
     Selector* clone() const {
-        return new TypeSelector(type());
-    }
-
-    Type type() const {
-        return _type;
-    }
-
-    bool any() const {
-        return type() == Type::NONE;
+        return new TypeSelector(type);
     }
 
     bool choose(obj_t obj) const {
-        return any() || obj->type() == type();
+        return obj->type() == type;
     }
 
 private:
-    Type _type;
-};
-
-// ------------------------------------------------------------------
-class RegexSelector : public Selector {
-public:
-    RegexSelector(const std::string& regex) : _regex(regex) { }
-    RegexSelector(const std::regex& regex) : _regex(regex) { }
-
-    Selector* clone() const {
-        return new RegexSelector(_regex);
-    }
-
-    bool choose(obj_t obj) const {
-        if (obj->has_label()) {
-            return std::regex_search(obj->label()->to_search_string(), regex());
-        } else {
-            return std::regex_search(obj->to_search_string(), regex());
-        }
-    }
-
-private:
-    const std::regex& regex() const {
-        return _regex;
-    }
-
-    const std::regex _regex;
-};
-
-// ------------------------------------------------------------------
-class OffsetSelector : public Selector {
-public:
-    OffsetSelector(int offset) : _offset(offset) { }
-
-    Selector* clone() const {
-        return new OffsetSelector(offset());
-    }
-
-    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
-        auto result = moonlight::splice::at(objects, offset());
-        if (result.has_value()) {
-            return {*result};
-        } else {
-            return {};
-        }
-    }
-
-private:
-    int offset() const {
-        return _offset;
-    }
-
-    int _offset;
-};
-
-// ------------------------------------------------------------------
-class InverseSelector : public Selector {
-public:
-    InverseSelector(const Selector* base) : _base(base) { }
-
-    Selector* clone() const {
-        return new InverseSelector(base().clone());
-    }
-
-    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
-        std::unordered_set<obj_t> selected_set;
-        std::vector<obj_t> unselected_objects;
-        auto selected_objects = base().select(objects);
-        selected_set.insert(selected_objects.begin(), selected_objects.end());
-        std::copy_if(objects.begin(), objects.end(), unselected_objects.begin(), [&](auto obj) {
-            return selected_set.find(obj) == selected_set.end();
-        });
-        return unselected_objects;
-    }
-
-private:
-    const Selector& base() const {
-        return *_base;
-    }
-
-    std::unique_ptr<const Selector> _base;
+    Type type;
 };
 
 // ------------------------------------------------------------------
 class RecursiveSelector : public Selector {
 public:
-    RecursiveSelector(const Selector* base) : _base(base) { }
+    RecursiveSelector(const Selector* query) : query(query) { };
 
-    RecursiveSelector* clone() const {
-        return new RecursiveSelector(base().clone());
+    Selector* clone() const {
+        return new RecursiveSelector(query->clone());
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
-        std::vector<obj_t> results;
-
-        for (auto obj : objects) {
-            if (choose(obj)) {
-                results.push_back(obj);
-            }
-
-            if (obj->has_label()) {
-                auto sub_results = select(obj->label()->contents());
-                results.insert(results.end(), sub_results.begin(), sub_results.end());
-            }
-
-            if (obj->is_container()) {
-                auto container = std::static_pointer_cast<object::Container>(obj);
-                auto sub_results = select(container->contents());
-                results.insert(results.end(), sub_results.begin(), sub_results.end());
-            }
+        auto results = query->select(objects);
+        if (results.size() > 0) {
+            auto sub_results = select(results);
+            std::copy(sub_results.begin(), sub_results.end(), results.begin());
         }
-
         return results;
-    }
-
-    bool choose(obj_t obj) const {
-        return _base->choose(obj);
     }
 
 private:
-    const Selector& base() const {
-        return *_base;
-    }
-
-    std::unique_ptr<const Selector> _base;
+    std::unique_ptr<const Selector> query;
 };
 
 // ------------------------------------------------------------------
-class LabelSelector : public Selector {
+class LevelSelector : public Selector {
 public:
+    LevelSelector(int level) : level(level) { }
+
+    bool choose(obj_t obj) const {
+        if (obj->type() == Type::ORDERED_LIST_ITEM ||
+            obj->type() == Type::UNORDERED_LIST_ITEM) {
+            auto list_item = std::static_pointer_cast<object::ListItem>(obj);
+            return list_item->level() == level;
+
+        } else if (obj->type() == Type::SECTION) {
+            auto section = std::static_pointer_cast<object::Section>(obj);
+            return section->level() == level;
+        }
+
+        return false;
+    }
+
+private:
+    int level;
+};
+
+// ------------------------------------------------------------------
+class RegexSelector : public Selector {
+public:
+    RegexSelector(const std::string& rx) : rx(rx) { }
+    RegexSelector(const std::regex& rx) : rx(rx) { }
+
     Selector* clone() const {
-        return new LabelSelector();
+        return new RegexSelector(rx);
+    }
+
+    bool choose(obj_t obj) const {
+        if (obj->has_label()) {
+            return std::regex_search(obj->label()->to_search_string(), rx);
+        } else {
+            return std::regex_search(obj->to_search_string(), rx);
+        }
+    }
+
+private:
+    std::regex rx;
+};
+
+// ------------------------------------------------------------------
+class ContentsSubSelector : public Selector {
+public:
+    ContentsSubSelector(const Selector* query) : query(query) { }
+
+    bool choose(obj_t obj) const {
+        return obj->is_container() && query->select(
+            std::static_pointer_cast<object::Container>(obj)->contents()
+        ).size() > 0;
+    }
+
+private:
+    std::unique_ptr<const Selector> query;
+};
+
+// ------------------------------------------------------------------
+class SectionSelector : public Selector {
+public:
+    SectionSelector(int level = -1) : level(level) { }
+
+    bool choose(obj_t obj) const {
+        if (obj->type() == Type::SECTION) {
+            auto section = std::static_pointer_cast<object::Section>(obj);
+            return level == -1 || section->level() == level;
+        }
+        return false;
+    }
+
+private:
+    int level;
+};
+
+// ------------------------------------------------------------------
+class StatusSelector : public Selector {
+public:
+    StatusSelector(const std::string& status = "") : status(status) { }
+
+    bool choose(obj_t obj) const {
+        if (obj->type() == Type::UNORDERED_LIST_ITEM || obj->type() == Type::ORDERED_LIST_ITEM) {
+            auto list_item = std::static_pointer_cast<object::ListItem>(obj);
+            return (status.size() == 0 && list_item->status().size() > 0) ||
+                   (list_item->status() == status);
+        }
+        return false;
+    }
+
+private:
+    std::string status;
+};
+
+// ------------------------------------------------------------------
+class OrSelector : public Selector {
+public:
+    OrSelector(const Selector* lhs, const Selector* rhs)
+    : lhs(lhs), rhs(rhs) { }
+
+    bool choose(obj_t obj) const {
+        return lhs->choose(obj) || rhs->choose(obj);
+    }
+
+    std::unique_ptr<const Selector> lhs, rhs;
+};
+
+// ------------------------------------------------------------------
+class AllSubSelector : public Selector {
+public:
+    AllSubSelector(const Selector* query) : query(query) { }
+
+    Selector* clone() const {
+        return new AllSubSelector(query->clone());
+    }
+
+    bool choose(obj_t obj) const {
+        return obj->is_container() && query->select(
+            std::static_pointer_cast<object::Container>(obj)->contents()
+        ).size() == std::static_pointer_cast<object::Container>(obj)->contents().size();
+    }
+
+private:
+    std::unique_ptr<const Selector> query;
+};
+
+// ------------------------------------------------------------------
+class NoneSubSelector : public Selector {
+public:
+    NoneSubSelector(const Selector* query) : query(query) { }
+
+    Selector* clone() const {
+        return new NoneSubSelector(query->clone());
+    }
+
+    bool choose(obj_t obj) const {
+        return obj->is_container() && query->select(
+            std::static_pointer_cast<object::Container>(obj)->contents()
+        ).size() == 0;
+    }
+
+private:
+    std::unique_ptr<const Selector> query;
+};
+
+// ------------------------------------------------------------------
+class NotSelector : public Selector {
+public:
+    NotSelector(const Selector* query) : query(query) { };
+
+    Selector* clone() const {
+        return new NotSelector(query->clone());
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
-        std::vector<obj_t> results;
-
-        for (auto obj : objects) {
-            if (obj->has_label()) {
-                results.push_back(obj->label());
-            }
+        std::unordered_set<obj_t> anti_result_set;
+        for (auto obj : query->select(objects)) {
+            anti_result_set.insert(obj);
         }
-
+        std::vector<obj_t> results;
+        std::copy_if(objects.begin(), objects.end(), results.begin(), [&](auto obj) {
+            return anti_result_set.find(obj) == anti_result_set.end();
+        });
         return results;
     }
+
+private:
+    std::unique_ptr<const Selector> query;
 };
 
 // ------------------------------------------------------------------
-class ContentsSelector : public Selector {
+class ParentSelector : public Selector {
 public:
     Selector* clone() const {
-        return new ContentsSelector();
+        return new ParentSelector();
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
-        std::vector<obj_t> results;
+        std::unordered_set<obj_t> result_set;
         for (auto obj : objects) {
-            if (obj->is_container()) {
-                auto container = std::static_pointer_cast<object::Container>(obj);
-                results.insert(results.begin(), container->begin(), container->end());
+            if (obj->has_parent()) {
+                result_set.insert(obj->parent());
             }
         }
+        std::vector<obj_t> results;
+        results.insert(results.begin(), result_set.begin(), result_set.end());
         return results;
     }
 };
@@ -262,72 +307,223 @@ public:
 class Query : public Selector {
 public:
     Query() { }
-    Query(const std::vector<selector_t>& selectors) : _selectors(selectors) { }
+    Query(const Selector* query) {
+        sequence.emplace_back(query);
+    }
+    Query(const Query& other) {
+        for (auto& query : other.sequence) {
+            sequence.emplace_back(query->clone());
+        }
+    }
+    Query& operator=(const Query& other) {
+        sequence.clear();
+        for (auto& query : other.sequence) {
+            sequence.emplace_back(query->clone());
+        }
+        return *this;
+    }
 
     Selector* clone() const {
-        return new Query(selectors());
+        return new Query(*this);
+    }
+
+    Query by(const Query& query) {
+        return _extend(query.clone());
+    }
+
+    Query or_by(const Query& query) {
+        return Query(new OrSelector(clone(), query.clone()));
+    }
+
+    static Query type(Type type) {
+        return Query(new TypeSelector(type));
+    }
+
+    static Query regex(const std::string& rx) {
+        return Query(new RegexSelector(rx));
+    }
+
+    static Query level(int level) {
+        return Query(new LevelSelector(level));
+    }
+
+    static Query parents() {
+        return Query(new ParentSelector());
+    }
+
+    static Query contents(const Query& content_query) {
+        return Query(new ContentsSubSelector(content_query.clone()));
+    }
+
+    static Query all(const Query& query) {
+        return Query(new AllSubSelector(query.clone()));
+    }
+
+    static Query none(const Query& query) {
+        return Query(new NoneSubSelector(query.clone()));
+    }
+
+    static Query recursive(const Query& query) {
+        return Query(new RecursiveSelector(query.clone()));
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
-        return cycle(objects);
-    }
-
-private:
-    std::vector<obj_t> cycle(const std::vector<obj_t>& initial_objects) const {
-        std::vector<obj_t> objects = initial_objects;
-        std::vector<selector_t> stack;
-        std::reverse_copy(selectors().begin(), selectors().end(), stack.begin());
-
-        while (stack.size() > 0 && objects.size() > 0) {
-            auto selector = stack.back();
-            stack.pop_back();
-            objects = selector->select(objects);
+        std::vector<obj_t> results = objects;
+        for (auto& query : sequence) {
+            if (results.size() == 0) {
+                break;
+            }
+            results = query->select(results);
         }
-
-        return objects;
+        return results;
     }
 
 private:
-    const std::vector<selector_t>& selectors() const {
-        return _selectors;
+    Query _extend(const Selector* query) const {
+        Query q = *this;
+        q.sequence.emplace_back(query);
+        return q;
     }
 
-    std::vector<selector_t> _selectors;
+    std::vector<std::unique_ptr<const Selector>> sequence;
 };
-
-// ------------------------------------------------------------------
-class ContentsQuerySelector : public Selector {
-public:
-    ContentsQuerySelector(std::shared_ptr<const Selector> query) : query(query) { }
-
-    bool choose(obj_t obj) const {
-        if (obj->is_container()) {
-            auto container = std::static_pointer_cast<object::Container>(obj);
-            return query->select(container->contents()).size() > 0;
-        }
-        return false;
-    }
-
-private:
-    std::shared_ptr<const Selector> query;
-};
-
 
 // ------------------------------------------------------------------
 struct Context {
     moonlight::file::BufferedInput input;
     Query query;
-    bool next_recursive = false;
+    std::optional<std::function<Query(const Query&)>> transformer;
+
+    Location location() const {
+        return (Location){
+            .line = input.line(),
+            .col = input.col()
+        };
+    }
 };
 
 // ------------------------------------------------------------------
-typedef moonlight::automata::State<Context> ParseState;
+class ParseBegin;
+class ParseState : public moonlight::automata::State<Context> {
+protected:
+    ParserError unexpected_char() {
+        return ParserError(tfm::format(
+            "Unexpected character: '%c'", context().input.peek()
+        ), context().location());
+    }
+};
+
+// ------------------------------------------------------------------
+class PostByContentsSubExpression : public ParseState {
+    PostByContentsSubExpression(Query& query, const Query& sub_query)
+    : query(query), sub_query(sub_query) { }
+
+    void run() {
+        query = query.by(Query::contents(sub_query));
+    }
+
+    Query& query;
+    const Query& sub_query;
+};
+
+// ------------------------------------------------------------------
+class SetupByContentsSubExpression : public ParseState {
+public:
+    SetupByContentsSubExpression(Query& query) : query(query) { }
+
+    void run() {
+        context().transformer = Query::contents;
+        push<PostByContentsSubExpression>(query, sub_query);
+        push<ParseBegin>(sub_query);
+    }
+
+    Query& query;
+    Query sub_query;
+};
 
 // ------------------------------------------------------------------
 class ParseBegin : public ParseState {
-    void run() {
+public:
+    ParseBegin(Query& query) : query(query) { };
 
+    void run() {
+        int c = context().input.peek();
+
+        if (c == '<') {
+            context().input.advance();
+            push<SetupByContentsSubExpression>(query);
+            return;
+
+        } else if (c == '>') {
+            if (parent() == nullptr) {
+                throw unexpected_char();
+            }
+            pop();
+            return;
+        }
+
+        if (scan("anchor", "&")) {
+            query = query.by(Query::type(Type::ANCHOR));
+            return;
+        }
+
+        if (scan("code", "c")) {
+            query = query.by(Query::type(Type::CODE));
+            return;
+        }
+
+        if (scan("codeblock", "C")) {
+            query = query.by(Query::type(Type::CODE_BLOCK));
+            return;
+        }
+
+        if (scan("hashtag", "#")) {
+            query = query.by(Query::type(Type::HASHTAG));
+            return;
+        }
+
+        if (scan("list", "l")) {
+            query = query.by(Query::type(Type::ORDERED_LIST))
+            .or_by(Query::type(Type::UNORDERED_LIST));
+            return;
+        }
+
+        if (scan("item", "i")) {
+            query = query.by(Query::type(Type::ORDERED_LIST_ITEM))
+            .or_by(Query::type(Type::UNORDERED_LIST_ITEM));
+            return;
+        }
+
+        if (scan("ordered_list", "ol")) {
+            query = query.by(Query::type(Type::ORDERED_LIST));
+            return;
+        }
+
+        if (scan("unordered_list", "ul")) {
+            query = query.by(Query::type(Type::UNORDERED_LIST));
+            return;
+        }
+
+        if (scan("ref", "@")) {
+            query = query.by(Query::type(Type::REF));
+            return;
+        }
+
+        if (scan("section", "s")) {
+            query = query.by(Query::type(Type::SECTION));
+            return;
+        }
+
+        throw unexpected_char();
     }
+
+private:
+    bool scan(const std::string& long_form, const std::string& short_form) {
+        return (context().input.scan_eq_advance(long_form) ||
+                context().input.scan_eq_advance(short_form));
+    }
+
+    Query& query;
 };
 
 // ------------------------------------------------------------------
@@ -337,7 +533,7 @@ public:
     : ctx({
         .input=moonlight::file::BufferedInput(input, "<query>")
     }),
-    machine(ParseState::Machine::init<ParseBegin>(ctx)) { }
+    machine(ParseState::Machine::init<ParseBegin>(ctx, ctx.query)) { }
 
 private:
     Context ctx;
