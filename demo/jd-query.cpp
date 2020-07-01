@@ -37,7 +37,7 @@ void query_repl(std::shared_ptr<jotdown::object::Document> doc) {
             continue;
         }
         std::cout << query.repr() << std::endl;
-        auto results = query.select(doc->contents());
+        auto results = query.select({doc});
         for (auto result : results) {
             std::cout << result->repr() << std::endl;
         }
@@ -64,8 +64,8 @@ int main(int argc, char** argv) {
 
         query_repl(doc);
 
-    } catch(...) {
-        std::cout << "oh no mr bill!";
+    } catch(const std::exception& e) {
+        std::cout << "ERROR: " << e.what() << std::endl;
     }
 
     return 0;

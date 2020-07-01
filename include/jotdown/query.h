@@ -510,12 +510,41 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Contains : public Selector {
+class Not : public Selector {
 public:
-    Contains(const Selector& query) : query(query.clone()) { }
+    Not(const Query& query) : query(query.clone()) { }
 
     Selector* clone() const {
-        return new Contains(*query);
+        return new Not(query.get());
+    }
+
+    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
+        auto results = query->select(objects);
+        std::set<obj_t> results_set;
+        results_set.insert(results.begin(), results.end());
+        results.clear();
+
+        std::copy_if(objects.begin(), objects.end(), std::back_inserter(results),
+                     [&](auto obj) { return results_set.find(obj) == results_set.end(); });
+        return results;
+    }
+
+    std::string repr() const {
+        return tfm::format("Not<%s>", query->repr());
+    }
+
+private:
+    Not(const Selector* selector) : query(selector->clone()) { }
+    std::unique_ptr<Selector> query;
+};
+
+// ------------------------------------------------------------------
+class Contains : public Selector {
+public:
+    Contains(const Query& query) : query(query.clone()) { }
+
+    Selector* clone() const {
+        return new Contains(query.get());
     }
 
     bool choose(obj_t obj) const {
@@ -531,33 +560,76 @@ public:
     }
 
 private:
+    Contains(const Selector* selector) : query(selector->clone()) { }
     std::unique_ptr<Selector> query;
 };
 
 // ------------------------------------------------------------------
 inline std::vector<std::string> tokenize(const std::string& query) {
+    std::istringstream sinput(query);
+    moonlight::file::BufferedInput input(sinput);
     std::vector<std::string> tokens;
     std::string token;
 
-    for (auto iter = query.begin();
-         iter != query.end();
-         iter++) {
+    for (;;) {
+        int c = input.getc();
 
-        if (*iter == '/' && token.size() > 0) {
-            tokens.push_back(token);
-            token.clear();
+        if (c == EOF) {
+            if (token.size() > 0) {
+                tokens.push_back(token);
+            }
+            break;
+        }
 
-        } else if (*iter == '\\') {
-            if (std::next(iter) != query.end() && *std::next(iter) == '/') {
-                token.push_back(*(++iter));
+        if (c == '/') {
+            if (token.size() > 0) {
+                tokens.push_back(token);
+                token.clear();
+            }
+
+        } else if (c == '\\') {
+            int c2 = input.peek();
+
+            if (c != EOF && (c == '/' || c == '(' || c == ')')) {
+                token.push_back(c);
+                token.push_back(c2);
+                input.advance();
+            }
+
+        } else if (c == '(') {
+            if (token.size() > 0) {
+                tokens.push_back(token);
+                token.clear();
+            }
+
+            token.push_back(c);
+
+            // Scan for the next unescaped ')'
+            for (;;) {
+                c = input.getc();
+
+                if (c == '\\') {
+                    int c2 = input.peek();
+
+                    if (c != EOF && (c == '/' || c == '(' || c == ')')) {
+                        token.push_back(c);
+                        token.push_back(c2);
+                        input.advance();
+                    }
+                } else if (c == ')') {
+                    token.push_back(c);
+                    tokens.push_back(token);
+                    token.clear();
+                    break;
+                } else if (c == EOF) {
+                    throw QueryError("Unterminated parenthetical grouping in query.");
+                } else {
+                    token.push_back(c);
+                }
             }
         } else {
-            token.push_back(*iter);
+            token.push_back(c);
         }
-    }
-
-    if (token.size() > 0) {
-        tokens.push_back(token);
     }
 
     return tokens;
@@ -643,10 +715,12 @@ inline bool scan_offset_or_slice(Query& result, const std::string& token) {
 }
 
 // ------------------------------------------------------------------
-inline Query _parse(std::vector<std::string>& tokens) {
+inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
     Query query;
+    int cycles = 0;
 
-    while (tokens.size() > 0) {
+    while (tokens.size() > 0 && (depth == -1 || cycles < depth)) {
+        cycles++;
         Query sub_result;
         auto token = tokens.back();
         tokens.pop_back();
@@ -659,7 +733,9 @@ inline Query _parse(std::vector<std::string>& tokens) {
 
         } else if (token == "contains" || token == "<") {
             query.by(Contains(_parse(tokens)));
-            break;
+
+        } else if (token == "not" || token == "!") {
+            query.by(Not(_parse(tokens, 1)));
 
         } else if (token == "..") {
             query = Query().by(Contains(query));
@@ -669,6 +745,15 @@ inline Query _parse(std::vector<std::string>& tokens) {
 
         } else if (token == "level") {
             query.by(build_level_query(tokens));
+
+        } else if (token == "line_break" || token == "br") {
+            query.by(Type(ObjectType::LINE_BREAK));
+
+        } else if (token == "text" || token == "t") {
+            query.by(Type(ObjectType::TEXT));
+
+        } else if (token == "content") {
+            query.by(Type(ObjectType::TEXT_CONTENT));
 
         } else if (token == "list") {
             query.by(List());
@@ -702,6 +787,11 @@ inline Query _parse(std::vector<std::string>& tokens) {
 
         } else if (token == "task") {
             query.by(Item::Checklist());
+
+
+        } else if (token.starts_with('(')) {
+            auto subquery_tokens = tokenize(moonlight::slice(token, 1, -1));
+            query.by(Query(_parse(subquery_tokens)));
 
         } else if (token.starts_with("~")) {
             query.by(Search(moonlight::slice(token, 1, {})));
