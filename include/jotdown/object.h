@@ -163,6 +163,10 @@ public:
     virtual std::string to_jotdown() const = 0;
     virtual std::string to_search_string() const = 0;
 
+    virtual std::string repr() const {
+        return type_name(type());
+    }
+
 private:
     Type _type;
     container_t _parent = nullptr;
@@ -264,6 +268,10 @@ public:
         return sb.str();
     }
 
+    std::string repr() const {
+        return tfm::format("%s(%d)", type_name(type()), contents().size());
+    }
+
 protected:
     void _add(obj_t obj) {
         if (obj->has_parent()) {
@@ -290,7 +298,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = make<Anchor>(name());
+        auto obj = std::make_shared<Anchor>(name());
         obj->range(range());
         return obj;
     }
@@ -309,6 +317,10 @@ public:
         return name();
     }
 
+    std::string repr() const {
+        return tfm::format("%s<\"%s\">", type_name(type()), strliteral(name()));
+    }
+
 private:
     std::string _name;
 };
@@ -323,7 +335,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = make<Text>(text());
+        auto obj = std::make_shared<Text>(text());
         obj->range(range());
         return obj;
     }
@@ -342,6 +354,10 @@ public:
         return make_search_string(text());
     }
 
+    std::string repr() const {
+        return tfm::format("%s<\"%s\">", type_name(type()), strliteral(text()));
+    }
+
 private:
     std::string _text;
 };
@@ -356,7 +372,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = make<Hashtag>(tag());
+        auto obj = std::make_shared<Hashtag>(tag());
         obj->range(range());
         return obj;
     }
@@ -375,6 +391,10 @@ public:
         return tag();
     }
 
+    std::string repr() const {
+        return tfm::format("%s<\"%s\">", type_name(type()), strliteral(tag()));
+    }
+
 private:
     std::string _tag;
 };
@@ -385,7 +405,7 @@ public:
     LineBreak() : Object(Type::LINE_BREAK) { }
 
     obj_t clone() const {
-        auto obj = make<LineBreak>();
+        auto obj = std::make_shared<LineBreak>();
         obj->range(range());
         return obj;
     }
@@ -409,7 +429,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = make<Code>(code());
+        auto obj = std::make_shared<Code>(code());
         obj->range(range());
         return obj;
     }
@@ -435,6 +455,10 @@ public:
         return to_jotdown();
     }
 
+    std::string repr() const {
+        return tfm::format("%s<\"%s\">", type_name(type()), strliteral(code()));
+    }
+
 private:
     std::string _code;
 };
@@ -454,7 +478,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = make<Ref>(link(), text());
+        auto obj = std::make_shared<Ref>(link(), text());
         obj->range(range());
         return obj;
     }
@@ -492,6 +516,15 @@ public:
 
     std::string to_search_string() const {
         return text();
+    }
+
+    std::string repr() const {
+        if (link() == text()) {
+            return tfm::format("%s<\"%s\">", type_name(type()), strliteral(link()));
+
+        } else {
+            return tfm::format("%s<link=\"%s\" text=\"%s\">", type_name(type()), link(), text());
+        }
     }
 
 private:
@@ -533,7 +566,7 @@ public:
     }
 
     obj_t clone() const {
-        auto textblock = make<TextContent>();
+        auto textblock = std::make_shared<TextContent>();
         textblock->_copy_from(std::static_pointer_cast<const Container>(shared_from_this()));
         textblock->range(range());
         return textblock;
@@ -549,6 +582,10 @@ public:
             str.push_back('\n');
         }
         return str;
+    }
+
+    std::string repr() const {
+        return tfm::format("%s<\"%s\">", Container::repr(), strliteral(to_jotdown()));
     }
 };
 
@@ -712,11 +749,15 @@ public:
         return sb.str();
     }
 
+    std::string repr() const {
+        return tfm::format("%s<\"%s\">", Container::repr(), to_search_string());
+    }
+
 protected:
     ListItem(Object::Type type) : Container(type) { }
 
     static void init(std::shared_ptr<ListItem> item) {
-        item->text(make<TextContent>());
+        item->text(std::make_shared<TextContent>());
     }
 
 private:
@@ -802,7 +843,7 @@ public:
     }
 
     obj_t clone() const {
-        auto ol = make<OrderedList>();
+        auto ol = std::make_shared<OrderedList>();
         ol->_copy_from(std::static_pointer_cast<const List>(shared_from_this()));
         ol->range(range());
         return ol;
@@ -821,7 +862,7 @@ public:
     }
 
     obj_t clone() const {
-        auto ul = make<UnorderedList>();
+        auto ul = std::make_shared<UnorderedList>();
         ul->_copy_from(std::static_pointer_cast<const List>(shared_from_this()));
         ul->range(range());
         return ul;
@@ -843,7 +884,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = make<CodeBlock>(code(), language());
+        auto obj = std::make_shared<CodeBlock>(code(), language());
         obj->range(range());
         return obj;
     }
@@ -876,6 +917,15 @@ public:
         return code();
     }
 
+    std::string repr() const {
+        if (language() != "") {
+            return tfm::format("%s<lang=\"%s\" code=\"%s\"", type_name(type()), language(), strliteral(code()));
+
+        } else {
+            return tfm::format("%s<\"%s\">", type_name(type()), strliteral(code()));
+        }
+    }
+
 private:
     std::string _code;
     std::string _language;
@@ -886,7 +936,7 @@ class Section : public Container {
 public:
     static std::shared_ptr<Section> create(int level = 0) {
         auto section = std::shared_ptr<Section>(new Section(level));
-        section->header(make<TextContent>());
+        section->header(std::make_shared<TextContent>());
         return section;
     }
 
@@ -981,6 +1031,11 @@ public:
         return cheader()->to_search_string();
     }
 
+    std::string repr() const {
+        return tfm::format("%s<level=%d header=\"%s\">", Container::repr(), level(),
+                           strliteral(cheader()->to_jotdown()));
+    }
+
 private:
     Section(int level = 0) : Container(Type::SECTION), _level(level) { }
 
@@ -999,7 +1054,7 @@ public:
     }
 
     obj_t clone() const {
-        auto doc = make<Document>();
+        auto doc = std::make_shared<Document>();
         doc->_copy_from(std::static_pointer_cast<const Container>(shared_from_this()));
         doc->range(range());
         return doc;

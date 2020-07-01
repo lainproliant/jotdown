@@ -15,6 +15,45 @@ s           section
 t           text-content
 ```
 
+# Examples (revised 2)
+```
+; all top-level objects
+/*
+
+; the second top-level section
+/section/2
+
+; all objects at all levels
+/**
+
+; all top-level sections
+/section
+
+; all sections at all levels
+/**/section
+/**/section
+
+; all sections at all levels with 'test' in the name
+/**/section/search/test
+/**/section/~test
+
+; all level 2 sections at all levels.
+/**/section/level/2
+
+; all lists containing checklist items at any level
+/**/list/contains/**/checklist_item
+
+; all lists containing checklist items with the 'shopping' hashtag
+/**/checklist_item/#shopping
+
+; all hashtags
+/**/#
+
+; all refs
+/**/@
+
+```
+
 ## Examples (revised)
 ```
 /                       -> all top level objects

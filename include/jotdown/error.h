@@ -10,7 +10,7 @@
 #ifndef __JOTDOWN_ERROR_H
 #define __JOTDOWN_ERROR_H
 
-#include "moonlight/core.h"
+#include "moonlight/exceptions.h"
 
 namespace jotdown {
 

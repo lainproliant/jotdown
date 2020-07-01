@@ -11,6 +11,7 @@
 #include "pybind11/operators.h"
 #include "jotdown/python/declarators.h"
 #include "jotdown/object.h"
+#include "moonlight/hash.h"
 
 #include <functional>
 
@@ -47,7 +48,7 @@ py::class_<Location> declare_location(py::module& m) {
         .def_readwrite("line", &Location::line)
         .def_readwrite("col", &Location::col)
         .def("__repr__", [](const Location& self) {
-            return tfm::format("Location<'%s' %d:%d>",
+            return tfm::format("Location<file=\"%s\" loc=\"%d:%d\">",
                                self.filename,
                                self.line,
                                self.col);
@@ -80,7 +81,7 @@ py::class_<Range> declare_range(py::module& m) {
         .def_readwrite("begin", &Range::begin)
         .def_readwrite("end", &Range::end)
         .def("__repr__", [](const Range& self) {
-            return tfm::format("Range<%d:%d, %d:%d>",
+            return tfm::format("Range<start=\"%d:%d\", end=\"%d:%d\">",
                                self.begin.line,
                                self.begin.col,
                                self.end.line,
@@ -153,7 +154,7 @@ obj_class declare_object(py::module& m) {
         return obj.to_jotdown();
     });
     object.def("__repr__", [](const object::Object& obj) {
-        return tfm::format("%s", obj.type_name(obj.type()));
+        return obj.repr();
     });
 
     return object;

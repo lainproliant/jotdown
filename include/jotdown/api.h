@@ -13,7 +13,6 @@
 #include "jotdown/object.h"
 #include "jotdown/parser.h"
 #include "jotdown/compiler.h"
-#include "moonlight/core.h"
 
 namespace jotdown {
 

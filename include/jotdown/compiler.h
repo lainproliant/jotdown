@@ -139,19 +139,19 @@ public:
         switch (tk->type()) {
         case Token::Type::TEXT:
             context().tokens.advance();
-            _text_content->add(make<Text>(tk->content()))->range(tk->range());
+            _text_content->add(std::make_shared<Text>(tk->content()))->range(tk->range());
             break;
         case Token::Type::HASHTAG:
             context().tokens.advance();
-            _text_content->add(make<Hashtag>(tk->content()))->range(tk->range());
+            _text_content->add(std::make_shared<Hashtag>(tk->content()))->range(tk->range());
             break;
         case Token::Type::CODE:
             context().tokens.advance();
-            _text_content->add(make<Code>(tk->content()))->range(tk->range());
+            _text_content->add(std::make_shared<Code>(tk->content()))->range(tk->range());
             break;
         case Token::Type::ANCHOR:
             context().tokens.advance();
-            _text_content->add(make<Anchor>(tk->content()))->range(tk->range());
+            _text_content->add(std::make_shared<Anchor>(tk->content()))->range(tk->range());
             break;
         case Token::Type::REF:
             context().tokens.advance();
@@ -179,7 +179,7 @@ private:
         std::shared_ptr<parser::RefToken> ref_tk = (
             dynamic_pointer_cast<parser::RefToken>(tk));
         auto obj = _text_content->add(
-            make<Ref>(ref_tk->link(), ref_tk->text()));
+            std::make_shared<Ref>(ref_tk->link(), ref_tk->text()));
         obj->range(tk->range());
     }
 
@@ -223,13 +223,13 @@ protected:
 
     void _process_sub_list(std::shared_ptr<parser::ListItemToken> tk) {
         if (tk->type() == Token::Type::OL_ITEM) {
-            auto new_list = make<OrderedList>();
+            auto new_list = std::make_shared<OrderedList>();
             last_item->add(new_list);
             new_list->range().begin = tk->begin();
             push<CompileOrderedList>(new_list, level + 1);
 
         } else if (tk->type() == Token::Type::UL_ITEM) {
-            auto new_list = make<UnorderedList>();
+            auto new_list = std::make_shared<UnorderedList>();
             new_list->range().begin = tk->begin();
             last_item->add(new_list);
             push<CompileUnorderedList>(new_list, level + 1);
@@ -318,12 +318,12 @@ public:
         auto tk = context().tokens.peek();
 
         if (tk->type() == Token::Type::OL_ITEM) {
-            auto ordered_list = _parent->add(make<OrderedList>());
+            auto ordered_list = _parent->add(std::make_shared<OrderedList>());
             ordered_list->range().begin = tk->begin();
             transition<CompileOrderedList>(ordered_list);
 
         } else if (tk->type() == Token::Type::UL_ITEM) {
-            auto unordered_list = _parent->add(make<UnorderedList>());
+            auto unordered_list = _parent->add(std::make_shared<UnorderedList>());
             unordered_list->range().begin = tk->begin();
             transition<CompileUnorderedList>(unordered_list);
 
@@ -355,7 +355,7 @@ public:
         );
 
         auto obj = _section->add(
-            make<CodeBlock>(code_tk->content(), code_tk->langspec()));
+            std::make_shared<CodeBlock>(code_tk->content(), code_tk->langspec()));
         obj->range(tk->range());
         pop();
     }
@@ -408,7 +408,7 @@ public:
 
         case Token::Type::NEWLINE:
             context().tokens.advance();
-            _section->add(make<LineBreak>())->range(tk->range());
+            _section->add(std::make_shared<LineBreak>())->range(tk->range());
             break;
 
         case Token::Type::END:
@@ -429,7 +429,7 @@ private:
     }
 
     void init_text_content() {
-        auto text_content = _section->add(make<TextContent>());
+        auto text_content = _section->add(std::make_shared<TextContent>());
         push<CompileTextContent>(text_content);
     }
 
@@ -542,7 +542,7 @@ public:
         auto end = moonlight::gen::end<typename T::value_type>();
 
         Context ctx {
-            .doc = make<Document>(),
+            .doc = std::make_shared<Document>(),
             .tokens = BufferedTokens(begin, end)
         };
 

@@ -10,12 +10,15 @@
 #ifndef __JOTDOWN_PARSER_H
 #define __JOTDOWN_PARSER_H
 
-#include "moonlight/core.h"
 #include "moonlight/generator.h"
 #include "jotdown/utils.h"
 #include "jotdown/interfaces.h"
 #include "jotdown/error.h"
 #include "tinyformat/tinyformat.h"
+
+#ifdef MOONLIGHT_AUTOMATA_DEBUG
+#include "moonlight/collect.h"
+#endif
 
 #include <istream>
 
@@ -248,7 +251,7 @@ struct Context {
     std::deque<token_t> tokens;
 
     token_t push_token(Token::Type type, const std::string& content = "") {
-        auto tk = make<Token>(type, content);
+        auto tk = std::make_shared<Token>(type, content);
         return push_token(tk);
     }
 
