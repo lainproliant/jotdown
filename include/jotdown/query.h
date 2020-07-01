@@ -17,7 +17,6 @@
 #include "tinyformat/tinyformat.h"
 
 #include <regex>
-#include <unordered_set>
 #include <vector>
 #include <set>
 
@@ -25,7 +24,7 @@ namespace jotdown {
 namespace query {
 
 using Object = object::Object;
-using Type = object::Object::Type;
+using ObjectType = object::Object::Type;
 using obj_t = object::obj_t;
 
 // ------------------------------------------------------------------
@@ -38,13 +37,12 @@ class Selector {
 public:
     virtual ~Selector() { }
 
-    virtual Selector* clone() const {
-        return new Selector();
-    }
+    virtual Selector* clone() const  = 0;
+    virtual std::string repr() const = 0;
 
     virtual std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
-        std::copy_if(objects.begin(), objects.end(), results.begin(), [&](auto obj) {
+        std::copy_if(objects.begin(), objects.end(), std::back_inserter(results), [&](auto obj) {
             return choose(obj);
         });
         return results;
@@ -54,19 +52,12 @@ public:
         (void) obj;
         return true;
     }
-
-    virtual std::string repr() const {
-        return "Selector";
-    }
 };
 
 // ------------------------------------------------------------------
 class Query : public Selector {
 public:
     Query() { }
-    Query(const Selector* query) {
-        sequence.emplace_back(query);
-    }
     Query(const Query& other) {
         for (auto& query : other.sequence) {
             sequence.emplace_back(query->clone());
@@ -80,21 +71,8 @@ public:
         return *this;
     }
 
-    Query operator|(const Query& query) {
-        return _extend(query.clone());
-    }
-
-    Query operator|(const Selector* query) {
-        return operator|(Query(query));
-    }
-
-    Query& operator|=(const Query& query) {
-        *this = *this | query;
-        return *this;
-    }
-
-    Query& operator|=(const Selector* query) {
-        *this = *this | query;
+    Query& by(const Selector& query) {
+        sequence.emplace_back(query.clone());
         return *this;
     }
 
@@ -116,11 +94,10 @@ public:
 
     std::string repr() const {
         std::vector<std::string> seq_reprs;
-        std::transform(sequence.begin(), sequence.end(), seq_reprs.end(),
-                       [](auto& selector) {
-                           return selector->repr();
-                       });
-        return tfm::format("Query<%s>", moonlight::str::join(seq_reprs, " "));
+        for (auto& query : sequence) {
+            seq_reprs.push_back(query->repr());
+        }
+        return tfm::format("Query(%d)<%s>", sequence.size(), moonlight::str::join(seq_reprs, " "));
     }
 
 private:
@@ -134,7 +111,91 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Children : public Query {
+class Type : public Selector {
+public:
+    Type(ObjectType type) : type(type) { }
+
+    Selector* clone() const {
+        return new Type(type);
+    }
+
+    bool choose(obj_t obj) const {
+        return obj->type() == type;
+    }
+
+    std::string repr() const {
+        return tfm::format("Type<\"%s\">", Object::type_name(type));
+    }
+
+private:
+    ObjectType type;
+};
+
+// ------------------------------------------------------------------
+class Slice : public Selector {
+public:
+    Slice(const std::optional<int>& begin, const std::optional<int>& end)
+    : begin(begin), end(end) { }
+
+    Selector* clone() const {
+        return new Slice(begin, end);
+    }
+
+    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
+        return moonlight::slice(objects, begin, end);
+    }
+
+    std::string repr() const {
+        if (begin.has_value() && end.has_value()) {
+            return tfm::format("Slice<%d:%d>", *begin, *end);
+
+        } else if (begin.has_value()) {
+            return tfm::format("Slice<%d:>", *begin);
+
+        } else if (end.has_value()) {
+            return tfm::format("Slice<:%d>", *end);
+
+        } else {
+            return "Slice<:>";
+        }
+    }
+
+private:
+    std::optional<int> begin, end;
+};
+
+// ------------------------------------------------------------------
+class Offset : public Selector {
+public:
+    Offset(int offset) : offset(offset) { }
+
+    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
+        try {
+            return {moonlight::slice(objects, offset)};
+
+        } catch (const moonlight::SliceError& e) {
+            return {};
+        }
+    }
+
+    Selector* clone() const {
+        return new Offset(offset);
+    }
+
+    std::string repr() const {
+        return tfm::format("Offset<%d>", offset);
+    }
+
+private:
+    int offset;
+};
+
+// ------------------------------------------------------------------
+class Children : public Selector {
+    Selector* clone() const {
+        return new Children();
+    }
+
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
 
@@ -142,7 +203,7 @@ class Children : public Query {
             if (obj->is_container()) {
                 auto container = std::static_pointer_cast<object::Container>(obj);
                 auto& contents = container->contents();
-                results.insert(results.end(), contents.begin(), contents.end());
+                std::copy(contents.begin(), contents.end(), std::back_inserter(results));
             }
         }
 
@@ -155,7 +216,11 @@ class Children : public Query {
 };
 
 // ------------------------------------------------------------------
-class Descendants : public Query {
+class Descendants : public Selector {
+    Selector* clone() const {
+        return new Descendants();
+    }
+
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
 
@@ -163,9 +228,9 @@ class Descendants : public Query {
             if (obj->is_container()) {
                 auto container = std::static_pointer_cast<object::Container>(obj);
                 auto& contents = container->contents();
-                results.insert(results.end(), contents.begin(), contents.end());
+                std::copy(contents.begin(), contents.end(), std::back_inserter(results));
                 auto sub_results = select(contents);
-                results.insert(results.end(), sub_results.begin(), sub_results.end());
+                std::copy(sub_results.begin(), sub_results.end(), std::back_inserter(results));
             }
         }
 
@@ -178,7 +243,7 @@ class Descendants : public Query {
 };
 
 // ------------------------------------------------------------------
-class Level : public Query {
+class Level : public Selector {
 public:
     Level(int level) : level(level) { }
 
@@ -187,12 +252,12 @@ public:
     }
 
     bool choose(obj_t obj) const {
-        if (obj->type() == Type::ORDERED_LIST_ITEM ||
-            obj->type() == Type::UNORDERED_LIST_ITEM) {
+        if (obj->type() == ObjectType::ORDERED_LIST_ITEM ||
+            obj->type() == ObjectType::UNORDERED_LIST_ITEM) {
             auto list_item = std::static_pointer_cast<object::ListItem>(obj);
             return list_item->level() == level;
 
-        } else if (obj->type() == Type::SECTION) {
+        } else if (obj->type() == ObjectType::SECTION) {
             auto section = std::static_pointer_cast<object::Section>(obj);
             return section->level() == level;
         }
@@ -209,7 +274,7 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Search : public Query {
+class Search : public Selector {
 public:
     Search(const std::string& rx) : str_rx(rx), rx(rx) { }
 
@@ -237,7 +302,7 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Hashtag : public Query {
+class Hashtag : public Selector {
 public:
     Hashtag(const std::string& tag) : tag(tag) { }
 
@@ -246,7 +311,7 @@ public:
     }
 
     bool choose(obj_t obj) const {
-        if (obj->type() == Type::HASHTAG) {
+        if (obj->type() == ObjectType::HASHTAG) {
             auto hashtag = std::static_pointer_cast<object::Hashtag>(obj);
             return tag == "" || hashtag->tag() == tag;
         }
@@ -262,21 +327,25 @@ private:
 };
 
 // ------------------------------------------------------------------
-class List : public Query {
+class List : public Selector {
 public:
-    List() : type(Type::NONE) { }
+    List() : type(ObjectType::NONE) { }
 
-    static List Ordered() {
-        return List(Type::ORDERED_LIST);
+    static Query Ordered() {
+        return Query().by(List(ObjectType::ORDERED_LIST));
     }
 
-    static List Unordered() {
-        return List(Type::UNORDERED_LIST);
+    static Query Unordered() {
+        return Query().by(List(ObjectType::UNORDERED_LIST));
+    }
+
+    Selector* clone() const {
+        return new List(type);
     }
 
     bool choose(obj_t obj) const {
-        if (type == Type::NONE) {
-            return obj->type() == Type::ORDERED_LIST || obj->type() == Type::UNORDERED_LIST;
+        if (type == ObjectType::NONE) {
+            return obj->type() == ObjectType::ORDERED_LIST || obj->type() == ObjectType::UNORDERED_LIST;
 
         } else {
             return obj->type() == type;
@@ -284,7 +353,7 @@ public:
     }
 
     std::string repr() const {
-        if (type == Type::NONE) {
+        if (type == ObjectType::NONE) {
             return "List";
         } else {
             return Object::type_name(type);
@@ -292,25 +361,29 @@ public:
     }
 
 private:
-    List(Type type) : type(type) { }
-    Type type;
+    List(ObjectType type) : type(type) { }
+    ObjectType type;
 };
 
 // ------------------------------------------------------------------
-class Item : public Query {
+class Item : public Selector {
 public:
-    Item() : type(Type::NONE) { }
+    Item() : type(ObjectType::NONE) { }
 
-    static Item Ordered(const std::string& ordinal = "") {
-        return Item(Type::ORDERED_LIST_ITEM, ordinal);
+    static Query Ordered(const std::string& ordinal = "") {
+        return Query().by(Item(ObjectType::ORDERED_LIST_ITEM, ordinal));
     }
 
-    static Item Unordered() {
-        return Item(Type::UNORDERED_LIST_ITEM);
+    static Query Unordered() {
+        return Query().by(Item(ObjectType::UNORDERED_LIST_ITEM));
     }
 
-    static Item Checklist(const std::string& status = "") {
-        return Item(Type::NONE, "", true, status);
+    static Query Checklist(const std::string& status = "") {
+        return Query().by(Item(ObjectType::NONE, "", true, status));
+    }
+
+    Selector* clone() const {
+        return new Item(type, ordinal, checklist_item, status);
     }
 
     bool choose(obj_t obj) const {
@@ -318,7 +391,7 @@ public:
             return false;
         }
 
-        if (type == Type::ORDERED_LIST_ITEM && ordinal.size() > 0) {
+        if (type == ObjectType::ORDERED_LIST_ITEM && ordinal.size() > 0) {
             auto oli = std::static_pointer_cast<object::OrderedListItem>(obj);
             if (oli->ordinal() != ordinal) {
                 return false;
@@ -342,11 +415,11 @@ public:
             }
         }
 
-        if (type == Type::UNORDERED_LIST_ITEM) {
+        if (type == ObjectType::UNORDERED_LIST_ITEM) {
             return "UnorderedListItem";
         }
 
-        if (type == Type::ORDERED_LIST_ITEM) {
+        if (type == ObjectType::ORDERED_LIST_ITEM) {
             if (ordinal != "") {
                 return "OrderedListItem";
             } else {
@@ -359,25 +432,25 @@ public:
 
 private:
     bool is_correct_type(obj_t obj) const {
-        if (type == Type::NONE) {
-            return obj->type() == Type::ORDERED_LIST_ITEM || obj->type() == Type::UNORDERED_LIST_ITEM;
+        if (type == ObjectType::NONE) {
+            return obj->type() == ObjectType::ORDERED_LIST_ITEM || obj->type() == ObjectType::UNORDERED_LIST_ITEM;
 
         } else {
             return obj->type() == type;
         }
     }
 
-    Item(Type type, const std::string& ordinal = "", bool checklist_item = false, const std::string& status = "")
+    Item(ObjectType type, const std::string& ordinal = "", bool checklist_item = false, const std::string& status = "")
     : type(type), ordinal(ordinal), checklist_item(checklist_item), status(status) { }
 
-    Type type;
+    ObjectType type;
     std::string ordinal;
     bool checklist_item;
     std::string status;
 };
 
 // ------------------------------------------------------------------
-class Anchor : public Query {
+class Anchor : public Selector {
 public:
     Anchor(const std::string& name) : name(name) { }
 
@@ -386,7 +459,7 @@ public:
     }
 
     bool choose(obj_t obj) const {
-        if (obj->type() == Type::HASHTAG) {
+        if (obj->type() == ObjectType::HASHTAG) {
             auto anchor = std::static_pointer_cast<object::Anchor>(obj);
             return name == "" || anchor->name() == name;
         }
@@ -407,7 +480,7 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Reference : public Query {
+class Reference : public Selector {
 public:
     Reference(const std::string& ref_search) : ref_search(ref_search) { }
 
@@ -416,7 +489,7 @@ public:
     }
 
     bool choose(obj_t obj) const {
-        if (obj->type() == Type::REF) {
+        if (obj->type() == ObjectType::REF) {
             auto ref = std::static_pointer_cast<object::Ref>(obj);
             auto& link = ref->link();
             return ref_search == "" || link.find(ref_search) != std::string::npos;
@@ -437,9 +510,13 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Contains : public Query {
+class Contains : public Selector {
 public:
-    Contains(const Query& query) : query(query.clone()) { }
+    Contains(const Selector& query) : query(query.clone()) { }
+
+    Selector* clone() const {
+        return new Contains(*query);
+    }
 
     bool choose(obj_t obj) const {
         if (obj->is_container()) {
@@ -455,30 +532,6 @@ public:
 
 private:
     std::unique_ptr<Selector> query;
-};
-
-// ------------------------------------------------------------------
-class Or : public Query {
-public:
-    Or(const Query& lhs, const Query& rhs) : lhs(lhs.clone()), rhs(rhs.clone()) { }
-
-    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
-        auto lhs_results = lhs->select(objects);
-        auto rhs_results = rhs->select(objects);
-        std::set<obj_t> result_set;
-        std::vector<obj_t> results;
-        result_set.insert(lhs_results.begin(), lhs_results.end());
-        result_set.insert(rhs_results.begin(), rhs_results.end());
-        results.insert(results.end(), result_set.begin(), result_set.end());
-        return results;
-    }
-
-    std::string repr() const {
-        return tfm::format("Or<%s %s>", lhs->repr(), rhs->repr());
-    }
-
-private:
-    std::unique_ptr<Selector> lhs, rhs;
 };
 
 // ------------------------------------------------------------------
@@ -511,7 +564,7 @@ inline std::vector<std::string> tokenize(const std::string& query) {
 }
 
 // ------------------------------------------------------------------
-inline Query build_search_query(std::vector<std::string>& tokens) {
+inline Search build_search_query(std::vector<std::string>& tokens) {
     if (tokens.size() == 0) {
         throw QueryError("/search query requires an argument.");
     }
@@ -522,7 +575,7 @@ inline Query build_search_query(std::vector<std::string>& tokens) {
 }
 
 // ------------------------------------------------------------------
-inline Query build_level_query(std::vector<std::string>& tokens) {
+inline Level build_level_query(std::vector<std::string>& tokens) {
     if (tokens.size() == 0) {
         throw QueryError("/level query requires an argument.");
     }
@@ -550,67 +603,125 @@ inline Query build_ordinal_list_item_query(std::vector<std::string>& tokens) {
 }
 
 // ------------------------------------------------------------------
+inline Query build_status_list_item_query(std::vector<std::string>& tokens) {
+    if (tokens.size() == 0) {
+        throw QueryError("/status query requires an argument.");
+    }
+
+    auto status = tokens.back();
+    tokens.pop_back();
+
+    return Item::Checklist(status);
+}
+
+// ------------------------------------------------------------------
+inline bool scan_offset_or_slice(Query& result, const std::string& token) {
+    auto parts = moonlight::str::split(token, ":");
+    switch(parts.size()) {
+    case 2:
+        try {
+            result = Query().by(
+                Slice(parts[0] == "" ? std::optional<int>() : std::stoi(parts[0]),
+                      parts[1] == "" ? std::optional<int>() : std::stoi(parts[1])));
+            return true;
+        } catch (...) {
+            return false;
+        }
+
+    case 1:
+        try {
+            result = Query().by(Offset(std::stoi(parts[0])));
+            return true;
+
+        } catch (...) {
+            return false;
+        }
+
+    default:
+        return false;
+    }
+}
+
+// ------------------------------------------------------------------
 inline Query _parse(std::vector<std::string>& tokens) {
     Query query;
 
     while (tokens.size() > 0) {
+        Query sub_result;
         auto token = tokens.back();
         tokens.pop_back();
 
         if (token == "*") {
-            query = Children() | query;
+            query.by(Children());
 
         } else if (token == "**") {
-            query = Descendants() | query;
+            query.by(Descendants());
 
         } else if (token == "contains" || token == "<") {
-            query = Contains(_parse(tokens));
+            query.by(Contains(_parse(tokens)));
             break;
 
         } else if (token == "..") {
-            query = Contains(query);
+            query = Query().by(Contains(query));
 
         } else if (token == "search") {
-            query = build_search_query(tokens) | query;
+            query.by(build_search_query(tokens));
 
         } else if (token == "level") {
-            query = build_level_query(tokens) | query;
+            query.by(build_level_query(tokens));
 
         } else if (token == "list") {
-            query = List() | query;
+            query.by(List());
 
         } else if (token == "ordered_list" || token == "ol") {
-            query = List::Ordered() | query;
+            query.by(List::Ordered());
 
         } else if (token == "unordered_list" || token == "ul") {
-            query = List::Unordered() | query;
+            query.by(List::Unordered());
 
         } else if (token == "checklist") {
-            query = Contains(Item::Checklist()) | query;
+            query.by(Contains(Item::Checklist()));
 
-        } else if (token == "item" || token == "list_item") {
-            query = Item() | query;
+        } else if (token == "status") {
+            query.by(build_status_list_item_query(tokens));
+
+        } else if (token == "item" || token == "list_item" || token == "li") {
+            query.by(Item());
 
         } else if (token == "ordinal" || token == "ord") {
-            query = build_ordinal_list_item_query(tokens) | query;
+            query.by(build_ordinal_list_item_query(tokens));
 
         } else if (token == "ordered_list_item" || token == "oli") {
-            query = Item::Ordered() | query;
+            query.by(Item::Ordered());
 
         } else if (token == "unordered_list_item" || token == "uli") {
-            query = Item::Unordered() | query;
+            query.by(Item::Unordered());
+
+        } else if (token == "section" || token == "s") {
+            query.by(Type(ObjectType::SECTION));
+
+        } else if (token == "task") {
+            query.by(Item::Checklist());
 
         } else if (token.starts_with("~")) {
-            query = Search(moonlight::slice(token, 1, {})) | query;
+            query.by(Search(moonlight::slice(token, 1, {})));
 
         } else if (token.starts_with("#")) {
-            query = Hashtag(moonlight::slice(token, 1, {})) | query;
+            query.by(Hashtag(moonlight::slice(token, 1, {})));
 
         } else if (token.starts_with("&")) {
-            query = Anchor(moonlight::slice(token, 1, {})) | query;
+            query.by(Anchor(moonlight::slice(token, 1, {})));
 
         } else if (token.starts_with("@")) {
-            query = Reference(moonlight::slice(token, 1, {})) | query;
+            query.by(Reference(moonlight::slice(token, 1, {})));
+
+        } else if (scan_offset_or_slice(sub_result, token)) {
+            query.by(sub_result);
+
+        } else {
+            throw QueryError(
+                tfm::format("Unrecognized query token: \"%s\"",
+                            strliteral(token)));
         }
     }
 

@@ -29,7 +29,13 @@ void query_repl(std::shared_ptr<jotdown::object::Document> doc) {
 
         auto tokens = jotdown::query::tokenize(str);
         std::cout << moonlight::str::join(moonlight::collect::map<std::string>(tokens, [](auto token) -> std::string { return tfm::format("\"%s\"", jotdown::strliteral(token)); }), ",") << std::endl;
-        auto query = jotdown::query::parse(str);
+        jotdown::query::Query query;
+        try {
+            query = jotdown::query::parse(str);
+        } catch (const std::exception& e) {
+            std::cout << "ERROR: " << e.what() << std::endl;
+            continue;
+        }
         std::cout << query.repr() << std::endl;
         auto results = query.select(doc->contents());
         for (auto result : results) {
