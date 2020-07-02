@@ -9,8 +9,10 @@
 
 #include "pybind11/pybind11.h"
 #include "pybind11/operators.h"
+#include "pybind11/stl.h"
 #include "jotdown/python/declarators.h"
 #include "jotdown/object.h"
+#include "jotdown/query.h"
 #include "moonlight/hash.h"
 
 #include <functional>
@@ -152,6 +154,9 @@ obj_class declare_object(py::module& m) {
     });
     object.def("to_jotdown", [](const object::Object& obj) {
         return obj.to_jotdown();
+    });
+    object.def("query", [](object::obj_t obj, const std::string& query_str) {
+        return query::parse(query_str).select({obj});
     });
     object.def("__repr__", [](const object::Object& obj) {
         return obj.repr();

@@ -47,11 +47,6 @@ shared_class<object::TextContent> declare_text_content(
         .def("add", [](object::TextContent& self,
                        std::shared_ptr<object::Text> text) {
             return self.add(text);
-        })
-        .def("__repr__", [](const object::TextContent& self) {
-            return tfm::format("%s<%s>",
-                               self.type_name(self.type()),
-                               strliteral(self.to_jotdown()));
         });
 
     return text_content;

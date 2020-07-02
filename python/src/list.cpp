@@ -69,16 +69,7 @@ shared_class<object::ListItem> declare_list_item(
             },
             [](object::ListItem& li, const std::string& status) {
                 li.status(status);
-            })
-        .def("__repr__", [](const object::ListItem& self) {
-            std::ostringstream sb;
-            sb << self.type_name(self.type()) << "<" << self.crown();
-            if (self.status().size() > 0) {
-                sb << " [" << self.status() << "]";
-            }
-            sb << self.ctext()->to_jotdown();
-            return sb.str();
-        });
+            });
     return li;
 }
 

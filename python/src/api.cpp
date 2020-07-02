@@ -8,11 +8,12 @@
  */
 
 #include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 #include "pybind11/operators.h"
+#include "pybind11/stl.h"
 #include "jotdown/python/declarators.h"
 #include "jotdown/object.h"
 #include "jotdown/api.h"
+#include "jotdown/query.h"
 
 #include <functional>
 
@@ -29,6 +30,9 @@ void declare_api(py::module& m) {
     m.def("save", [](std::shared_ptr<const Document> document,
                      const std::string& filename) {
         save(document, filename);
+    });
+    m.def("query", [](const std::vector<object::obj_t>& objects, const std::string& query_str) {
+        return query::parse(query_str).select(objects);
     });
 }
 

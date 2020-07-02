@@ -191,15 +191,78 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Children : public Selector {
+class Label : public Selector {
     Selector* clone() const {
-        return new Children();
+        return new Label();
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
 
         for (auto obj : objects) {
+            if (obj->has_label()) {
+                auto sub_results = select({obj->label()});
+                std::copy(sub_results.begin(), sub_results.end(), std::back_inserter(results));
+            }
+        }
+
+        return results;
+    }
+
+    std::string repr() const {
+        return "Label";
+    }
+};
+
+// ------------------------------------------------------------------
+class Parents : public Selector {
+    Selector* clone() const {
+        return new Parents();
+    }
+
+    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
+        std::vector<obj_t> intermediate_results;
+        std::vector<obj_t> final_results;
+        std::set<obj_t> final_result_set;
+
+        for (auto obj : objects) {
+            if (obj->has_parent()) {
+                intermediate_results.push_back(obj->parent());
+            }
+        }
+
+        for (auto parent : intermediate_results) {
+            if (final_result_set.find(parent) == final_result_set.end()) {
+                final_results.push_back(parent);
+                final_result_set.insert(parent);
+            }
+        }
+
+        return final_results;
+    }
+
+    std::string repr() const {
+        return "Parents";
+    }
+};
+
+// ------------------------------------------------------------------
+class Children : public Selector {
+public:
+    Children(bool include_labels = false) : include_labels(include_labels) { }
+
+    Selector* clone() const {
+        return new Children(include_labels);
+    }
+
+    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
+        std::vector<obj_t> results;
+
+        for (auto obj : objects) {
+            if (include_labels && obj->has_label()) {
+                auto sub_results = select({obj->label()});
+                std::copy(sub_results.begin(), sub_results.end(), std::back_inserter(results));
+            }
             if (obj->is_container()) {
                 auto container = std::static_pointer_cast<object::Container>(obj);
                 auto& contents = container->contents();
@@ -211,20 +274,34 @@ class Children : public Selector {
     }
 
     std::string repr() const {
-        return "Children";
+        if (include_labels) {
+            return "Children+Labels";
+        } else {
+            return "Children";
+        }
     }
+
+private:
+    bool include_labels;
 };
 
 // ------------------------------------------------------------------
 class Descendants : public Selector {
+public:
+    Descendants(bool include_labels = false) : include_labels(include_labels) { }
+
     Selector* clone() const {
-        return new Descendants();
+        return new Descendants(include_labels);
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         std::vector<obj_t> results;
 
         for (auto obj : objects) {
+            if (include_labels && obj->has_label()) {
+                auto sub_results = select({obj->label()});
+                std::copy(sub_results.begin(), sub_results.end(), std::back_inserter(results));
+            }
             if (obj->is_container()) {
                 auto container = std::static_pointer_cast<object::Container>(obj);
                 auto& contents = container->contents();
@@ -238,8 +315,15 @@ class Descendants : public Selector {
     }
 
     std::string repr() const {
-        return "Decendants";
+        if (include_labels) {
+            return "Descendants+Labels";
+        } else {
+            return "Descendants";
+        }
     }
+
+private:
+    bool include_labels = false;
 };
 
 // ------------------------------------------------------------------
@@ -445,7 +529,7 @@ private:
 
     ObjectType type;
     std::string ordinal;
-    bool checklist_item;
+    bool checklist_item = false;
     std::string status;
 };
 
@@ -726,10 +810,22 @@ inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
         tokens.pop_back();
 
         if (token == "*") {
-            query.by(Children());
+            query.by(Children(true));
 
         } else if (token == "**") {
-            query.by(Descendants());
+            query.by(Descendants(true));
+
+        } else if (token == ">") {
+            query.by(Children(false));
+
+        } else if (token == ">>") {
+            query.by(Descendants(false));
+
+        } else if (token == "..") {
+            query.by(Parents());
+
+        } else if (token == "label") {
+            query.by(Label());
 
         } else if (token == "contains" || token == "<") {
             query.by(Contains(_parse(tokens)));
@@ -764,7 +860,7 @@ inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
         } else if (token == "unordered_list" || token == "ul") {
             query.by(List::Unordered());
 
-        } else if (token == "checklist") {
+        } else if (token == "check_list" || token == "task_list") {
             query.by(Contains(Item::Checklist()));
 
         } else if (token == "status") {
@@ -785,9 +881,8 @@ inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
         } else if (token == "section" || token == "s") {
             query.by(Type(ObjectType::SECTION));
 
-        } else if (token == "task") {
+        } else if (token == "task" || token == "check_item") {
             query.by(Item::Checklist());
-
 
         } else if (token.starts_with('(')) {
             auto subquery_tokens = tokenize(moonlight::slice(token, 1, -1));

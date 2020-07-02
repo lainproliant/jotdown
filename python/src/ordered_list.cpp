@@ -41,13 +41,7 @@ shared_class<object::OrderedListItem> declare_ordered_list_item(
     auto oli = shared_class<object::OrderedListItem>(m, "OrderedListItem", li)
     .def(py::init([](const std::string& ordinal) {
         return object::OrderedListItem::create(ordinal);
-    }), py::arg("ordinal"))
-        .def("__repr__", [](const object::OrderedListItem& self) {
-            return tfm::format("%s<%s, %s>",
-                               self.type_name(self.type()),
-                               self.ordinal(),
-                               self.ctext()->to_json().to_string());
-        });
+    }), py::arg("ordinal"));
     return oli;
 }
 

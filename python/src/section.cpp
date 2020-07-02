@@ -54,12 +54,6 @@ shared_class<object::Section> declare_section(
     })
     .def("add", [](object::Section& self, std::shared_ptr<object::Section> section) {
         return self.add(section);
-    })
-    .def("__repr__", [](const object::Section& self) {
-        return tfm::format("%s<%d, %s>",
-                           self.type_name(self.type()),
-                           self.level(),
-                           self.cheader()->to_jotdown());
     });
 
     return section;
