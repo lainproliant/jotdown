@@ -50,11 +50,20 @@ def compile_app(src, headers):
 
 
 # -------------------------------------------------------------------
-def compile_pybind11_module(src, headers):
+def link_pybind11_module(pybind11_module_objects):
+    return sh(
+        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {input} -o {output}",
+        input=pybind11_module_objects,
+        output="jotdown%s" % check("python3-config --extension-suffix")
+    )
+
+
+# -------------------------------------------------------------------
+def compile_pybind11_module_object(src, headers):
     return sh(
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {input} -o {output}",
         input=src,
-        output="jotdown%s" % check("python3-config --extension-suffix"),
+        output=Path(src).with_suffix('.o'),
         flags=INCLUDES + shlex.split(check("python-config --includes")),
         includes=headers,
     )
@@ -115,14 +124,20 @@ def pybind11_tests(submodules):
 
 # -------------------------------------------------------------------
 @provide
-def pymodule_src(submodules):
+def pymodule_sources(submodules):
     return Path.cwd().glob("python/src/*.cpp")
 
 
 # -------------------------------------------------------------------
 @target
-def pymodule(pymodule_src, headers, tests):
-    return compile_pybind11_module(pymodule_src, headers)
+def pymodule_objects(pymodule_sources, headers, run_tests):
+    return [compile_pybind11_module_object(src, headers) for src in pymodule_sources]
+
+
+# -------------------------------------------------------------------
+@target
+def pymodule(pymodule_objects):
+    return link_pybind11_module(pymodule_objects)
 
 
 # -------------------------------------------------------------------
