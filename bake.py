@@ -79,9 +79,28 @@ def demo_sources(submodules):
 
 
 # -------------------------------------------------------------------
+@provide
+def test_sources(submodules):
+    return Path.cwd().glob("test/*.cpp")
+
+
+# -------------------------------------------------------------------
 @target
 def demos(demo_sources, headers):
     return [compile_app(src, headers) for src in demo_sources]
+
+
+# -------------------------------------------------------------------
+@target
+def tests(test_sources, headers):
+    return [compile_app(src, headers) for src in test_sources]
+
+
+# -------------------------------------------------------------------
+@target
+def run_tests(tests):
+    return (sh("{input}", input=test, cwd="test").interactive()
+            for test in tests)
 
 
 # -------------------------------------------------------------------
@@ -96,37 +115,19 @@ def pybind11_tests(submodules):
 
 # -------------------------------------------------------------------
 @provide
-def test_sources(submodules):
-    return Path.cwd().glob("test/*.cpp")
-
-
-# -------------------------------------------------------------------
-@provide
-def tests(test_sources, headers):
-    return [compile_app(src, headers) for src in test_sources]
-
-
-# -------------------------------------------------------------------
-@target
-def run_tests(tests):
-    return (sh("{input}", input=test, cwd="test") for test in tests)
-
-
-# -------------------------------------------------------------------
-@provide
 def pymodule_src(submodules):
     return Path.cwd().glob("python/src/*.cpp")
 
 
 # -------------------------------------------------------------------
 @target
-def pymodule(pymodule_src, headers):
+def pymodule(pymodule_src, headers, tests):
     return compile_pybind11_module(pymodule_src, headers)
 
 
 # -------------------------------------------------------------------
 @default
-def all(tests, demos, pymodule):
+def all(demos, pymodule):
     pass
 
 

@@ -149,6 +149,9 @@ obj_class declare_object(py::module& m) {
     object.def("clone", [](const object::Object& obj) {
         return obj.clone();
     });
+    object.def("q", [](std::shared_ptr<object::Object> object, const std::string& query_str) {
+        return query::parse(query_str).select({object});
+    });
     object.def("to_json", [](const object::Object& obj) {
         return json_to_dict(obj.to_json());
     });

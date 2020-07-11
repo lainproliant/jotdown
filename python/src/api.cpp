@@ -31,7 +31,7 @@ void declare_api(py::module& m) {
                      const std::string& filename) {
         save(document, filename);
     });
-    m.def("query", [](const std::vector<object::obj_t>& objects, const std::string& query_str) {
+    m.def("q", [](const std::vector<object::obj_t>& objects, const std::string& query_str) {
         return query::parse(query_str).select(objects);
     });
 }

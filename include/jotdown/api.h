@@ -13,6 +13,7 @@
 #include "jotdown/object.h"
 #include "jotdown/parser.h"
 #include "jotdown/compiler.h"
+#include "jotdown/query.h"
 
 namespace jotdown {
 
@@ -28,6 +29,16 @@ inline std::shared_ptr<Document> load(const std::string& filename) {
 inline void save(std::shared_ptr<const Document> doc, const std::string& filename) {
     auto outfile = moonlight::file::open_w(filename);
     outfile << doc->to_jotdown();
+}
+
+inline std::vector<object::obj_t> q(const std::vector<object::obj_t>& objects,
+                                    const std::string& query_str) {
+    return query::parse(query_str).select(objects);
+}
+
+inline std::vector<object::obj_t> q(object::obj_t obj,
+                                    const std::string& query_str) {
+    return q(std::vector<object::obj_t>{obj}, query_str);
 }
 
 }

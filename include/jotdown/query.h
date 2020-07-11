@@ -851,6 +851,7 @@ inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
     classify("**") = [&]() { query.by(Descendants(true)); };
     classify(">") = [&]() { query.by(Children(false)); };
     classify(">>") = [&]() { query.by(Descendants(false)); };
+    classify("<<") = [&]() { query.by(Antecedents()); };
     classify("..") = [&]() { query.by(Parents()); };
     classify("label") = [&]() { query.by(Label()); };
     classify("contains", "<") = [&]() { query.by(Contains(_parse(tokens))); };
