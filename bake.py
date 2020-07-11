@@ -9,7 +9,7 @@
 import shlex
 import subprocess
 from pathlib import Path
-from panifex import build, default, seq, sh
+from panifex import build, provide, default, target, seq, sh
 
 
 # -------------------------------------------------------------------
@@ -20,19 +20,23 @@ INCLUDES = [
     "-I./pybind11/include",
 ]
 
-sh.env(CC="clang++",
-       CFLAGS=("-g",
-               *INCLUDES,
-               "--std=c++2a",
-               "-DMOONLIGHT_DEBUG",
-               "-DMOONLIGHT_ENABLE_STACKTRACE",
-               "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION"),
-       LDFLAGS=("-rdynamic", "-g", "-ldl"))
+sh.env(
+    CC="clang++",
+    CFLAGS=(
+        "-g",
+        *INCLUDES,
+        "--std=c++2a",
+        "-DMOONLIGHT_DEBUG",
+        "-DMOONLIGHT_ENABLE_STACKTRACE",
+        "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION",
+    ),
+    LDFLAGS=("-rdynamic", "-g", "-ldl"),
+)
 
 
 # --------------------------------------------------------------------
 def check(cmd):
-    return subprocess.check_output(shlex.split(cmd)).decode('utf-8').strip()
+    return subprocess.check_output(shlex.split(cmd)).decode("utf-8").strip()
 
 
 # -------------------------------------------------------------------
@@ -41,7 +45,7 @@ def compile_app(src, headers):
         "{CC} {CFLAGS} {input} {LDFLAGS} -o {output}",
         input=src,
         output=Path(src).with_suffix(""),
-        includes=headers
+        includes=headers,
     )
 
 
@@ -52,49 +56,79 @@ def compile_pybind11_module(src, headers):
         input=src,
         output="jotdown%s" % check("python3-config --extension-suffix"),
         flags=INCLUDES + shlex.split(check("python-config --includes")),
-        includes=headers
+        includes=headers,
     )
 
 
 # -------------------------------------------------------------------
-@build
-class Jotdown:
-    def submodules(self):
-        return sh("git submodule update --init --recursive")
+@provide
+def submodules():
+    return sh("git submodule update --init --recursive")
 
-    def headers(self):
-        return Path.cwd().glob("include/jotdown/*.h")
 
-    def demo_sources(self, submodules):
-        return Path.cwd().glob("demo/*.cpp")
+# -------------------------------------------------------------------
+@provide
+def headers():
+    return Path.cwd().glob("include/jotdown/*.h")
 
-    def demos(self, demo_sources, headers):
-        return [compile_app(src, headers) for src in demo_sources]
 
-    def pybind11_tests(self, submodules):
-        return seq(
-            sh("mkdir -p {output}", output='pybind11-test-build'),
-            sh("cmake ../pybind11", cwd='pybind11-test-build'),
-            sh("make check -j 4", cwd='pybind11-test-build').interactive())
+# -------------------------------------------------------------------
+@provide
+def demo_sources(submodules):
+    return Path.cwd().glob("demo/*.cpp")
 
-    def test_sources(self, submodules):
-        return Path.cwd().glob("test/*.cpp")
 
-    def tests(self, test_sources, headers):
-        return [compile_app(src, headers) for src in test_sources]
+# -------------------------------------------------------------------
+@target
+def demos(demo_sources, headers):
+    return [compile_app(src, headers) for src in demo_sources]
 
-    def run_tests(self, tests):
-        return (sh("{input}",
-                   input=test,
-                   cwd="test")
-                for test in tests)
 
-    def pymodule_src(self, submodules):
-        return Path.cwd().glob("python/src/*.cpp")
+# -------------------------------------------------------------------
+@target
+def pybind11_tests(submodules):
+    return seq(
+        sh("mkdir -p {output}", output="pybind11-test-build"),
+        sh("cmake ../pybind11", cwd="pybind11-test-build"),
+        sh("make check -j 4", cwd="pybind11-test-build").interactive(),
+    )
 
-    def pymodule(self, pymodule_src, headers):
-        return compile_pybind11_module(pymodule_src, headers)
 
-    @default
-    def all(self, tests, demos, pymodule):
-        pass
+# -------------------------------------------------------------------
+@provide
+def test_sources(submodules):
+    return Path.cwd().glob("test/*.cpp")
+
+
+# -------------------------------------------------------------------
+@provide
+def tests(test_sources, headers):
+    return [compile_app(src, headers) for src in test_sources]
+
+
+# -------------------------------------------------------------------
+@target
+def run_tests(tests):
+    return (sh("{input}", input=test, cwd="test") for test in tests)
+
+
+# -------------------------------------------------------------------
+@provide
+def pymodule_src(submodules):
+    return Path.cwd().glob("python/src/*.cpp")
+
+
+# -------------------------------------------------------------------
+@target
+def pymodule(pymodule_src, headers):
+    return compile_pybind11_module(pymodule_src, headers)
+
+
+# -------------------------------------------------------------------
+@default
+def all(tests, demos, pymodule):
+    pass
+
+
+# -------------------------------------------------------------------
+build()

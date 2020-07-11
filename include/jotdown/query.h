@@ -14,6 +14,7 @@
 #include "jotdown/error.h"
 #include "jotdown/interfaces.h"
 #include "jotdown/object.h"
+#include "jotdown/utils.h"
 #include "tinyformat/tinyformat.h"
 
 #include <regex>
@@ -324,6 +325,41 @@ public:
 
 private:
     bool include_labels = false;
+};
+
+// ------------------------------------------------------------------
+class Antecedents : public Selector {
+public:
+    Selector* clone() const {
+        return new Antecedents();
+    }
+
+    std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
+        std::vector<obj_t> results;
+        std::vector<obj_t> final_results;
+        std::set<obj_t> sieve;
+        for (auto obj : objects) {
+            if (obj->has_parent() && sieve.find(obj->parent()) == sieve.end()) {
+                results.push_back(obj->parent());
+                sieve.insert(obj->parent());
+            }
+        }
+        if (results.size() == 0) {
+            return {};
+        }
+        final_results = results;
+        for (auto obj : select(results)) {
+            if (sieve.find(obj) == sieve.end()) {
+                final_results.push_back(obj);
+                sieve.insert(obj);
+            }
+        }
+        return final_results;
+    }
+
+    std::string repr() const {
+        return "Antecedents";
+    }
 };
 
 // ------------------------------------------------------------------
@@ -801,113 +837,57 @@ inline bool scan_offset_or_slice(Query& result, const std::string& token) {
 // ------------------------------------------------------------------
 inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
     Query query;
+    Query sub_result;
+    Classifier<std::string> classify;
     int cycles = 0;
+
+    auto startswith = [](const std::string& s) {
+        return [=](const std::string& x) {
+            return x.starts_with(s);
+        };
+    };
+
+    classify("*") = [&]() { query.by(Children(true)); };
+    classify("**") = [&]() { query.by(Descendants(true)); };
+    classify(">") = [&]() { query.by(Children(false)); };
+    classify(">>") = [&]() { query.by(Descendants(false)); };
+    classify("..") = [&]() { query.by(Parents()); };
+    classify("label") = [&]() { query.by(Label()); };
+    classify("contains", "<") = [&]() { query.by(Contains(_parse(tokens))); };
+    classify("not", "!") = [&]() { query.by(Not(_parse(tokens, 1))); };
+    classify("search") = [&]() { query.by(build_search_query(tokens)); };
+    classify("level") = [&]() { query.by(build_level_query(tokens)); };
+    classify("line_break", "br") = [&]() { query.by(Type(ObjectType::LINE_BREAK)); };
+    classify("text", "t") = [&]() { query.by(Type(ObjectType::TEXT)); };
+    classify("content") = [&]() { query.by(Type(ObjectType::TEXT_CONTENT)); };
+    classify("list") = [&]() { query.by(List()); };
+    classify("ordered_list", "ol") = [&]() { query.by(List::Ordered()); };
+    classify("unordered_list", "ul") = [&]() { query.by(List::Unordered()); };
+    classify("check_list", "task_list") = [&]() { query.by(Contains(Item::Checklist())); };
+    classify("status") = [&]() { query.by(build_status_list_item_query(tokens)); };
+    classify("item", "list_item", "li") = [&]() { query.by(Item()); };
+    classify("ordinal", "ord") = [&]() { query.by(build_ordinal_list_item_query(tokens)); };
+    classify("ordered_list_item", "oli") = [&]() { query.by(Item::Ordered()); };
+    classify("unordered_list_item", "uli") = [&]() { query.by(Item::Unordered()); };
+    classify("section", "s") = [&]() { query.by(Type(ObjectType::SECTION)); };
+    classify("task", "check_item", "task_item") = [&]() { query.by(Item::Checklist()); };
+    classify(startswith("(")) = [&](const std::string& token) {
+        auto subquery_tokens = tokenize(moonlight::slice(token, 1, -1));
+        query.by(Query(_parse(subquery_tokens)));
+    };
+    classify(startswith("~")) = [&](const std::string& token) { query.by(Search(moonlight::slice(token, 1, {}))); };
+    classify(startswith("#")) = [&](const std::string& token) { query.by(Hashtag(moonlight::slice(token, 1, {}))); };
+    classify(startswith("@")) = [&](const std::string& token) { query.by(Reference(moonlight::slice(token, 1, {}))); };
+    classify(([&](const std::string& token) { return scan_offset_or_slice(sub_result, token); })) = [&]() { query.by(sub_result); };
+    classify.otherwise() = [](const std::string& token) {
+        throw QueryError(tfm::format("Unrecognized query token: \"%s\"", strliteral(token)));
+    };
 
     while (tokens.size() > 0 && (depth == -1 || cycles < depth)) {
         cycles++;
-        Query sub_result;
         auto token = tokens.back();
         tokens.pop_back();
-
-        if (token == "*") {
-            query.by(Children(true));
-
-        } else if (token == "**") {
-            query.by(Descendants(true));
-
-        } else if (token == ">") {
-            query.by(Children(false));
-
-        } else if (token == ">>") {
-            query.by(Descendants(false));
-
-        } else if (token == "..") {
-            query.by(Parents());
-
-        } else if (token == "label") {
-            query.by(Label());
-
-        } else if (token == "contains" || token == "<") {
-            query.by(Contains(_parse(tokens)));
-
-        } else if (token == "not" || token == "!") {
-            query.by(Not(_parse(tokens, 1)));
-
-        } else if (token == "..") {
-            query = Query().by(Contains(query));
-
-        } else if (token == "search") {
-            query.by(build_search_query(tokens));
-
-        } else if (token == "level") {
-            query.by(build_level_query(tokens));
-
-        } else if (token == "line_break" || token == "br") {
-            query.by(Type(ObjectType::LINE_BREAK));
-
-        } else if (token == "text" || token == "t") {
-            query.by(Type(ObjectType::TEXT));
-
-        } else if (token == "content") {
-            query.by(Type(ObjectType::TEXT_CONTENT));
-
-        } else if (token == "list") {
-            query.by(List());
-
-        } else if (token == "ordered_list" || token == "ol") {
-            query.by(List::Ordered());
-
-        } else if (token == "unordered_list" || token == "ul") {
-            query.by(List::Unordered());
-
-        } else if (token == "check_list" || token == "task_list") {
-            query.by(Contains(Item::Checklist()));
-
-        } else if (token == "status") {
-            query.by(build_status_list_item_query(tokens));
-
-        } else if (token == "item" || token == "list_item" || token == "li") {
-            query.by(Item());
-
-        } else if (token == "ordinal" || token == "ord") {
-            query.by(build_ordinal_list_item_query(tokens));
-
-        } else if (token == "ordered_list_item" || token == "oli") {
-            query.by(Item::Ordered());
-
-        } else if (token == "unordered_list_item" || token == "uli") {
-            query.by(Item::Unordered());
-
-        } else if (token == "section" || token == "s") {
-            query.by(Type(ObjectType::SECTION));
-
-        } else if (token == "task" || token == "check_item") {
-            query.by(Item::Checklist());
-
-        } else if (token.starts_with('(')) {
-            auto subquery_tokens = tokenize(moonlight::slice(token, 1, -1));
-            query.by(Query(_parse(subquery_tokens)));
-
-        } else if (token.starts_with("~")) {
-            query.by(Search(moonlight::slice(token, 1, {})));
-
-        } else if (token.starts_with("#")) {
-            query.by(Hashtag(moonlight::slice(token, 1, {})));
-
-        } else if (token.starts_with("&")) {
-            query.by(Anchor(moonlight::slice(token, 1, {})));
-
-        } else if (token.starts_with("@")) {
-            query.by(Reference(moonlight::slice(token, 1, {})));
-
-        } else if (scan_offset_or_slice(sub_result, token)) {
-            query.by(sub_result);
-
-        } else {
-            throw QueryError(
-                tfm::format("Unrecognized query token: \"%s\"",
-                            strliteral(token)));
-        }
+        classify.match(token);
     }
 
     return query;

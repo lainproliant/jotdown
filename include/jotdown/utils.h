@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <memory>
 
 #include "tinyformat/tinyformat.h"
 
@@ -75,6 +76,124 @@ inline std::string strliteral(const std::string& str) {
 
     return sb.str();
 }
+
+// ------------------------------------------------------------------
+template<class T>
+class Classifier {
+public:
+    typedef std::function<bool(const T&)> MatchFunction;
+    typedef std::function<void()> NullaryAction;
+    typedef std::function<void(const T&)> UnaryAction;
+
+    class Action {
+    public:
+        Action(NullaryAction action) : _nullary(action), _unary({}) { }
+        Action(UnaryAction action) : _nullary({}), _unary(action) { }
+
+        void nullary() const {
+            _nullary.value()();
+        }
+
+        void unary(const T& value) const {
+            _unary.value()(value);
+        }
+
+        bool is_unary() const {
+            return _unary.has_value();
+        }
+
+    private:
+        std::optional<NullaryAction> _nullary;
+        std::optional<UnaryAction> _unary;
+    };
+
+    class Case {
+    public:
+        template<class ActionImpl>
+        Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+
+        bool match(const T& value) const {
+            if (_match(value)) {
+                if (_action.is_unary()) {
+                    _action.unary(value);
+                } else {
+                    _action.nullary();
+                }
+                return true;
+            }
+            return false;
+        }
+
+    private:
+        MatchFunction _match;
+        Action _action;
+    };
+
+    class CaseAssigner {
+    public:
+        CaseAssigner(Classifier& switch_, MatchFunction match) : _switch(switch_), _match(match) { }
+
+        template<class ActionType>
+        void operator=(ActionType action) {
+            _switch._cases.push_back(Case(_match, action));
+        }
+
+    private:
+        Classifier& _switch;
+        MatchFunction _match;
+    };
+
+    template<class... MatchType>
+    CaseAssigner operator()(const MatchType&... matches) {
+        return CaseAssigner(*this, f_or_join(matches...));
+    }
+
+    CaseAssigner otherwise() {
+        return CaseAssigner(*this, [](const T& value) { (void)value; return true; });
+    }
+
+    bool match(const T& value) const {
+        for (auto case_ : _cases) {
+            if (case_.match(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    static MatchFunction f_eq(const T& value) {
+        return [=](const T& x) {
+            return x == value;
+        };
+    }
+
+    static MatchFunction f_or(MatchFunction fA, MatchFunction fB) {
+        return [=](const T& x) {
+            return fA(x) || fB(x);
+        };
+    }
+
+    MatchFunction f_or_join(MatchFunction f) {
+        return f;
+    }
+
+    MatchFunction f_or_join(const T& value) {
+        return f_eq(value);
+    }
+
+    template<class... MatchTypePack>
+    MatchFunction f_or_join(MatchFunction f, MatchTypePack... pack) {
+        return f_or(f, f_or_join(pack...));
+    }
+
+    template<class... MatchTypePack>
+    MatchFunction f_or_join(const T& value, MatchTypePack... pack) {
+        return f_or(f_eq(value), f_or_join(pack...));
+    }
+
+    std::vector<Case> _cases;
+};
 
 }
 
