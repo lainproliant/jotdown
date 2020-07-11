@@ -56,7 +56,8 @@ int main(int argc, char** argv) {
         std::shared_ptr<jotdown::object::Document> doc;
 
         if (cmd.args().size() != 1) {
-            doc = load(std::cin);
+            throw moonlight::core::Exception("Missing required argument.");
+
         } else {
             auto infile = moonlight::file::open_r(cmd.args()[0]);
             doc = load(infile);
