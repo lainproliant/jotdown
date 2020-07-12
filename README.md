@@ -7,7 +7,7 @@ edited, parsed, and manipulated both by scripts and humans alike.
 
 Jotdown can be parsed into a list of plain tokens or into a compiled DOM
 (Document Object Model).  From the DOM it can then be translated into Markdown
-for formatting and display purposes, or back into Jotdown after being modified
+(coming soon!) for formatting and display purposes, or back into Jotdown after being modified
 in its structured form.
 
 Jotdown is offered simultaneously as a header-only C++ library and a compiled
