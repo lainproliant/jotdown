@@ -9,8 +9,15 @@
 import shlex
 import subprocess
 from pathlib import Path
-from panifex import build, provide, default, target, seq, sh
 
+from jinja2 import Template
+from panifex import build, default, provide, seq, sh, target
+from panifex.recipes import FileRecipe
+
+# -------------------------------------------------------------------
+VERSION = "1.0.0"
+PYPI_USERNAME = "lainproliant"
+PYPI_KEY_NAME = "pypi"
 
 # -------------------------------------------------------------------
 INCLUDES = [
@@ -35,6 +42,32 @@ sh.env(
 
 
 # --------------------------------------------------------------------
+class TemplateRecipe(FileRecipe):
+    def __init__(self, template_file, output_file, **params):
+        super().__init__()
+        self.template_file = template_file
+        self.output_file = output_file
+        self.params = params
+
+    def input(self):
+        return self.template_file
+
+    def output(self):
+        return self.output_file
+
+    def _load_template(self):
+        with open(self.input(), "r") as infile:
+            return Template(infile.read())
+
+    async def _resolve(self):
+        template = self._load_template()
+        with open(self.output(), "w") as outfile:
+            print(template.render(**self.params), file=outfile)
+        self.finished = True
+        return self.output()
+
+
+# --------------------------------------------------------------------
 def check(cmd):
     return subprocess.check_output(shlex.split(cmd)).decode("utf-8").strip()
 
@@ -54,7 +87,7 @@ def link_pybind11_module(pybind11_module_objects):
     return sh(
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {input} -o {output}",
         input=pybind11_module_objects,
-        output="jotdown%s" % check("python3-config --extension-suffix")
+        output="jotdown%s" % check("python3-config --extension-suffix"),
     )
 
 
@@ -63,7 +96,7 @@ def compile_pybind11_module_object(src, headers):
     return sh(
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {input} -o {output}",
         input=src,
-        output=Path(src).with_suffix('.o'),
+        output=Path(src).with_suffix(".o"),
         flags=INCLUDES + shlex.split(check("python-config --includes")),
         includes=headers,
     )
@@ -108,8 +141,7 @@ def tests(test_sources, headers):
 # -------------------------------------------------------------------
 @target
 def run_tests(tests):
-    return (sh("{input}", input=test, cwd="test").interactive()
-            for test in tests)
+    return (sh("{input}", input=test, cwd="test").interactive() for test in tests)
 
 
 # -------------------------------------------------------------------
@@ -136,13 +168,39 @@ def pymodule_objects(pymodule_sources, headers, run_tests):
 
 # -------------------------------------------------------------------
 @target
-def pymodule(pymodule_objects):
+def pymodule_dev(pymodule_objects):
     return link_pybind11_module(pymodule_objects)
 
 
 # -------------------------------------------------------------------
+@target
+def pymodule_setup_py():
+    return TemplateRecipe('./python/setup.py.jinja',
+                          './python/setup.py',
+                          version=VERSION)
+
+
+# -------------------------------------------------------------------
+@target
+def pymodule_sdist(pymodule_setup_py):
+    return sh("python3 setup.py sdist", cwd="./python",
+              output=f"./python/dist/jotdown-{VERSION}.tar.gz")
+
+
+# -------------------------------------------------------------------
+@target
+def pypi_upload(pymodule_sdist):
+    pypi_password = check(f"pass {PYPI_KEY_NAME}")
+    return sh("twine upload -u {PYPI_USERNAME} -p {pypi_password} {pymodule_sdist}",
+              PYPI_USERNAME=PYPI_USERNAME,
+              pypi_password=pypi_password,
+              pymodule_sdist=pymodule_sdist).no_echo()
+
+
+
+# -------------------------------------------------------------------
 @default
-def all(demos, pymodule):
+def all(demos, pymodule_dev):
     pass
 
 
