@@ -186,8 +186,7 @@ def pypi_upload(pymodule_sdist):
     return sh("twine upload -u {PYPI_USERNAME} -p {pypi_password} {pymodule_sdist}",
               PYPI_USERNAME=PYPI_USERNAME,
               pypi_password=pypi_password,
-              pymodule_sdist=latest_tarball)
-
+              pymodule_sdist=latest_tarball).no_echo()
 
 
 # -------------------------------------------------------------------
