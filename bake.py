@@ -11,18 +11,16 @@ import subprocess
 from pathlib import Path
 
 from jinja2 import Template
-from panifex import build, default, provide, seq, sh, target
+from panifex import build, default, provide, seq, sh, target, noclean
 from panifex.recipes import FileRecipe
 
 # -------------------------------------------------------------------
-VERSION = "1.0.0"
 PYPI_USERNAME = "lainproliant"
 PYPI_KEY_NAME = "pypi"
 
 # -------------------------------------------------------------------
 INCLUDES = [
     "-I./include",
-    "-I./python/include",
     "-I./moonlight/include",
     "-I./pybind11/include",
 ]
@@ -157,7 +155,7 @@ def pybind11_tests(submodules):
 # -------------------------------------------------------------------
 @provide
 def pymodule_sources(submodules):
-    return Path.cwd().glob("python/src/*.cpp")
+    return Path.cwd().glob("src/*.cpp")
 
 
 # -------------------------------------------------------------------
@@ -174,27 +172,21 @@ def pymodule_dev(pymodule_objects):
 
 # -------------------------------------------------------------------
 @target
-def pymodule_setup_py():
-    return TemplateRecipe('./python/setup.py.jinja',
-                          './python/setup.py',
-                          version=VERSION)
+def pymodule_sdist(submodules):
+    return sh("python3 setup.py sdist", output="dist")
 
 
 # -------------------------------------------------------------------
 @target
-def pymodule_sdist(pymodule_setup_py):
-    return sh("python3 setup.py sdist", cwd="./python",
-              output=f"./python/dist/jotdown-{VERSION}.tar.gz")
-
-
-# -------------------------------------------------------------------
-@target
+@noclean
 def pypi_upload(pymodule_sdist):
+    tarballs = [*Path('dist').glob('*.tar.gz')]
+    latest_tarball = max(tarballs, key=lambda x: x.stat().st_mtime)
     pypi_password = check(f"pass {PYPI_KEY_NAME}")
     return sh("twine upload -u {PYPI_USERNAME} -p {pypi_password} {pymodule_sdist}",
               PYPI_USERNAME=PYPI_USERNAME,
               pypi_password=pypi_password,
-              pymodule_sdist=pymodule_sdist).no_echo()
+              pymodule_sdist=latest_tarball)
 
 
 

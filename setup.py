@@ -4,7 +4,7 @@ from setuptools.extension import Extension
 
 pymodule = Extension(
     name="jotdown",
-    include_dirs=["../include", "../moonlight/include", "./include"],
+    include_dirs=["include", "moonlight/include", "pybind11/include"],
     sources=[str(src) for src in Path.cwd().glob("src/*.cpp")],
     extra_compile_args=["-O3", "-shared", "-Wall", "-std=c++2a", "-fPIC"],
 )
@@ -15,7 +15,7 @@ with open(Path("README.md"), encoding="utf-8") as f:
 
 setup(
     name="jotdown",
-    version="{{ version }}",
+    version="1.1.5",
     description="Jotdown structrured document language, C++ to python wrapper module.",
     long_description=long_description,
     long_description_content_type="text/markdown",
