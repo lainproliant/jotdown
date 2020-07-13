@@ -15,7 +15,7 @@ with open(Path("README.md"), encoding="utf-8") as f:
 
 setup(
     name="jotdown",
-    version="1.1.5",
+    version="1.1.6",
     description="Jotdown structrured document language, C++ to python wrapper module.",
     long_description=long_description,
     long_description_content_type="text/markdown",
