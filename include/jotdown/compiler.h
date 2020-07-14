@@ -515,8 +515,7 @@ class CompileBegin : public CompileState {
         token_t tk = context().tokens.peek();
 
         if (context().doc->range().begin == NOWHERE) {
-            context().doc->range().begin = tk->begin();
-        }
+            context().doc->range().begin = Location{.filename = tk->begin().filename, .line = 0, .col = 0};
 
         if (tk->type() == Token::Type::HEADER_START) {
             push<CompileTopLevelSection>();

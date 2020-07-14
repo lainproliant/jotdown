@@ -529,6 +529,7 @@ PYBIND11_MODULE(jotdown, m) {
     declare_object_config(m);
     declare_object_error(m);
     declare_location(m);
+    declare_range(m);
     auto obj = declare_object(m);
 
     // Container declarator: container.cpp
