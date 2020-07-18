@@ -230,6 +230,15 @@ shared_class<object::Container> declare_container(
     .def("clear", [](object::Container& self) {
         self.clear();
     })
+    .def("add", [](object::Container& self, object::obj_t obj) {
+        return self.add(obj);
+    })
+    .def("insert_before", [](object::Container& self, object::cobj_t pivot, object::obj_t obj) {
+        return self.insert_before(pivot, obj);
+    })
+    .def("insert_after", [](object::Container& self, object::cobj_t pivot, object::obj_t obj) {
+        return self.insert_after(pivot, obj);
+    })
     .def("remove", [](object::Container& self, object::obj_t obj) {
         self.remove(obj);
     }, py::arg("obj"))
@@ -253,10 +262,6 @@ shared_class<object::Document> declare_document(
 
     auto document = shared_class<object::Document>(m, "Document", container)
         .def(py::init<>())
-        .def("add", [](object::Document& document,
-                       std::shared_ptr<object::Section> section) {
-            document.add(section);
-        })
         .def("save", [](std::shared_ptr<const Document> document,
                         const std::string& filename) {
             jotdown::save(document, filename);
@@ -283,25 +288,7 @@ shared_class<object::Section> declare_section(
         },
         [](object::Section& self, std::shared_ptr<object::TextContent> header) {
             self.header(header);
-        })
-    .def("add", [](object::Section& self, std::shared_ptr<object::CodeBlock> code_block) {
-        return self.add(code_block);
-    })
-    .def("add", [](object::Section& self, std::shared_ptr<object::TextContent> text_content) {
-        return self.add(text_content);
-    })
-    .def("add", [](object::Section& self, std::shared_ptr<object::OrderedList> ol) {
-        return self.add(ol);
-    })
-    .def("add", [](object::Section& self, std::shared_ptr<object::UnorderedList> ul) {
-        return self.add(ul);
-    })
-    .def("add", [](object::Section& self, std::shared_ptr<object::LineBreak> line_break) {
-        return self.add(line_break);
-    })
-    .def("add", [](object::Section& self, std::shared_ptr<object::Section> section) {
-        return self.add(section);
-    });
+        });
 
     return section;
 }
@@ -327,14 +314,6 @@ shared_class<object::ListItem> declare_list_item(
     shared_class<object::Container>& container) {
 
     auto li = shared_class<object::ListItem>(m, "ListItem", container)
-        .def("add", [](object::ListItem& li,
-                       std::shared_ptr<object::OrderedList> ol) {
-            li.add(ol);
-        })
-        .def("add", [](object::ListItem& li,
-                       std::shared_ptr<object::UnorderedList> ul) {
-            li.add(ul);
-        })
         .def_property(
             "text",
             [](const object::ListItem& li) {
@@ -371,10 +350,7 @@ shared_class<object::OrderedList> declare_ordered_list(
     shared_class<object::List>& list) {
 
     auto ol = shared_class<object::OrderedList>(m, "OrderedList", list)
-        .def(py::init<>())
-        .def("add", [](object::OrderedList& self, std::shared_ptr<object::OrderedListItem> oli) {
-            return self.add(oli);
-        });
+        .def(py::init<>());
     return ol;
 }
 
@@ -399,11 +375,7 @@ shared_class<object::UnorderedList> declare_unordered_list(
     shared_class<object::List>& list) {
 
     auto ul = shared_class<object::UnorderedList>(m, "UnorderedList", list)
-        .def(py::init<>())
-        .def("add", [](object::UnorderedList& self,
-                       std::shared_ptr<object::UnorderedListItem> uli) {
-            return self.add(uli);
-        });
+        .def(py::init<>());
     return ul;
 }
 
@@ -430,27 +402,7 @@ shared_class<object::TextContent> declare_text_content(
 
     auto text_content = shared_class<object::TextContent>(
         m, "TextContent", container)
-        .def(py::init<>())
-        .def("add", [](object::TextContent& self,
-                       std::shared_ptr<object::Anchor> anchor) {
-            return self.add(anchor);
-        })
-        .def("add", [](object::TextContent& self,
-                       std::shared_ptr<object::Hashtag> hashtag) {
-            return self.add(hashtag);
-        })
-        .def("add", [](object::TextContent& self,
-                       std::shared_ptr<object::Code> code) {
-            return self.add(code);
-        })
-        .def("add", [](object::TextContent& self,
-                       std::shared_ptr<object::Ref> ref) {
-            return self.add(ref);
-        })
-        .def("add", [](object::TextContent& self,
-                       std::shared_ptr<object::Text> text) {
-            return self.add(text);
-        });
+        .def(py::init<>());
 
     return text_content;
 }

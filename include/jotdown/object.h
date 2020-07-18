@@ -188,6 +188,38 @@ public:
         return true;
     }
 
+    virtual bool can_contain(cobj_t obj) const = 0;
+
+    template<class T>
+    std::shared_ptr<T> add(std::shared_ptr<T> obj) {
+        _check_can_contain(obj);
+        _reparent(obj);
+        _contents.push_back(obj);
+        return obj;
+    }
+
+    template<class T>
+    std::shared_ptr<T> insert_before(cobj_t pivot, std::shared_ptr<T> obj) {
+        _check_can_contain(obj);
+        auto iter = std::find(_contents.begin(), _contents.end(), pivot);
+        if (iter == _contents.end()) {
+            throw ObjectError("Pivot object does not exist in container.");
+        }
+        _contents.insert(iter, obj);
+        return obj;
+    }
+
+    template<class T>
+    std::shared_ptr<T> insert_after(cobj_t pivot, std::shared_ptr<T> obj) {
+        _check_can_contain(obj);
+        auto iter = std::find(_contents.begin(), _contents.end(), pivot);
+        if (iter == _contents.end()) {
+            throw ObjectError("Pivot object does not exist in container.");
+        }
+        _contents.insert(std::next(iter), obj);
+        return obj;
+    }
+
     iterator begin() {
         return _contents.begin();
     }
@@ -273,17 +305,24 @@ public:
     }
 
 protected:
-    void _add(obj_t obj) {
+    void _reparent(obj_t obj) {
         if (obj->has_parent()) {
             obj->parent()->remove(obj);
         }
-        _contents.push_back(obj);
         obj->parent(std::static_pointer_cast<Container>(shared_from_this()));
     }
 
     void _copy_from(std::shared_ptr<const Container> other) {
         for (auto& obj : other->contents()) {
-            _add(obj->clone());
+            add(obj->clone());
+        }
+    }
+
+    void _check_can_contain(cobj_t obj) const {
+        if (! can_contain(obj)) {
+            throw ObjectError(tfm::format("%s cannot contain %s.",
+                                          type_name(type()),
+                                          obj->type_name(obj->type())));
         }
     }
 };
@@ -540,29 +579,15 @@ public:
     friend class UnorderedListItem;
     TextContent() : Container(Type::TEXT_CONTENT) { }
 
-    std::shared_ptr<Anchor> add(std::shared_ptr<Anchor> anchor) {
-        _add(anchor);
-        return anchor;
-    }
-
-    std::shared_ptr<Hashtag> add(std::shared_ptr<Hashtag> hashtag) {
-        _add(hashtag);
-        return hashtag;
-    }
-
-    std::shared_ptr<Code> add(std::shared_ptr<Code> code) {
-        _add(code);
-        return code;
-    }
-
-    std::shared_ptr<Ref> add(std::shared_ptr<Ref> ref) {
-        _add(ref);
-        return ref;
-    }
-
-    std::shared_ptr<Text> add(std::shared_ptr<Text> text) {
-        _add(text);
-        return text;
+    bool can_contain(cobj_t obj) const {
+        static const std::vector<Type> cont = {
+            Type::ANCHOR,
+            Type::HASHTAG,
+            Type::CODE,
+            Type::REF,
+            Type::TEXT
+        };
+        return std::find(cont.begin(), cont.end(), obj->type()) != cont.end();
     }
 
     obj_t clone() const {
@@ -624,6 +649,14 @@ class ListItem : public Container {
 public:
     virtual std::string crown() const = 0;
 
+    bool can_contain(cobj_t obj) const {
+        static const std::vector<Type> cont = {
+            Type::ORDERED_LIST,
+            Type::UNORDERED_LIST
+        };
+        return std::find(cont.begin(), cont.end(), obj->type()) != cont.end();
+    }
+
     std::shared_ptr<TextContent> text() {
         return _text_block;
     }
@@ -656,18 +689,6 @@ public:
         return _text_block;
     }
 
-    std::shared_ptr<OrderedList> add(std::shared_ptr<OrderedList> list) {
-        _add(std::static_pointer_cast<List>(list));
-        std::static_pointer_cast<List>(list)->level(level() + 1);
-        return list;
-    }
-
-    std::shared_ptr<UnorderedList> add(std::shared_ptr<UnorderedList> list) {
-        _add(std::static_pointer_cast<List>(list));
-        std::static_pointer_cast<List>(list)->level(level() + 1);
-        return list;
-    }
-
     const std::string& status() const {
         return _status;
     }
@@ -696,7 +717,7 @@ public:
         }
         for (; y < ctext()->contents().size(); y++) {
             auto obj = ctext()->contents()[y];
-            if (obj->type() == Object::Type::TEXT) {
+            if (obj->type() == Type::TEXT) {
                 std::shared_ptr<Text> text_obj = (
                     std::dynamic_pointer_cast<Text>(obj));
                 if (text_obj->text().ends_with("\n")) {
@@ -754,7 +775,7 @@ public:
     }
 
 protected:
-    ListItem(Object::Type type) : Container(type) { }
+    ListItem(Type type) : Container(type) { }
 
     static void init(std::shared_ptr<ListItem> item) {
         item->text(std::make_shared<TextContent>());
@@ -836,10 +857,8 @@ class OrderedList : public List {
 public:
     OrderedList() : List(Type::ORDERED_LIST) { }
 
-    std::shared_ptr<OrderedListItem> add(std::shared_ptr<OrderedListItem> item) {
-        _add(item);
-        item->level(level());
-        return item;
+    bool can_contain(cobj_t obj) const {
+        return obj->type() == Type::ORDERED_LIST_ITEM;
     }
 
     obj_t clone() const {
@@ -855,10 +874,8 @@ class UnorderedList : public List {
 public:
     UnorderedList() : List(Type::UNORDERED_LIST) { }
 
-    std::shared_ptr<UnorderedListItem> add(std::shared_ptr<UnorderedListItem> item) {
-        _add(item);
-        item->level(level());
-        return item;
+    bool can_contain(cobj_t obj) const {
+        return obj->type() == Type::UNORDERED_LIST_ITEM;
     }
 
     obj_t clone() const {
@@ -968,37 +985,16 @@ public:
         return _header;
     }
 
-    std::shared_ptr<CodeBlock> add(std::shared_ptr<CodeBlock> code_block) {
-        _add(code_block);
-        return code_block;
-    }
-
-    std::shared_ptr<TextContent> add(std::shared_ptr<TextContent> text_block) {
-        _add(text_block);
-        return text_block;
-    }
-
-    std::shared_ptr<OrderedList> add(std::shared_ptr<OrderedList> list) {
-        _add(list);
-        return list;
-    }
-
-    std::shared_ptr<UnorderedList> add(std::shared_ptr<UnorderedList> list) {
-        _add(list);
-        return list;
-    }
-
-    std::shared_ptr<LineBreak> add(std::shared_ptr<LineBreak> line_break) {
-        _add(line_break);
-        return line_break;
-    }
-
-    std::shared_ptr<Section> add(std::shared_ptr<Section> section) {
-        if (section->level() <= level()) {
-            throw ObjectError("Sections must be added to parent sections of upper level.");
-        }
-        _add(section);
-        return section;
+    bool can_contain(cobj_t obj) const {
+        static const std::vector<Type> cont = {
+            Type::CODE_BLOCK,
+            Type::TEXT_CONTENT,
+            Type::ORDERED_LIST,
+            Type::UNORDERED_LIST,
+            Type::LINE_BREAK,
+            Type::SECTION
+        };
+        return std::find(cont.begin(), cont.end(), obj->type()) != cont.end();
     }
 
     obj_t clone() const {
@@ -1048,9 +1044,8 @@ class Document : public Container {
 public:
     Document() : Container(Type::DOCUMENT) { }
 
-    std::shared_ptr<Section> add(std::shared_ptr<Section> section) {
-        _add(section);
-        return section;
+    bool can_contain(cobj_t obj) const {
+        return obj->type() == Type::SECTION;
     }
 
     obj_t clone() const {

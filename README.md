@@ -69,3 +69,10 @@ up and help out!
 ### Why are there functions for shifting the order of objects in containers?
 I intend to use these functions to facilitate high-level document editing
 features in an upcoming Vim plugin and toolchain for Jotdown document sets.
+
+# Change Log
+### 07/17/2020
+- Refactored `objects.h` to do runtime validation of insertion types rather than
+  limiting via the C++ type system to reduce code duplication.
+- Added `Container::insert_before` and `Container::insert_after`.
+
