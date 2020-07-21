@@ -433,7 +433,7 @@ public:
     bool choose(obj_t obj) const {
         if (obj->type() == ObjectType::HASHTAG) {
             auto hashtag = std::static_pointer_cast<object::Hashtag>(obj);
-            return tag == "" || hashtag->tag() == tag;
+            return tag == "" || moonlight::str::to_lower(hashtag->tag()) == moonlight::str::to_lower(tag);
         }
         return false;
     }
@@ -851,10 +851,10 @@ inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
     classify("**") = [&]() { query.by(Descendants(true)); };
     classify(">") = [&]() { query.by(Children(false)); };
     classify(">>") = [&]() { query.by(Descendants(false)); };
+    classify("<") = [&]() { query.by(Parents()); };
     classify("<<") = [&]() { query.by(Antecedents()); };
-    classify("..") = [&]() { query.by(Parents()); };
     classify("label") = [&]() { query.by(Label()); };
-    classify("contains", "<") = [&]() { query.by(Contains(_parse(tokens))); };
+    classify("contains") = [&]() { query.by(Contains(_parse(tokens))); };
     classify("not", "!") = [&]() { query.by(Not(_parse(tokens, 1))); };
     classify("search") = [&]() { query.by(build_search_query(tokens)); };
     classify("level") = [&]() { query.by(build_level_query(tokens)); };
