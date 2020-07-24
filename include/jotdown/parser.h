@@ -56,6 +56,7 @@ public:
         CODE,
         CODE_BLOCK,
         END,
+        FRONT_MATTER,
         HASHTAG,
         HEADER_END,
         HEADER_START,
@@ -81,6 +82,7 @@ public:
             "CODE",
             "CODE_BLOCK",
             "END",
+            "FRONT_MATTER",
             "HASHTAG",
             "HEADER_END",
             "HEADER_START",
@@ -147,10 +149,10 @@ private:
 typedef std::shared_ptr<Token> token_t;
 
 // ------------------------------------------------------------------
-class CodeBlockToken : public Token {
+class EmbeddedDocumentToken : public Token {
 public:
-    CodeBlockToken(const std::string& langspec, const std::string& code)
-    : Token(Type::CODE_BLOCK, code), _langspec(moonlight::str::trim(langspec)) { };
+    EmbeddedDocumentToken(Token::Type type, const std::string& langspec, const std::string& code)
+    : Token(type, code), _langspec(moonlight::str::trim(langspec)) { }
 
     const std::string& langspec() const {
         return _langspec;
@@ -249,6 +251,7 @@ public:
 struct Context {
     moonlight::file::BufferedInput input;
     std::deque<token_t> tokens;
+    int tokens_parsed = 0;
 
     token_t push_token(Token::Type type, const std::string& content = "") {
         auto tk = std::make_shared<Token>(type, content);
@@ -257,6 +260,7 @@ struct Context {
 
     token_t push_token(token_t tk) {
         tokens.push_back(tk);
+        tokens_parsed ++;
         return tk;
     }
 
@@ -405,16 +409,22 @@ protected:
 };
 
 // ------------------------------------------------------------------
-class ParseCodeBlock : public ParseState {
+class ParseEmbeddedDocument : public ParseState {
+public:
+    ParseEmbeddedDocument(Token::Type target_type, const std::string& terminator)
+    : _target_type(target_type), _terminator(terminator) {
+        _tracer_name = tfm::format("ParseEmbeddedDocument<%s>", Token::type_name(_target_type));
+    }
+
     const char* tracer_name() const {
-        return "CodeBlock";
+        return _tracer_name.c_str();
     }
 
     void run() {
         Location begin = context().location();
 
-        // Skip the three backticks.
-        context().input.advance(3);
+        // Skip the terminator, assuming it is also the demarcator.
+        context().input.advance(_terminator.size());
 
         // Scan until a newline to pull the langspec.
         std::string langspec;
@@ -431,26 +441,31 @@ class ParseCodeBlock : public ParseState {
         std::string code;
         bool newline = true;
         for (;;) {
-            if (newline && context().input.scan_eq("```")) {
-                context().input.advance(4);
+            if (newline && context().input.scan_eq(_terminator)) {
+                context().input.advance(_terminator.size() + 1);
                 break;
             }
             int c = context().input.getc();
             if (c == '\n') {
                 newline = true;
             } else if (c == EOF) {
-                throw error("Unexpected end of file while parsing code block.");
+                throw error("Unexpected end of file while parsing embedded document.");
             } else {
                 newline = false;
             }
             code.push_back(c);
         }
 
-        auto tk = context().push_token(new CodeBlockToken(langspec, code));
+        auto tk = context().push_token(new EmbeddedDocumentToken(_target_type, langspec, code));
         tk->begin(begin);
         tk->end(context().location());
         pop();
     }
+
+private:
+    Token::Type _target_type;
+    std::string _terminator;
+    std::string _tracer_name;
 };
 
 // ------------------------------------------------------------------
@@ -949,7 +964,7 @@ class ParseTextBlock : public ParseState {
         } else {
             int c = context().input.peek();
             if (c == '`' && context().input.scan_eq("```")) {
-                transition<ParseCodeBlock>();
+                transition<ParseEmbeddedDocument>(Token::Type::CODE_BLOCK, "```");
 
             } else {
                 push<ParseTextLine>();
@@ -976,8 +991,11 @@ class ParseBegin : public ParseState {
         } else if (c == '#') {
             push<ParseSectionHeader>();
 
-        } else if (c == '`' && context().input.scan_eq("```")) {
-            push<ParseCodeBlock>();
+        } else if (context().tokens_parsed == 0 && context().input.scan_eq("---")) {
+            push<ParseEmbeddedDocument>(Token::Type::FRONT_MATTER, "---");
+
+        } else if (context().input.scan_eq("```")) {
+            push<ParseEmbeddedDocument>(Token::Type::CODE_BLOCK, "```");
 
         } else if (scan_ordered_list() != 0) {
             push<ParseOrderedList>();

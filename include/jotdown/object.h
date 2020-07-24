@@ -55,6 +55,7 @@ public:
         CODE,
         CODE_BLOCK,
         DOCUMENT,
+        FRONT_MATTER,
         HASHTAG,
         LINE_BREAK,
         ORDERED_LIST,
@@ -127,6 +128,7 @@ public:
             "Code",
             "CodeBlock",
             "Document",
+            "FrontMatter",
             "Hashtag",
             "LineBreak",
             "OrderedList",
@@ -186,6 +188,10 @@ public:
 
     bool is_container() const {
         return true;
+    }
+
+    bool is_empty() const {
+        return contents().size() == 0;
     }
 
     virtual bool can_contain(cobj_t obj) const = 0;
@@ -887,10 +893,10 @@ public:
 };
 
 //-------------------------------------------------------------------
-class CodeBlock : public Object {
+class EmbeddedDocument : public Object {
 public:
-    CodeBlock(const std::string& code, const std::string& language)
-    : Object(Type::CODE_BLOCK), _code(code), _language(language) { }
+    EmbeddedDocument(Type type, const std::string& code, const std::string& language)
+    : Object(type), _code(code), _language(language) { }
 
     const std::string& code() const {
         return _code;
@@ -898,12 +904,6 @@ public:
 
     const std::string& language() const {
         return _language;
-    }
-
-    obj_t clone() const {
-        auto obj = std::make_shared<CodeBlock>(code(), language());
-        obj->range(range());
-        return obj;
     }
 
     JSON to_json() const {
@@ -917,7 +917,7 @@ public:
 
     std::string to_jotdown() const {
         std::ostringstream sb;
-        sb << "```";
+        sb << delimiter();
         if (language().size() > 0) {
             sb << " " << language();
         }
@@ -926,7 +926,7 @@ public:
         if (! code().ends_with('\n')) {
             sb << '\n';
         }
-        sb << "```\n";
+        sb << delimiter() << '\n';
         return sb.str();
     }
 
@@ -943,9 +943,52 @@ public:
         }
     }
 
+protected:
+    virtual const std::string& delimiter() const = 0;
+
 private:
     std::string _code;
     std::string _language;
+};
+
+//-------------------------------------------------------------------
+class CodeBlock : public EmbeddedDocument {
+public:
+    CodeBlock(const std::string& code, const std::string& language)
+    : EmbeddedDocument(Type::CODE_BLOCK, code, language) { }
+
+    obj_t clone() const {
+        auto obj = std::make_shared<CodeBlock>(code(), language());
+        obj->range(range());
+        return obj;
+    }
+
+    const std::string& delimiter() const {
+        static const std::string delim = "```";
+        return delim;
+    }
+
+private:
+    std::string _code;
+    std::string _language;
+};
+
+//-------------------------------------------------------------------
+class FrontMatter : public EmbeddedDocument {
+public:
+    FrontMatter(const std::string& code, const std::string& language)
+    : EmbeddedDocument(Type::FRONT_MATTER, code, language) { }
+
+    obj_t clone() const {
+        auto obj = std::make_shared<FrontMatter>(code(), language());
+        obj->range(range());
+        return obj;
+    }
+
+    const std::string& delimiter() const {
+        static const std::string delim = "---";
+        return delim;
+    }
 };
 
 //-------------------------------------------------------------------
@@ -1048,8 +1091,19 @@ public:
         return obj->type() == Type::SECTION;
     }
 
+    std::shared_ptr<FrontMatter> front_matter() const {
+        return _front_matter;
+    }
+
+    void front_matter(std::shared_ptr<FrontMatter> front_matter) {
+        _front_matter = front_matter;
+    }
+
     obj_t clone() const {
         auto doc = std::make_shared<Document>();
+        if (front_matter() != nullptr) {
+            doc->front_matter(std::static_pointer_cast<FrontMatter>(front_matter()->clone()));
+        }
         doc->_copy_from(std::static_pointer_cast<const Container>(shared_from_this()));
         doc->range(range());
         return doc;
@@ -1057,11 +1111,17 @@ public:
 
     std::string to_jotdown() const {
         std::stringstream sb;
+        if (front_matter() != nullptr) {
+            sb << front_matter()->to_jotdown();
+        }
         for (auto obj : contents()) {
             sb << obj->to_jotdown();
         }
         return sb.str();
     }
+
+private:
+    std::shared_ptr<FrontMatter> _front_matter;
 };
 
 }

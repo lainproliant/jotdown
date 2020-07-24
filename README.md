@@ -71,7 +71,16 @@ I intend to use these functions to facilitate high-level document editing
 features in an upcoming Vim plugin and toolchain for Jotdown document sets.
 
 # Change Log
-### 07/17/2020
+### 07/24/2020: v1.3.0
+- Added support for document front-matter.
+- New features for the Python interface:
+  - Collections are now callable.  With no arguments, calling them will return
+    their contents as a list.  With arguments, they will return themselves with
+    all of the arguments being added in sequence.
+  - Section can now be constructed with a string or a TextContent for the header.
+  - TextContent can now be initialized with a string.
+
+### 07/17/2020: v1.2.0
 - Refactored `objects.h` to do runtime validation of insertion types rather than
   limiting via the C++ type system to reduce code duplication.
 - Added `Container::insert_before` and `Container::insert_after`.

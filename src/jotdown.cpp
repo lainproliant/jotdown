@@ -247,7 +247,16 @@ shared_class<object::Container> declare_container(
     }, py::arg("obj"))
     .def("shift_down", [](object::Container& self, object::cobj_t obj) {
         self.shift_down(obj);
-    }, py::arg("obj"));
+    }, py::arg("obj"))
+    .def("__call__", [](std::shared_ptr<object::Container> self) {
+        return self->contents();
+    })
+    .def("__call__", [](std::shared_ptr<object::Container> self, py::args args) {
+        for (auto arg : args) {
+            self->add(arg.cast<object::obj_t>());
+        }
+        return self;
+    });
 
     return container;
 }
@@ -262,6 +271,14 @@ shared_class<object::Document> declare_document(
 
     auto document = shared_class<object::Document>(m, "Document", container)
         .def(py::init<>())
+        .def_property(
+            "front_matter",
+            [](const object::Document& self) {
+                return self.front_matter();
+            },
+            [](object::Document& self, std::shared_ptr<object::FrontMatter> front_matter) {
+                self.front_matter(front_matter);
+            })
         .def("save", [](std::shared_ptr<const Document> document,
                         const std::string& filename) {
             jotdown::save(document, filename);
@@ -280,13 +297,25 @@ shared_class<object::Section> declare_section(
     auto section = shared_class<object::Section>(m, "Section", container)
     .def(py::init([](int level) {
         return object::Section::create(level);
-    }), py::arg("level") = 0)
+    }), py::arg("level") = 1)
+    .def(py::init([](const std::string& header_text, int level) {
+        auto header = std::make_shared<object::TextContent>();
+        header->add(std::make_shared<object::Text>(header_text));
+        auto section = object::Section::create(level);
+        section->header(header);
+        return section;
+    }), py::arg("header_text"), py::arg("level") = 1)
+    .def(py::init([](std::shared_ptr<object::TextContent> header, int level) {
+        auto section = object::Section::create(level);
+        section->header(header);
+        return section;
+    }), py::arg("header"), py::arg("level") = 1)
     .def_property(
         "header",
         [](const object::Section& self) {
             return self.cheader();
         },
-        [](object::Section& self, std::shared_ptr<object::TextContent> header) {
+        [&](object::Section& self, std::shared_ptr<object::TextContent> header) {
             self.header(header);
         });
 
@@ -402,7 +431,12 @@ shared_class<object::TextContent> declare_text_content(
 
     auto text_content = shared_class<object::TextContent>(
         m, "TextContent", container)
-        .def(py::init<>());
+        .def(py::init<>())
+        .def(py::init([](const std::string& text) {
+            auto content = std::make_shared<object::TextContent>();
+            content->add(std::make_shared<object::Text>(text));
+            return content;
+        }));
 
     return text_content;
 }
@@ -469,6 +503,15 @@ shared_class<object::CodeBlock> declare_code_block(py::module& m, obj_class& obj
     return code_block;
 }
 
+//-------------------------------------------------------------------
+shared_class<object::FrontMatter> declare_front_matter(py::module& m, obj_class& obj) {
+    auto code_block = shared_class<object::FrontMatter>(m, "FrontMatter", obj)
+        .def(py::init<const std::string&, const std::string&>(),
+             py::arg("code"), py::arg("language") = "")
+        .def_property_readonly("code", &object::FrontMatter::code)
+        .def_property_readonly("language", &object::FrontMatter::language);
+    return code_block;
+}
 
 //-------------------------------------------------------------------
 // Declare Python Module
@@ -495,6 +538,7 @@ PYBIND11_MODULE(jotdown, m) {
     auto code = declare_code(m, obj);
     auto ref = declare_ref(m, obj);
     auto code_block = declare_code_block(m, obj);
+    auto front_matter = declare_front_matter(m, obj);
 
     // Textblock declarator: textblock.cpp
     auto text_content = declare_text_content(m, container);

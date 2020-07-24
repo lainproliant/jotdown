@@ -337,6 +337,29 @@ private:
 };
 
 //-------------------------------------------------------------------
+class CompileFrontMatter : public CompileState {
+public:
+    const char* tracer_name() const {
+        return "CompileFrontMatter";
+    }
+
+    void run() {
+        auto tk = context().tokens.get();
+        if (tk == nullptr || tk->type() != Token::Type::FRONT_MATTER) {
+            throw unexpected_token(tk, "compiling front matter, expected FRONT_MATTER");
+        }
+
+        std::shared_ptr<parser::EmbeddedDocumentToken> front_matter_tk = (
+            std::dynamic_pointer_cast<parser::EmbeddedDocumentToken>(tk)
+        );
+
+        auto obj = std::make_shared<FrontMatter>(front_matter_tk->content(), front_matter_tk->langspec());
+        context().doc->front_matter(obj);
+        pop();
+    }
+};
+
+//-------------------------------------------------------------------
 class CompileCodeBlock : public CompileState {
 public:
     CompileCodeBlock(std::shared_ptr<Section> section) : _section(section) { }
@@ -350,8 +373,8 @@ public:
         if (tk == nullptr || tk->type() != Token::Type::CODE_BLOCK) {
             throw unexpected_token(tk, "compiling code block, expected CODE_BLOCK");
         }
-        std::shared_ptr<parser::CodeBlockToken> code_tk = (
-            std::dynamic_pointer_cast<parser::CodeBlockToken>(tk)
+        std::shared_ptr<parser::EmbeddedDocumentToken> code_tk = (
+            std::dynamic_pointer_cast<parser::EmbeddedDocumentToken>(tk)
         );
 
         auto obj = _section->add(
@@ -518,7 +541,10 @@ class CompileBegin : public CompileState {
             context().doc->range().begin = Location{.filename = tk->begin().filename, .line = 0, .col = 0};
         }
 
-        if (tk->type() == Token::Type::HEADER_START) {
+        if (tk->type() == Token::Type::FRONT_MATTER) {
+            push<CompileFrontMatter>();
+
+        } else if (tk->type() == Token::Type::HEADER_START) {
             push<CompileTopLevelSection>();
 
         } else if (tk->type() == Token::Type::END) {
