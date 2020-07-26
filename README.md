@@ -32,28 +32,15 @@ These are the primary goals of the Jotdown language and project:
 - First-class support for loading, querying, modifying, saving, and creating
     documents in C++ and Python.
 
-## Anti-Goals
-These are specific anti-goals: intended limitations to the scope of the project:
-
-- Full compatibility with Markdown.
-- First class support for layout, display, and formatting.
-    - Jotdown is less concerned with the formatting of text than it is with the
-        content of text as a structured document.  Formatting is left up to the
-        user to determine, though it is advised to use Markdown formatting where
-        possible if you intend to render your document by converting it to
-        Markdown first.
-- Jotdown -> HTML conversion.
-    - This can be achieved indirectly via Jotdown -> Markdown conversion.
-
 ## Q/A
 ### Why not just use Markdown for this?
-While Markdown is great as a text formatting language, it doesn't work as well
-as a structured document language.  It's main focus has always been generating
-HTML, and as such many of the existing parsers don't even bother creating an
-intermediate AST.  Additionally, I wanted a bit more uniformity across documents
-and as such I wanted to make sure there was (as much as feasible) only one way
-to represent a specific document structure.  For example, Jotdown forgoes the
-"underlined headers" format in favor of only supporting headers with hashes.
+While Markdown is great as a text formatting language, it doesn't work as an
+easily parsable structured document language.  It's main focus has always been 
+generating HTML, and as such many of the existing parsers don't even bother
+creating an intermediate AST.  I also feel that Markdown, though it is formally
+defined in the CommonMark and Github Flavored Markdown specs, has hugely complex
+rules for parsing to support features that aren't often used or don't need to
+exist.
 
 ### Why is Jotdown offered in C++ and Python?
 I wanted to be able to support the runtime power and expressiveness of C++ while
@@ -66,9 +53,12 @@ submit an issue to add support for your language.  I can't guarantee I'll ever
 get around to writing bindings myself, but someone in the community might step
 up and help out!
 
-### Why are there functions for shifting the order of objects in containers?
-I intend to use these functions to facilitate high-level document editing
-features in an upcoming Vim plugin and toolchain for Jotdown document sets.
+### What are you planning to do with Jotdown in the future?
+Some things I'm planning on building around Jotdown include:
+
+- A Vim plugin which will support advanced editing features and highlighting.
+- Command line productivity tools built around the concept of a Jotdown document set.
+- A web wiki built around the concept of a Jotdown document set.
 
 # Change Log
 ### 07/24/2020: v1.3.0
