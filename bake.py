@@ -7,11 +7,10 @@
 # Distributed under terms of the MIT license.
 # --------------------------------------------------------------------
 import shlex
-import subprocess
 from pathlib import Path
 
 from jinja2 import Template
-from panifex import build, default, provide, seq, sh, target, noclean
+from panifex import build, provide, seq, poly, sh, check
 from panifex.recipes import FileRecipe
 
 # -------------------------------------------------------------------
@@ -25,7 +24,7 @@ INCLUDES = [
     "-I./pybind11/include",
 ]
 
-sh.env(
+sh = sh.env(
     CC="clang++",
     CFLAGS=(
         "-g",
@@ -41,40 +40,27 @@ sh.env(
 
 # --------------------------------------------------------------------
 class TemplateRecipe(FileRecipe):
-    def __init__(self, template_file, output_file, **params):
-        super().__init__()
+    def __init__(self, template_file: Path, output_file: Path, **params):
+        super().__init__(output_file)
         self.template_file = template_file
         self.output_file = output_file
         self.params = params
 
-    def input(self):
-        return self.template_file
-
-    def output(self):
-        return self.output_file
-
     def _load_template(self):
-        with open(self.input(), "r") as infile:
+        with open(self.template_file, "r") as infile:
             return Template(infile.read())
 
-    async def _resolve(self):
+    async def make(self):
         template = self._load_template()
-        with open(self.output(), "w") as outfile:
+        with open(self.output_file, "w") as outfile:
             print(template.render(**self.params), file=outfile)
-        self.finished = True
-        return self.output()
-
-
-# --------------------------------------------------------------------
-def check(cmd):
-    return subprocess.check_output(shlex.split(cmd)).decode("utf-8").strip()
 
 
 # -------------------------------------------------------------------
 def compile_app(src, headers):
     return sh(
-        "{CC} {CFLAGS} {input} {LDFLAGS} -o {output}",
-        input=src,
+        "{CC} {CFLAGS} {src} {LDFLAGS} -o {output}",
+        src=src,
         output=Path(src).with_suffix(""),
         includes=headers,
     )
@@ -83,8 +69,8 @@ def compile_app(src, headers):
 # -------------------------------------------------------------------
 def link_pybind11_module(pybind11_module_objects):
     return sh(
-        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {input} -o {output}",
-        input=pybind11_module_objects,
+        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {objs} -o {output}",
+        objs=pybind11_module_objects,
         output="jotdown%s" % check("python3-config --extension-suffix"),
     )
 
@@ -92,8 +78,8 @@ def link_pybind11_module(pybind11_module_objects):
 # -------------------------------------------------------------------
 def compile_pybind11_module_object(src, headers):
     return sh(
-        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {input} -o {output}",
-        input=src,
+        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {src} -o {output}",
+        src=src,
         output=Path(src).with_suffix(".o"),
         flags=INCLUDES + shlex.split(check("python-config --includes")),
         includes=headers,
@@ -125,30 +111,30 @@ def test_sources(submodules):
 
 
 # -------------------------------------------------------------------
-@target
+@provide
 def demos(demo_sources, headers):
     return [compile_app(src, headers) for src in demo_sources]
 
 
 # -------------------------------------------------------------------
-@target
+@provide
 def tests(test_sources, headers):
     return [compile_app(src, headers) for src in test_sources]
 
 
 # -------------------------------------------------------------------
-@target
+@provide
 def run_tests(tests):
-    return (sh("{input}", input=test, cwd="test").interactive() for test in tests)
+    return poly(*sh("{test}", test=test, cwd="test", interactive=True) for test in tests)
 
 
 # -------------------------------------------------------------------
-@target
+@provide
 def pybind11_tests(submodules):
     return seq(
         sh("mkdir -p {output}", output="pybind11-test-build"),
         sh("cmake ../pybind11", cwd="pybind11-test-build"),
-        sh("make check -j 4", cwd="pybind11-test-build").interactive(),
+        sh("make check -j 4", cwd="pybind11-test-build", interactive=True),
     )
 
 
@@ -159,26 +145,25 @@ def pymodule_sources(submodules):
 
 
 # -------------------------------------------------------------------
-@target
+@provide
 def pymodule_objects(pymodule_sources, headers, run_tests):
     return [compile_pybind11_module_object(src, headers) for src in pymodule_sources]
 
 
 # -------------------------------------------------------------------
-@target
+@provide
 def pymodule_dev(pymodule_objects):
     return link_pybind11_module(pymodule_objects)
 
 
 # -------------------------------------------------------------------
-@target
+@provide
 def pymodule_sdist(submodules):
     return sh("python3 setup.py sdist", output="dist")
 
 
 # -------------------------------------------------------------------
-@target
-@noclean
+@provide
 def pypi_upload(pymodule_sdist):
     tarballs = [*Path('dist').glob('*.tar.gz')]
     latest_tarball = max(tarballs, key=lambda x: x.stat().st_mtime)
@@ -186,14 +171,15 @@ def pypi_upload(pymodule_sdist):
     return sh("twine upload -u {PYPI_USERNAME} -p {pypi_password} {pymodule_sdist}",
               PYPI_USERNAME=PYPI_USERNAME,
               pypi_password=pypi_password,
-              pymodule_sdist=latest_tarball).no_echo()
+              pymodule_sdist=latest_tarball,
+              echo=False)
 
 
 # -------------------------------------------------------------------
-@default
+@provide
 def all(demos, pymodule_dev):
     pass
 
 
 # -------------------------------------------------------------------
-build()
+build(default="all")
