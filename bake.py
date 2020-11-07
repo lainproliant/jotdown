@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # --------------------------------------------------------------------
 # bake.py
 #
@@ -9,7 +10,8 @@
 import shlex
 from pathlib import Path
 
-import panifex as pfx
+from xeno.build import ValueRecipe, build, default, provide, sh, target
+from xeno.shell import check
 
 # -------------------------------------------------------------------
 PYPI_USERNAME = "lainproliant"
@@ -22,7 +24,7 @@ INCLUDES = [
     "-I./pybind11/include",
 ]
 
-sh = pfx.sh.env(
+ENV = dict(
     CC="clang++",
     CFLAGS=(
         "-g",
@@ -37,164 +39,165 @@ sh = pfx.sh.env(
 
 
 # -------------------------------------------------------------------
-@pfx.factory
 def compile_app(src, headers):
     return sh(
-        "{CC} {CFLAGS} {input} {LDFLAGS} -o {output}",
-        input=src,
+        "{CC} {CFLAGS} {src} {LDFLAGS} -o {output}",
+        env=ENV,
+        src=src,
         output=Path(src).with_suffix(""),
         includes=headers,
     )
 
 
 # -------------------------------------------------------------------
-@pfx.factory
 def link_pybind11_module(pybind11_module_objects):
     return sh(
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {input} -o {output}",
+        env=ENV,
         input=pybind11_module_objects,
-        output="jotdown%s" % pfx.check("python3-config --extension-suffix"),
+        output=Path("jotdown%s" % check("python3-config --extension-suffix")),
     )
 
 
 # -------------------------------------------------------------------
-@pfx.recipe
-def find_latest_tarball(path: Path) -> Path:
-    tarballs = [*path.glob("*.tar.gz")]
-    return max(tarballs, key=lambda x: x.stat().st_mtime)
+class FindLatestTarball(ValueRecipe):
+    def __init__(self, path):
+        super().__init__(input=[path])
+        self.path = path.result
+
+    async def compute(self):
+        tarballs = [*self.path.glob("*.tar.gz")]
+        return max(tarballs, key=lambda x: x.stat().st_mtime)
 
 
 # -------------------------------------------------------------------
-@pfx.factory
-def compile_pybind11_module_object(src, headers):
+class GetPassword(ValueRecipe):
+    def __init__(self, name: str):
+        super().__init__()
+        self._name = name
+
+    async def compute(self):
+        return check(f"pass {self._name}")
+
+
+# -------------------------------------------------------------------
+def compile_pybind11_module_object(src, headers, tests):
     return sh(
-        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {input} -o {output}",
-        input=src,
+        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {src} -o {output}",
+        env=ENV,
+        src=src,
+        tests=tests,
         output=Path(src).with_suffix(".o"),
-        flags=INCLUDES + shlex.split(pfx.check("python-config --includes")),
-        includes=headers,
+        flags=INCLUDES + shlex.split(check("python-config --includes")),
+        requires=headers,
     )
 
 
 # -------------------------------------------------------------------
-@pfx.recipe
-def get_password(name):
-    return pfx.check(f"pass {name}")
-
-
-# -------------------------------------------------------------------
-@pfx.provide
+@provide
 def submodules():
     return sh("git submodule update --init --recursive")
 
 
 # -------------------------------------------------------------------
-@pfx.provide
+@provide
 def headers():
     return Path.cwd().glob("include/jotdown/*.h")
 
 
 # -------------------------------------------------------------------
-@pfx.provide
+@provide
 def demo_sources(submodules):
     return Path.cwd().glob("demo/*.cpp")
 
 
 # -------------------------------------------------------------------
-@pfx.provide
+@provide
 def test_sources(submodules):
     return Path.cwd().glob("test/*.cpp")
 
 
 # -------------------------------------------------------------------
-@pfx.target
+@target
 def demos(demo_sources, headers):
-    return pfx.poly(compile_app(src, headers) for src in demo_sources)
+    return [compile_app(src, headers) for src in demo_sources]
 
 
 # -------------------------------------------------------------------
-@pfx.target
+@target
 def tests(test_sources, headers):
-    return pfx.poly(compile_app(src, headers) for src in test_sources)
+    return [compile_app(src, headers) for src in test_sources]
 
 
 # -------------------------------------------------------------------
-@pfx.target
+@target
 def run_tests(tests):
-    return pfx.poly(
-        sh("{input}", input=test, cwd="test", interactive=True)
-        for test in tests
-    )
+    return [sh("{input}", input=test, cwd="test", interactive=True).named(test.name) for test in tests]
 
 
 # -------------------------------------------------------------------
-@pfx.target
+@target
 def pybind11_tests(submodules):
-    return pfx.seq(
-        [
-            sh("mkdir -p {output}", output="pybind11-test-build"),
-            sh("cmake ../pybind11", cwd="pybind11-test-build"),
-            sh("make check -j 4", cwd="pybind11-test-build", interactive=True),
-        ]
+    return (
+        sh("mkdir -p {output}", output="pybind11-test-build"),
+        sh("cmake ../pybind11", cwd=Path("pybind11-test-build")),
+        sh("make check -j 4", cwd=Path("pybind11-test-build"), interactive=True),
     )
 
 
 # -------------------------------------------------------------------
-@pfx.provide
+@provide
 def pymodule_sources(submodules):
     return Path.cwd().glob("src/*.cpp")
 
 
 # -------------------------------------------------------------------
-@pfx.provide
+@provide
 def pymodule_objects(pymodule_sources, headers, run_tests):
-    return pfx.poly(
-        compile_pybind11_module_object(src, headers) for src in pymodule_sources
-    )
+    return [compile_pybind11_module_object(src, headers, run_tests) for src in pymodule_sources]
 
 
 # -------------------------------------------------------------------
-@pfx.target
+@target
 def pymodule_dev(pymodule_objects):
     return link_pybind11_module(pymodule_objects)
 
 
 # -------------------------------------------------------------------
-@pfx.target
+@target
 def pymodule_sdist(submodules):
     return sh("python3 setup.py sdist", output="dist")
 
 
 # -------------------------------------------------------------------
-@pfx.provide
+@provide
 def latest_tarball(pymodule_sdist):
-    return find_latest_tarball(pymodule_sdist)
+    return FindLatestTarball(pymodule_sdist)
 
 
 # -------------------------------------------------------------------
-@pfx.provide
+@provide
 def pypi_password():
-    return get_password(PYPI_KEY_NAME)
+    return GetPassword(PYPI_KEY_NAME)
 
 
 # -------------------------------------------------------------------
-@pfx.target
-def upload_to_pypi(pymodule_sdist, latest_tarball, pypi_password):
+@target
+def upload_to_pypi(latest_tarball, pypi_password):
     return sh(
-        "twine upload -u {PYPI_USERNAME} -p {pypi_password} {input}",
+        "twine upload -u {PYPI_USERNAME} -p {password} {input}",
         PYPI_USERNAME=PYPI_USERNAME,
-        pypi_password=pypi_password,
+        password=pypi_password,
         input=latest_tarball,
-        echo=False,
-        stdout=False,
+        redacted=['password']
     )
 
 
 # -------------------------------------------------------------------
-@pfx.target
+@default
 def all(demos, pymodule_dev):
-    return pfx.poly([demos, pymodule_dev])
+    return [demos, pymodule_dev]
 
 
 # -------------------------------------------------------------------
-pfx.build(default="all")
+build()
