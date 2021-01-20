@@ -20,7 +20,6 @@
 namespace jotdown {
 namespace object {
 
-using jotdown::Location;
 using jotdown::NOWHERE;
 
 typedef moonlight::json::Wrapper JSON;

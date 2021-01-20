@@ -10,7 +10,7 @@
 import shlex
 from pathlib import Path
 
-from xeno.build import ValueRecipe, build, default, provide, sh, target
+from xeno.build import ValueRecipe, build, default, provide, sh, target, factory
 from xeno.shell import check
 
 # -------------------------------------------------------------------
@@ -39,6 +39,7 @@ ENV = dict(
 
 
 # -------------------------------------------------------------------
+@factory
 def compile_app(src, headers):
     return sh(
         "{CC} {CFLAGS} {src} {LDFLAGS} -o {output}",
@@ -50,6 +51,7 @@ def compile_app(src, headers):
 
 
 # -------------------------------------------------------------------
+@factory
 def link_pybind11_module(pybind11_module_objects):
     return sh(
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {input} -o {output}",
@@ -81,6 +83,7 @@ class GetPassword(ValueRecipe):
 
 
 # -------------------------------------------------------------------
+@factory
 def compile_pybind11_module_object(src, headers, tests):
     return sh(
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {src} -o {output}",
@@ -152,7 +155,7 @@ def pymodule_sources(submodules):
 
 
 # -------------------------------------------------------------------
-@provide
+@target
 def pymodule_objects(pymodule_sources, headers, run_tests):
     return [compile_pybind11_module_object(src, headers, run_tests) for src in pymodule_sources]
 
