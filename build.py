@@ -10,7 +10,7 @@
 import shlex
 from pathlib import Path
 
-from xeno.build import ValueRecipe, build, default, provide, sh, target, factory
+from xeno.build import Recipe, ValueRecipe, build, default, provide, sh, target, factory
 from xeno.shell import check
 
 # -------------------------------------------------------------------
@@ -110,13 +110,13 @@ def headers():
 
 # -------------------------------------------------------------------
 @provide
-def demo_sources(submodules):
+async def demo_sources():
     return Path.cwd().glob("demo/*.cpp")
 
 
 # -------------------------------------------------------------------
 @provide
-def test_sources(submodules):
+def test_sources():
     return Path.cwd().glob("test/*.cpp")
 
 
@@ -128,8 +128,8 @@ def demos(demo_sources, headers):
 
 # -------------------------------------------------------------------
 @target
-def tests(test_sources, headers):
-    return [compile_app(src, headers) for src in test_sources]
+def tests(test_sources, headers, submodules):
+    return Recipe([compile_app(src, headers) for src in test_sources], setup=submodules)
 
 
 # -------------------------------------------------------------------
@@ -141,11 +141,11 @@ def run_tests(tests):
 # -------------------------------------------------------------------
 @target
 def pybind11_tests(submodules):
-    return (
+    return Recipe([
         sh("mkdir -p {output}", output="pybind11-test-build"),
         sh("cmake ../pybind11", cwd=Path("pybind11-test-build")),
         sh("make check -j 4", cwd=Path("pybind11-test-build"), interactive=True),
-    )
+    ], synchronous=True, setup=submodules)
 
 
 # -------------------------------------------------------------------
