@@ -19,11 +19,15 @@ namespace jotdown {
 
 typedef object::Document Document;
 
-inline std::shared_ptr<Document> load(const std::string& filename) {
-    auto infile = moonlight::file::open_r(filename);
+inline std::shared_ptr<Document> load(std::istream& infile, const std::string& filename = "<in>") {
     parser::Parser parser(infile, filename);
     compiler::Compiler compiler;
     return compiler.compile(parser.begin(), parser.end());
+}
+
+inline std::shared_ptr<Document> load(const std::string& filename) {
+    auto infile = moonlight::file::open_r(filename);
+    return load(infile, filename);
 }
 
 inline void save(std::shared_ptr<const Document> doc, const std::string& filename) {
