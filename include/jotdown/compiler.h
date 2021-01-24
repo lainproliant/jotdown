@@ -157,6 +157,11 @@ public:
             context().tokens.advance();
             ingest_ref_token(tk);
             break;
+        case Token::Type::INDEX:
+            context().tokens.advance();
+            ingest_index_token(tk);
+            break;
+
         default:
             if (tk->type() != _terminal_type && _terminal_type != Token::Type::NONE) {
                 throw unexpected_token(
@@ -176,10 +181,27 @@ public:
 
 private:
     void ingest_ref_token(token_t tk) {
+        obj_t obj;
         std::shared_ptr<parser::RefToken> ref_tk = (
             dynamic_pointer_cast<parser::RefToken>(tk));
+
+        if (! ref_tk->index_name().empty()) {
+            obj = _text_content->add(
+                std::make_shared<IndexedRef>(ref_tk->text(), ref_tk->index_name()));
+
+        } else {
+            obj = _text_content->add(
+                std::make_shared<Ref>(ref_tk->link(), ref_tk->text()));
+        }
+
+        obj->range(tk->range());
+    }
+
+    void ingest_index_token(token_t tk) {
+        std::shared_ptr<parser::IndexToken> index_tk = (
+            dynamic_pointer_cast<parser::IndexToken>(tk));
         auto obj = _text_content->add(
-            std::make_shared<Ref>(ref_tk->link(), ref_tk->text()));
+            std::make_shared<RefIndex>(index_tk->name(), index_tk->link()));
         obj->range(tk->range());
     }
 
@@ -407,6 +429,7 @@ public:
         case Token::Type::ANCHOR:
         case Token::Type::HASHTAG:
         case Token::Type::CODE:
+        case Token::Type::INDEX:
             init_text_content();
             break;
 

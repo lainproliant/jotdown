@@ -5,11 +5,6 @@ like org-mode.  The main purpose of Jotdown is to centralize personal and
 project organization into a set of plain-text documents that can be easily
 edited, parsed, and manipulated both by scripts and humans alike.
 
-Jotdown can be parsed into a list of plain tokens or into a compiled DOM
-(Document Object Model).  From the DOM it can then be translated into Markdown
-(coming soon!) for formatting and display purposes, or back into Jotdown after being modified
-in its structured form.
-
 Jotdown is offered simultaneously as a header-only C++ library and a compiled
 Python module sharing the same code.  The Python bindings are enabled via
 pybind11.  It is released under an MIT license, see LICENSE for more info.
@@ -61,6 +56,10 @@ Some things I'm planning on building around Jotdown include:
 - A web wiki built around the concept of a Jotdown document set.
 
 # Change Log
+### 01/24/2021: v2.0.0
+- Removed support for custom '@' style links, replaced with Markdown style
+  links and link indexes.
+
 ### 07/24/2020: v1.3.0
 - Added support for document front-matter.
 - New features for the Python interface:

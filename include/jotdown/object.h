@@ -60,6 +60,7 @@ public:
         ORDERED_LIST,
         ORDERED_LIST_ITEM,
         REF,
+        REF_INDEX,
         SECTION,
         TEXT,
         TEXT_CONTENT,
@@ -133,6 +134,7 @@ public:
             "OrderedList",
             "OrderedListItem",
             "Ref",
+            "RefIndex",
             "Section",
             "Text",
             "TextContent",
@@ -141,7 +143,7 @@ public:
             "NUM_TYPES"
         };
 
-        return names[(unsigned int)type];
+        return names[static_cast<unsigned int>(type)];
     }
 
     static Config& config() {
@@ -485,20 +487,15 @@ public:
     }
 
     std::string to_jotdown() const {
-        std::ostringstream sb;
-        for (auto c : _code) {
-            if (c == '`') {
-                sb << '\\';
-            }
-            sb << c;
-        }
-        return tfm::format("`%s`", sb.str());
+        return tfm::format("`%s`",
+                           strescape(code(), "`"));
     }
 
     std::string to_search_string() const {
         return to_jotdown();
     }
 
+//-------------------------------------------------------------------
     std::string repr() const {
         return tfm::format("%s<\"%s\">", type_name(type()), strliteral(code()));
     }
@@ -537,29 +534,18 @@ public:
     }
 
     std::string to_jotdown() const {
-        std::ostringstream sb;
-        sb << "@";
-        for (auto c : link()) {
-            if (c == '[' || c == '\\') {
-                sb << '\\';
-            }
-            sb << c;
+        if (link() == text()) {
+            return tfm::format("<%s>",
+                               strescape(link(), ">"));
+        } else {
+            return tfm::format("[%s](%s)",
+                               strescape(text(), "]"),
+                               strescape(link(), ")"));
         }
-        if (link() != text()) {
-            sb << "[";
-            for (auto c : text()) {
-                if (c == ']' || c == '\\') {
-                    sb << '\\';
-                }
-                sb << c;
-            }
-            sb << "]";
-        }
-        return sb.str();
     }
 
     std::string to_search_string() const {
-        return text();
+        return tfm::format("%s %s", text(), link());
     }
 
     std::string repr() const {
@@ -577,6 +563,106 @@ private:
 };
 
 //-------------------------------------------------------------------
+class IndexedRef : public Object {
+public:
+    IndexedRef(const std::string& text, const std::string& index_name) : Object(Type::REF), _text(text), _index_name(index_name) { }
+
+    void link(const std::string& link) {
+        _link = link;
+    }
+
+    const std::string& link() const {
+        return _link;
+    }
+
+    const std::string& text() const {
+        return _text;
+    }
+
+    const std::string& index_name() const {
+        return _index_name;
+    }
+
+    JSON to_json() const {
+        JSON json = Object::to_json();
+        json.set<std::string>("text", text());
+        json.set<std::string>("index_name", index_name());
+        return json;
+    }
+
+    obj_t clone() const {
+        auto obj = std::make_shared<IndexedRef>(text(), index_name());
+        obj->link(link());
+        obj->range(range());
+        return obj;
+    }
+
+    std::string to_jotdown() const {
+        return tfm::format("[%s][%s]",
+                           strescape(text(), "]"),
+                           strescape(index_name(), "]"));
+    }
+
+    std::string to_search_string() const {
+        return text();
+    }
+
+    std::string repr() const {
+        return tfm::format("%s<index_name=\"%s\" text=\"%s\">", type_name(type()), index_name(), text());
+    }
+
+private:
+    std::string _text;
+    std::string _index_name;
+    std::string _link = "";
+};
+
+//-------------------------------------------------------------------
+class RefIndex : public Object {
+public:
+    RefIndex(const std::string& name, const std::string& link) : Object(Type::REF_INDEX), _name(name), _link(link) { }
+
+    const std::string& name() const {
+        return _name;
+    }
+
+    const std::string& link() const {
+        return _link;
+    }
+
+    obj_t clone() const {
+        auto obj = std::make_shared<RefIndex>(name(), link());
+        obj->range(range());
+        return obj;
+    }
+
+    JSON to_json() const {
+        JSON json = Object::to_json();
+        json.set<std::string>("name", name());
+        json.set<std::string>("link", link());
+        return json;
+    }
+
+    std::string to_jotdown() const {
+        return tfm::format("[%s]: %s",
+                           strescape(name(), "]"),
+                           link());
+    }
+
+    std::string to_search_string() const {
+        return tfm::format("%s: %s", name(), link());
+    }
+
+    std::string repr() const {
+        return tfm::format("%s<name=\"%s\" link=\"%s\">", type_name(type()), name(), link());
+    }
+
+private:
+    std::string _name;
+    std::string _link;
+};
+
+//-------------------------------------------------------------------
 class TextContent : public Container {
 public:
     friend class Section;
@@ -587,9 +673,10 @@ public:
     bool can_contain(cobj_t obj) const {
         static const std::vector<Type> cont = {
             Type::ANCHOR,
-            Type::HASHTAG,
             Type::CODE,
+            Type::HASHTAG,
             Type::REF,
+            Type::REF_INDEX,
             Type::TEXT
         };
         return std::find(cont.begin(), cont.end(), obj->type()) != cont.end();
@@ -1030,11 +1117,11 @@ public:
     bool can_contain(cobj_t obj) const {
         static const std::vector<Type> cont = {
             Type::CODE_BLOCK,
-            Type::TEXT_CONTENT,
-            Type::ORDERED_LIST,
-            Type::UNORDERED_LIST,
             Type::LINE_BREAK,
-            Type::SECTION
+            Type::ORDERED_LIST,
+            Type::SECTION,
+            Type::TEXT_CONTENT,
+            Type::UNORDERED_LIST
         };
         return std::find(cont.begin(), cont.end(), obj->type()) != cont.end();
     }

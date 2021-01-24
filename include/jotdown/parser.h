@@ -56,6 +56,7 @@ public:
         CODE,
         CODE_BLOCK,
         END,
+        ERROR,
         FRONT_MATTER,
         HASHTAG,
         HEADER_END,
@@ -64,6 +65,7 @@ public:
         NEWLINE,
         OL_ITEM,
         REF,
+        INDEX,
         STATUS,
         TEXT,
         UL_ITEM,
@@ -82,6 +84,7 @@ public:
             "CODE",
             "CODE_BLOCK",
             "END",
+            "ERROR",
             "FRONT_MATTER",
             "HASHTAG",
             "HEADER_END",
@@ -90,6 +93,7 @@ public:
             "NEWLINE",
             "OL_ITEM",
             "REF",
+            "INDEX",
             "STATUS",
             "TEXT",
             "UL_ITEM",
@@ -184,8 +188,9 @@ private:
 class RefToken : public Token {
 public:
     RefToken(const std::string& link,
-             const std::string& text = "")
-    : Token(Type::REF, link), _text(text.size() > 0 ? text : link) { }
+             const std::string& text = "",
+             const std::string& index_name = "")
+    : Token(Type::REF, link), _text(text.size() > 0 ? text : link), _index_name(index_name) { }
 
     const std::string& link() const {
         return content();
@@ -193,6 +198,10 @@ public:
 
     const std::string& text() const {
         return _text;
+    }
+
+    const std::string& index_name() const {
+        return _index_name;
     }
 
     std::string repr() const {
@@ -205,6 +214,30 @@ public:
 
 private:
     const std::string _text;
+    const std::string _index_name;
+};
+
+// ------------------------------------------------------------------
+class IndexToken : public Token {
+public:
+    IndexToken(const std::string& name, const std::string& link)
+    : Token(Type::INDEX, link), _name(name), _link(link) { }
+
+    const std::string& name() const {
+        return _name;
+    }
+
+    const std::string& link() const {
+        return _link;
+    }
+
+    std::string repr() const {
+        return tfm::format("%-16s %s => %s", type_name(type()), name(), link());
+    }
+
+private:
+    std::string _name;
+    std::string _link;
 };
 
 // ------------------------------------------------------------------
@@ -307,8 +340,16 @@ struct Context {
 // ------------------------------------------------------------------
 class ParseState : public moonlight::automata::State<Context> {
 protected:
-    ParserError error(const std::string& message) {
-        return ParserError(message, context().location());
+    void error(const std::string& message, const Location& begin) {
+        auto tk = context().push_token(Token::Type::ERROR, message);
+        tk->begin(begin);
+        tk->end(context().location());
+    }
+
+    void error(const std::string& message) {
+        auto tk = context().push_token(Token::Type::ERROR, message);
+        tk->begin(context().location());
+        tk->end(context().location());
     }
 
     int scan_para_break() {
@@ -406,6 +447,12 @@ protected:
 
         return false;
     }
+
+    bool scan_wraplike(char start, char end) {
+        return (context().input.peek() == start &&
+                context().input.scan_line_eq(moonlight::str::chr(end), 1, "\\"));
+
+    }
 };
 
 // ------------------------------------------------------------------
@@ -449,7 +496,10 @@ public:
             if (c == '\n') {
                 newline = true;
             } else if (c == EOF) {
-                throw error("Unexpected end of file while parsing embedded document.");
+                error("Unexpected end of file while parsing embedded document.");
+                pop();
+                return;
+
             } else {
                 newline = false;
             }
@@ -476,16 +526,10 @@ class ParseCode : public ParseState {
 
     void run() {
         Location begin = context().location();
-
-        int c = context().input.getc();
-        if (c != '`') {
-            throw error(tfm::format("Unexpected character '%c' while parsing code.", c));
-        }
-
         std::string code;
 
         for (;;) {
-            c = context().input.peek();
+            int c = context().input.peek();
 
             if (c == '`') {
                 context().input.advance();
@@ -497,12 +541,12 @@ class ParseCode : public ParseState {
                     code.push_back(c2);
                     context().input.advance(2);
                 } else {
-                    throw error(
-                        tfm::format("Unspported escape sequence '\\%c' while parsing code.", c2));
+                    code.push_back(c);
+                    context().input.advance();
                 }
 
-            } else if (c == '\n' || c == EOF) {
-                throw error(tfm::format("Unexpected end-of-line while parsing code."));
+            } else if (c == EOF) {
+                break;
 
             } else {
                 context().input.advance();
@@ -518,73 +562,248 @@ class ParseCode : public ParseState {
 };
 
 // ------------------------------------------------------------------
+class ParseIndexedLink : public ParseState {
+public:
+    ParseIndexedLink(const Location& begin, const
+                                   std::string& text)
+    : begin(begin), text(text) { }
+
+    const char* tracer_name() const {
+        return "IndexedLink";
+    }
+
+    void run() {
+        std::string index_name;
+
+        for (;;) {
+            int c = context().input.peek();
+
+            if (c == '\n') {
+                context().input.advance();
+
+            } else if (c == EOF) {
+                error("Unexpected end of file while parsing indexed link.");
+                pop();
+                return;
+            }
+            else if (c == '\\') {
+                int c2 = context().input.peek(2);
+                if (c2 == ']') {
+                    index_name.push_back(c2);
+                    context().input.advance(2);
+                }
+
+            } else if (c == ']') {
+                context().input.advance();
+                break;
+
+            } else {
+                context().input.advance();
+                index_name.push_back(c);
+            }
+        }
+
+        auto tk = context().push_token(new RefToken("", text, index_name));
+        tk->begin(begin);
+        tk->end(context().location());
+        pop();
+    }
+
+private:
+    Location begin;
+    std::string text;
+};
+
+// ------------------------------------------------------------------
+class ParseLinkIndex : public ParseState {
+public:
+    ParseLinkIndex(const Location& begin, const std::string& index_name)
+    : begin(begin), index_name(index_name) { }
+
+    const char* tracer_name() const {
+        return "LinkIndex";
+    }
+
+    void run() {
+        std::string link;
+
+        // Skip leading spaces.
+        while (isspace(context().input.peek())) {
+            context().input.advance();
+        }
+
+        while (! scan_end_of_line()) {
+            link.push_back(context().input.getc());
+        }
+
+        auto tk = context().push_token(new IndexToken(index_name, link));
+        tk->begin(begin);
+        tk->end(context().location());
+        pop();
+    }
+
+private:
+    Location begin;
+    std::string index_name;
+};
+
+// ------------------------------------------------------------------
 class ParseLink : public ParseState {
+public:
+    ParseLink(const Location& begin) : begin(begin) { }
+
     const char* tracer_name() const {
         return "Link";
     }
 
     void run() {
-        Location begin = context().location();
-        int c = context().input.getc();
-        if (c != '@') {
-            throw error(tfm::format("Unexpected character '%c' while parsing link.", c));
-        }
-
-        std::string link;
         std::string text;
 
         for (;;) {
-            c = context().input.peek();
+            int c = context().input.peek();
 
-            if (isspace(c) || c == EOF) {
-                text = link;
-                break;
+            if (c == '\n') {
+                context().input.advance();
+
+            } else if (c == EOF) {
+                error("Unexpected end of file while parsing link or link index.");
+                pop();
+                return;
 
             } else if (c == '\\') {
                 int c2 = context().input.peek(2);
-                if (c2 == '[' || c2 == '\\') {
-                    link.push_back(c2);
-                    context().input.advance(2);
-
-                } else {
-                    throw error(
-                        tfm::format("Unsupported escape sequence '\\%c' while parsing link.", c2));
-                }
-
-            } else if (c == '[') {
-                context().input.advance();
-
-                for (;;) {
-                    int c2 = context().input.peek();
-
-                    if (c2 == ']') {
-                        context().input.advance();
-                        break;
-
-                    } else if (c2 == '\n' || c2 == EOF) {
-                        throw error("Unexpected end-of-line while parsing link text.");
-                    }
-
-                    context().input.advance();
+                if (c2 == ']') {
                     text.push_back(c2);
+                    context().input.advance(2);
                 }
+
+            } else if (c == ']') {
+                context().input.advance();
                 break;
 
-            } else if (ispunct(c)) {
-                int c2 = context().input.peek(2);
-                if (isspace(c2) || c2 == EOF) {
-                    break;
-                }
+            } else {
+                context().input.advance();
+                text.push_back(c);
             }
-
-            link.push_back(c);
-            context().input.advance();
         }
 
-        auto tk = context().push_token(new RefToken(link, text));
+        int c = context().input.peek();
+        if (c == '[' && context().input.scan_line_eq("]", 1, "\\")) {
+            context().input.advance();
+            transition<ParseIndexedLink>(begin, text);
+
+        } else if (c == ':') {
+            context().input.advance();
+            transition<ParseLinkIndex>(begin, text);
+
+        } else if (scan_wraplike('(', ')')) {
+            context().input.advance();
+            std::string link;
+
+            for (;;) {
+                int c = context().input.getc();
+                if (c == ')') {
+                    break;
+                } else if (c == '\\') {
+                    int c2 = context().input.peek();
+                    if (c2 == '\\' || c2 == ')') {
+                        context().input.advance();
+                        link.push_back(c2);
+                        continue;
+                    }
+                }
+                link.push_back(c);
+            }
+
+            auto tk = context().push_token(new RefToken(link, text));
+            tk->begin(begin);
+            tk->end(context().location());
+            pop();
+
+        } else {
+            auto tk = context().push_token(new RefToken(text));
+            tk->begin(begin);
+            tk->end(context().location());
+            pop();
+        }
+    }
+
+private:
+    Location begin;
+};
+
+// ------------------------------------------------------------------
+class ParseSimpleLink : public ParseState {
+public:
+    ParseSimpleLink(const Location& begin) : begin(begin) { }
+
+    const char* tracer_name() const {
+        return "SimpleLink";
+    }
+
+    void run() {
+        std::string link;
+
+        for (;;) {
+            int c = context().input.peek();
+
+            if (c == '\n') {
+                context().input.advance();
+
+            } else if (c == EOF) {
+                error("Unexpected end of file while parsing simple link.");
+                pop();
+                return;
+
+            } else if (c == '\\') {
+                int c2 = context().input.peek(2);
+                if (c2 == '>' || c2 == '\\') {
+                    link.push_back(c2);
+                    context().input.advance(2);
+                }
+
+            } else if (c == '>') {
+                context().input.advance();
+                break;
+
+            } else {
+                context().input.advance();
+                link.push_back(c);
+            }
+        }
+
+        auto tk = context().push_token(new RefToken(link));
         tk->begin(begin);
         tk->end(context().location());
         pop();
+    }
+
+private:
+    Location begin;
+};
+
+// ------------------------------------------------------------------
+class CategorizeLink : public ParseState {
+public:
+    const char* tracer_name() const {
+        return "CategorizeLink";
+    }
+
+    void run() {
+        Location begin = context().location();
+        int c = context().input.getc();
+
+        if (c == '<' && context().input.scan_line_eq(">", 1, "\\")) {
+            transition<ParseSimpleLink>(begin);
+
+        } else if (c == '[' && context().input.scan_line_eq("]", 1, "\\")) {
+            transition<ParseLink>(begin);
+
+        } else {
+            error(tfm::format("Unexpected character '%c' while parsing link.", c));
+            pop();
+            return;
+        }
     }
 };
 
@@ -600,7 +819,9 @@ class ParseHashtag : public ParseState {
         int c = context().input.getc();
 
         if (c != '#') {
-            throw error(tfm::format("Unexpected character '%c' while parsing hashtag.", c));
+            error(tfm::format("Unexpected character '%c' while parsing hashtag.", c));
+            pop();
+            return;
         }
 
         std::string hash;
@@ -636,17 +857,10 @@ class ParseAnchor : public ParseState {
 
     void run() {
         Location begin = context().location();
-
-        int c = context().input.getc();
-
-        if (c != '&') {
-            throw error(tfm::format("Unexpected character '%c' while parsing anchor.", c));
-        }
-
         std::string anchor;
 
         for (;;) {
-            c = context().input.peek();
+            int c = context().input.peek();
 
             if (isspace(c) || c == EOF) {
                 break;
@@ -693,9 +907,10 @@ public:
             tk->end(context().location());
         }
 
-        if (scan_taglike('@')) {
+        if (scan_wraplike('[', ']') ||
+            scan_wraplike('<', '>')) {
             digest();
-            push<ParseLink>();
+            push<CategorizeLink>();
 
         } else if (scan_taglike('#')) {
             digest();
@@ -703,10 +918,12 @@ public:
 
         } else if (scan_taglike('&')) {
             digest();
+            context().input.advance();
             push<ParseAnchor>();
 
         } else if (scan_taglike('`', true)) {
             digest();
+            context().input.advance();
             push<ParseCode>();
 
         } else if (c == '\n' || c == EOF) {

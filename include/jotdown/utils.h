@@ -38,6 +38,18 @@ inline std::string make_search_string(const std::string& src) {
 }
 
 // ------------------------------------------------------------------
+inline std::string strescape(const std::string& str, const std::string& escapes) {
+    std::ostringstream sb;
+    for (auto c : str) {
+        if (c == '\\' || escapes.find(c) != std::string::npos) {
+            sb << '\\';
+        }
+        sb << c;
+    }
+    return sb.str();
+}
+
+// ------------------------------------------------------------------
 inline std::string strliteral(const std::string& str) {
     static const std::map<char, std::string> ESCAPE_SEQUENCES = {
         {'\a', "\\a"},

@@ -18,6 +18,7 @@ def relative(filename):
 INCLUDES = [".",
             "./include",
             "./python/include",
+            "./pybind11/include",
             "./moonlight/include"]
 
 # --------------------------------------------------------------------

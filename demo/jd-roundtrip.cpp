@@ -21,20 +21,16 @@ std::shared_ptr<jotdown::object::Document> load(std::istream& input, const std::
 }
 
 int main(int argc, char** argv) {
-    try {
-        auto cmd = moonlight::cli::parse(argc, argv);
-        std::shared_ptr<jotdown::object::Document> doc;
+    auto cmd = moonlight::cli::parse(argc, argv);
+    std::shared_ptr<jotdown::object::Document> doc;
 
-        if (cmd.args().size() != 1) {
-            doc = load(std::cin);
-        } else {
-            auto infile = moonlight::file::open_r(cmd.args()[0]);
-            doc = load(infile);
-        }
-        std::cout << doc->to_jotdown();
-    } catch(...) {
-        std::cout << "oh no mr bill!";
+    if (cmd.args().size() != 1) {
+        doc = load(std::cin);
+    } else {
+        auto infile = moonlight::file::open_r(cmd.args()[0]);
+        doc = load(infile);
     }
+    std::cout << doc->to_jotdown();
 
     return 0;
 }

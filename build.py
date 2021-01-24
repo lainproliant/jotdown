@@ -24,26 +24,39 @@ INCLUDES = [
     "-I./pybind11/include",
 ]
 
-ENV = dict(
-    CC="clang++",
-    CFLAGS=(
-        "-g",
-        *INCLUDES,
-        "--std=c++2a",
-        "-DMOONLIGHT_DEBUG",
-        "-DMOONLIGHT_ENABLE_STACKTRACE",
-        "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION",
-    ),
-    LDFLAGS=("-rdynamic", "-g", "-ldl"),
+LDFLAGS=('-rdynamic', '-g', '-ldl')
+
+RELEASE_CFLAGS=(
+    *INCLUDES,
+    "--std=c++2a"
 )
 
+TEST_CFLAGS=(
+    *RELEASE_CFLAGS,
+    "-DMOONLIGHT_AUTOMATA_DEBUG"
+    "-DMOONLIGHT_DEBUG",
+    "-DMOONLIGHT_ENABLE_STACKTRACE",
+    "-DMOONLIGHT_AUTOMATA_DEBUG",
+    "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION",
+)
+
+RELEASE_ENV = dict(
+    CC="clang++",
+    CFLAGS=RELEASE_CFLAGS,
+    LDFLAGS=LDFLAGS
+)
+
+TEST_ENV = dict(
+    CC="clang++",
+    CFLAGS=TEST_CFLAGS,
+    LDFLAGS=LDFLAGS
+)
 
 # -------------------------------------------------------------------
-@factory
-def compile_app(src, headers):
+def compile_app(src, headers, env):
     return sh(
         "{CC} {CFLAGS} {src} {LDFLAGS} -o {output}",
-        env=ENV,
+        env=env,
         src=src,
         output=Path(src).with_suffix(""),
         includes=headers,
@@ -52,10 +65,25 @@ def compile_app(src, headers):
 
 # -------------------------------------------------------------------
 @factory
+def compile_test(src, headers, env):
+    return compile_app(src, headers, TEST_ENV)
+
+# -------------------------------------------------------------------
+@factory
+def compile_demo(src, headers, env):
+    return compile_app(src, headers, RELEASE_ENV)
+
+# -------------------------------------------------------------------
+@factory
+def run_test(app):
+    return sh("{test}", test=app, cwd="test", interactive=True)
+
+# -------------------------------------------------------------------
+@factory
 def link_pybind11_module(pybind11_module_objects):
     return sh(
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {input} -o {output}",
-        env=ENV,
+        env=RELEASE_ENV,
         input=pybind11_module_objects,
         output=Path("jotdown%s" % check("python3-config --extension-suffix")),
     )
@@ -87,7 +115,7 @@ class GetPassword(ValueRecipe):
 def compile_pybind11_module_object(src, headers, tests):
     return sh(
         "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {src} -o {output}",
-        env=ENV,
+        env=RELEASE_ENV,
         src=src,
         tests=tests,
         output=Path(src).with_suffix(".o"),
@@ -123,20 +151,19 @@ def test_sources():
 # -------------------------------------------------------------------
 @target
 def demos(demo_sources, headers):
-    return [compile_app(src, headers) for src in demo_sources]
+    return [compile_demo(src, headers, RELEASE_ENV) for src in demo_sources]
 
 
 # -------------------------------------------------------------------
 @target
 def tests(test_sources, headers, submodules):
-    return Recipe([compile_app(src, headers) for src in test_sources], setup=submodules)
+    return Recipe([compile_test(src, headers, TEST_ENV) for src in test_sources], setup=submodules)
 
 
 # -------------------------------------------------------------------
 @target
 def run_tests(tests):
-    return [sh("{input}", input=test, cwd="test", interactive=True).named(test.name) for test in tests]
-
+    return [run_test(app) for app in tests]
 
 # -------------------------------------------------------------------
 @target
