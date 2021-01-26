@@ -59,6 +59,9 @@ void declare_api(py::module& m) {
     m.def("load", [](const std::string& filename) {
         return load(filename);
     });
+    m.def("load", [](std::istream& infile) {
+        return load(infile);
+    });
     m.def("save", [](std::shared_ptr<const Document> document,
                      const std::string& filename) {
         save(document, filename);
@@ -161,6 +164,7 @@ obj_class declare_object(py::module& m) {
         .value("ORDERED_LIST", object::Object::Type::ORDERED_LIST)
         .value("ORDERED_LIST_ITEM", object::Object::Type::ORDERED_LIST_ITEM)
         .value("REF", object::Object::Type::REF)
+        .value("REF_INDEX", object::Object::Type::REF_INDEX)
         .value("SECTION", object::Object::Type::SECTION)
         .value("TEXT", object::Object::Type::TEXT)
         .value("TEXT_BLOCK", object::Object::Type::TEXT_CONTENT)
@@ -494,6 +498,16 @@ shared_class<object::Ref> declare_ref(py::module& m, obj_class& obj) {
 }
 
 //-------------------------------------------------------------------
+shared_class<object::IndexedRef> declare_indexed_ref(py::module& m, obj_class& obj) {
+    auto indexed_ref = shared_class<object::IndexedRef>(m, "IndexedRef", obj)
+        .def(py::init<const std::string&, const std::string&>(),
+             py::arg("text"), py::arg("index_name"))
+        .def_property_readonly("index_name", &object::IndexedRef::index_name)
+        .def_property_readonly("text", &object::IndexedRef::text);
+    return indexed_ref;
+}
+
+//-------------------------------------------------------------------
 shared_class<object::CodeBlock> declare_code_block(py::module& m, obj_class& obj) {
     auto code_block = shared_class<object::CodeBlock>(m, "CodeBlock", obj)
         .def(py::init<const std::string&, const std::string&>(),
@@ -511,6 +525,16 @@ shared_class<object::FrontMatter> declare_front_matter(py::module& m, obj_class&
         .def_property_readonly("code", &object::FrontMatter::code)
         .def_property_readonly("language", &object::FrontMatter::language);
     return code_block;
+}
+
+//-------------------------------------------------------------------
+shared_class<object::RefIndex> declare_ref_index(py::module& m, obj_class& obj) {
+    auto ref_index = shared_class<object::RefIndex>(m, "RefIndex", obj)
+        .def(py::init<const std::string&, const std::string&>(),
+             py::arg("name"), py::arg("link"))
+        .def_property_readonly("name", &object::RefIndex::name)
+        .def_property_readonly("link", &object::RefIndex::link);
+    return ref_index;
 }
 
 //-------------------------------------------------------------------
@@ -537,8 +561,10 @@ PYBIND11_MODULE(jotdown, m) {
     auto line_break = declare_line_break(m, obj);
     auto code = declare_code(m, obj);
     auto ref = declare_ref(m, obj);
+    auto indexed_ref = declare_indexed_ref(m, obj);
     auto code_block = declare_code_block(m, obj);
     auto front_matter = declare_front_matter(m, obj);
+    auto ref_index = declare_ref_index(m, obj);
 
     // Textblock declarator: textblock.cpp
     auto text_content = declare_text_content(m, container);
