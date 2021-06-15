@@ -21,6 +21,7 @@ namespace jotdown {
 namespace python {
 
 namespace py = pybind11;
+namespace json = moonlight::json;
 
 //-------------------------------------------------------------------
 // Utilities and Typedefs
@@ -29,9 +30,9 @@ template<class T, typename... options>
 using shared_class = py::class_<T, std::shared_ptr<T>, options...>;
 
 //-------------------------------------------------------------------
-inline py::dict json_to_dict(const JSON& json) {
+inline py::dict json_to_dict(const json::Object& json) {
     auto pyjson = py::module::import("json");
-    return pyjson.attr("loads")(json.to_string());
+    return pyjson.attr("loads")(json::to_string(json));
 }
 
 //-------------------------------------------------------------------

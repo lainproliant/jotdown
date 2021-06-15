@@ -31,6 +31,6 @@ int main(int argc, char** argv) {
         doc = load(infile, cmd.args()[0]);
     }
 
-    std::cout << doc->to_json().to_string(true) << std::endl;
+    std::cout << moonlight::json::to_string(doc->to_json()) << std::endl;
     return 0;
 }

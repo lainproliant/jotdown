@@ -31,7 +31,7 @@ int main() {
         auto front_matter = doc->front_matter();
         assert_true(front_matter != nullptr);
         assert_equal(front_matter->language(), std::string("json"));
-        auto json = moonlight::json::load_from_string(front_matter->code());
+        auto json = moonlight::json::read<moonlight::json::Object>(front_matter->code());
         assert_equal(json.get<std::string>("name"), std::string("Front Matter JSON"));
         assert_equal(json.get<std::string>("author"), std::string("Lain Musgrove"));
     })

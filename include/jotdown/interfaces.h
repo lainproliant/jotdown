@@ -15,7 +15,7 @@
 
 namespace jotdown {
 
-using JSON = moonlight::json::Wrapper;
+namespace json = moonlight::json;
 
 // ------------------------------------------------------------------
 struct Location {
@@ -41,8 +41,8 @@ struct Location {
         return ! operator==(other);
     }
 
-    JSON to_json() const {
-        JSON json;
+    json::Object to_json() const {
+        json::Object json;
         json.set<std::string>("filename", filename);
         json.set<float>("line", line);
         json.set<float>("col", col);
@@ -57,14 +57,14 @@ struct Range {
     Location begin;
     Location end;
 
-    JSON to_json() const {
-        JSON json, begin_json, end_json;
+    json::Object to_json() const {
+        json::Object json, begin_json, end_json;
         begin_json.set<float>("line", begin.line);
         begin_json.set<float>("col", begin.col);
         end_json.set<float>("line", end.line);
         end_json.set<float>("col", end.col);
-        json.set_object("begin", begin_json);
-        json.set_object("end", end_json);
+        json.set("begin", begin_json);
+        json.set("end", end_json);
         return json;
     }
 

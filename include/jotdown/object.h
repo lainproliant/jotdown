@@ -22,7 +22,7 @@ namespace object {
 
 using jotdown::NOWHERE;
 
-typedef moonlight::json::Wrapper JSON;
+namespace json = moonlight::json;
 
 //-------------------------------------------------------------------
 struct Config {
@@ -153,11 +153,11 @@ public:
         return config;
     }
 
-    virtual JSON to_json() const {
-        JSON json;
+    virtual json::Object to_json() const {
+        json::Object json;
         json.set<std::string>("type", type_name(type()));
         if (range().begin != NOWHERE && range().end != NOWHERE) {
-            json.set_object("range", range().to_json());
+            json.set("range", range().to_json());
         }
         return json;
     }
@@ -289,13 +289,13 @@ public:
         _contents.clear();
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
-        std::vector<JSON> json_contents;
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
+        std::vector<json::Object> json_contents;
         for (auto& obj : contents()) {
             json_contents.push_back(obj->to_json());
         }
-        json.set_object_array("contents", json_contents);
+        json.set("contents", json::Array(json_contents));
         return json;
     }
 
@@ -349,8 +349,8 @@ public:
         return obj;
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
         json.set<std::string>("name", name());
         return json;
     }
@@ -386,8 +386,8 @@ public:
         return obj;
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
         json.set<std::string>("text", text());
         return json;
     }
@@ -423,8 +423,8 @@ public:
         return obj;
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
         json.set<std::string>("tag", tag());
         return json;
     }
@@ -480,8 +480,8 @@ public:
         return obj;
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
         json.set<std::string>("code", code());
         return json;
     }
@@ -524,8 +524,8 @@ public:
         return obj;
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
         json.set<std::string>("link", link());
         if (text() != link()) {
             json.set<std::string>("text", text());
@@ -583,8 +583,8 @@ public:
         return _index_name;
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
         json.set<std::string>("text", text());
         json.set<std::string>("index_name", index_name());
         return json;
@@ -636,8 +636,8 @@ public:
         return obj;
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
         json.set<std::string>("name", name());
         json.set<std::string>("link", link());
         return json;
@@ -789,9 +789,9 @@ public:
         _status = status;
     }
 
-    virtual JSON to_json() const {
-        JSON json = Container::to_json();
-        json.set_object("text", ctext()->to_json());
+    virtual json::Object to_json() const {
+        json::Object json = Container::to_json();
+        json.set("text", ctext()->to_json());
         if (status().size() > 0) {
             json.set<std::string>("status", status());
         }
@@ -905,8 +905,8 @@ public:
         return oli;
     }
 
-    JSON to_json() const {
-        JSON json = ListItem::to_json();
+    json::Object to_json() const {
+        json::Object json = ListItem::to_json();
         json.set<std::string>("ordinal", ordinal());
         return json;
     }
@@ -992,8 +992,8 @@ public:
         return _language;
     }
 
-    JSON to_json() const {
-        JSON json = Object::to_json();
+    json::Object to_json() const {
+        json::Object json = Object::to_json();
         json.set<std::string>("code", code());
         if (_language.size() != 0) {
             json.set<std::string>("language", language());
@@ -1135,10 +1135,10 @@ public:
         return section;
     }
 
-    JSON to_json() const {
-        JSON json = Container::to_json();
+    json::Object to_json() const {
+        json::Object json = Container::to_json();
         json.set<double>("level", level());
-        json.set_object("header", cheader()->to_json());
+        json.set("header", cheader()->to_json());
         return json;
     }
 
