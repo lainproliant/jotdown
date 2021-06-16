@@ -20,6 +20,28 @@
 namespace jotdown {
 namespace object {
 
+class Object;
+class Container;
+class TextContent;
+
+}
+
+typedef std::shared_ptr<object::Object> obj_t;
+typedef std::shared_ptr<const object::Object> cobj_t;
+typedef std::shared_ptr<object::Container> container_t;
+typedef std::shared_ptr<const object::Container> ccontainer_t;
+typedef std::shared_ptr<object::TextContent> text_t;
+typedef std::shared_ptr<const object::TextContent> ctext_t;
+
+namespace object {
+
+typedef std::shared_ptr<object::Object> obj_t;
+typedef std::shared_ptr<const object::Object> cobj_t;
+typedef std::shared_ptr<object::Container> container_t;
+typedef std::shared_ptr<const object::Container> ccontainer_t;
+typedef std::shared_ptr<object::TextContent> text_t;
+typedef std::shared_ptr<const object::TextContent> ctext_t;
+
 using jotdown::NOWHERE;
 
 namespace json = moonlight::json;
@@ -36,15 +58,6 @@ public:
 };
 
 //-------------------------------------------------------------------
-class Object;
-class Container;
-class TextContent;
-typedef std::shared_ptr<Object> obj_t;
-typedef std::shared_ptr<const Object> cobj_t;
-typedef std::shared_ptr<Container> container_t;
-typedef std::shared_ptr<const Container> ccontainer_t;
-typedef std::shared_ptr<TextContent> text_t;
-typedef std::shared_ptr<const TextContent> ctext_t;
 
 class Object : public std::enable_shared_from_this<Object> {
 public:
