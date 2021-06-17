@@ -271,6 +271,12 @@ public:
         std::iter_swap(std::prev(iter), iter);
     }
 
+    void shift_first(cobj_t obj) {
+        try {
+            for (;;) shift_up(obj);
+        } catch (...) { }
+    }
+
     void shift_down(cobj_t obj) {
         auto iter = std::find(_contents.begin(), _contents.end(), obj);
         if (iter == _contents.end()) {
@@ -280,6 +286,12 @@ public:
             throw ObjectError("Object is already the last in the container.");
         }
         std::iter_swap(std::next(iter), iter);
+    }
+
+    void shift_last(cobj_t obj) {
+        try {
+            for (;;) shift_up(obj);
+        } catch (...) { }
     }
 
     void remove(obj_t obj) {
@@ -352,12 +364,16 @@ class Anchor : public Object {
 public:
     Anchor(const std::string& name) : Object(Type::ANCHOR), _name(name) { }
 
+    static std::shared_ptr<Anchor> create(const std::string& name) {
+        return std::make_shared<Anchor>(name);
+    }
+
     const std::string& name() const {
         return _name;
     }
 
     obj_t clone() const {
-        auto obj = std::make_shared<Anchor>(name());
+        auto obj = create(name());
         obj->range(range());
         return obj;
     }
@@ -389,12 +405,16 @@ class Text : public Object {
 public:
     Text(const std::string& text = "") : Object(Type::TEXT), _text(text) { }
 
+    static std::shared_ptr<Text> create(const std::string& text) {
+        return std::make_shared<Text>(text);
+    }
+
     const std::string& text() const {
         return _text;
     }
 
     obj_t clone() const {
-        auto obj = std::make_shared<Text>(text());
+        auto obj = create(text());
         obj->range(range());
         return obj;
     }
@@ -426,12 +446,16 @@ class Hashtag : public Object {
 public:
     Hashtag(const std::string& tag) : Object(Type::HASHTAG), _tag(tag) { }
 
+    static std::shared_ptr<Hashtag> create(const std::string& tag) {
+        return std::make_shared<Hashtag>(tag);
+    }
+
     const std::string& tag() const {
         return _tag;
     }
 
     obj_t clone() const {
-        auto obj = std::make_shared<Hashtag>(tag());
+        auto obj = create(tag());
         obj->range(range());
         return obj;
     }
@@ -463,8 +487,12 @@ class LineBreak : public Object {
 public:
     LineBreak() : Object(Type::LINE_BREAK) { }
 
+    static std::shared_ptr<LineBreak> create() {
+        return std::make_shared<LineBreak>();
+    }
+
     obj_t clone() const {
-        auto obj = std::make_shared<LineBreak>();
+        auto obj = create();
         obj->range(range());
         return obj;
     }
@@ -483,12 +511,16 @@ class Code : public Object {
 public:
     Code(const std::string& code) : Object(Type::CODE), _code(code) { }
 
+    static std::shared_ptr<Code> create(const std::string& code) {
+        return std::make_shared<Code>(code);
+    }
+
     const std::string& code() const {
         return _code;
     }
 
     obj_t clone() const {
-        auto obj = std::make_shared<Code>(code());
+        auto obj = create(code());
         obj->range(range());
         return obj;
     }
@@ -523,6 +555,10 @@ public:
     Ref(const std::string& link, const std::string& text = "")
     : Object(Type::REF), _link(link), _text(text) { }
 
+    static std::shared_ptr<Ref> create(const std::string& link, const std::string& text = "") {
+        return std::make_shared<Ref>(link, text);
+    }
+
     const std::string& link() const {
         return _link;
     }
@@ -532,7 +568,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = std::make_shared<Ref>(link(), text());
+        auto obj = create(link(), text());
         obj->range(range());
         return obj;
     }
@@ -580,6 +616,10 @@ class IndexedRef : public Object {
 public:
     IndexedRef(const std::string& text, const std::string& index_name) : Object(Type::REF), _text(text), _index_name(index_name) { }
 
+    static std::shared_ptr<IndexedRef> create(const std::string& text, const std::string& index_name) {
+        return std::make_shared<IndexedRef>(text, index_name);
+    }
+
     void link(const std::string& link) {
         _link = link;
     }
@@ -604,7 +644,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = std::make_shared<IndexedRef>(text(), index_name());
+        auto obj = create(text(), index_name());
         obj->link(link());
         obj->range(range());
         return obj;
@@ -635,6 +675,10 @@ class RefIndex : public Object {
 public:
     RefIndex(const std::string& name, const std::string& link) : Object(Type::REF_INDEX), _name(name), _link(link) { }
 
+    static std::shared_ptr<RefIndex> create(const std::string& name, const std::string& link) {
+        return std::make_shared<RefIndex>(name, link);
+    }
+
     const std::string& name() const {
         return _name;
     }
@@ -644,7 +688,7 @@ public:
     }
 
     obj_t clone() const {
-        auto obj = std::make_shared<RefIndex>(name(), link());
+        auto obj = create(name(), link());
         obj->range(range());
         return obj;
     }
@@ -683,6 +727,10 @@ public:
     friend class UnorderedListItem;
     TextContent() : Container(Type::TEXT_CONTENT) { }
 
+    static std::shared_ptr<TextContent> create() {
+        return std::make_shared<TextContent>();
+    }
+
     bool can_contain(cobj_t obj) const {
         static const std::vector<Type> cont = {
             Type::ANCHOR,
@@ -696,7 +744,7 @@ public:
     }
 
     obj_t clone() const {
-        auto textblock = std::make_shared<TextContent>();
+        auto textblock = create();
         textblock->_copy_from(std::static_pointer_cast<const Container>(shared_from_this()));
         textblock->range(range());
         return textblock;
@@ -962,12 +1010,16 @@ class OrderedList : public List {
 public:
     OrderedList() : List(Type::ORDERED_LIST) { }
 
+    static std::shared_ptr<OrderedList> create() {
+        return std::make_shared<OrderedList>();
+    }
+
     bool can_contain(cobj_t obj) const {
         return obj->type() == Type::ORDERED_LIST_ITEM;
     }
 
     obj_t clone() const {
-        auto ol = std::make_shared<OrderedList>();
+        auto ol = create();
         ol->_copy_from(std::static_pointer_cast<const List>(shared_from_this()));
         ol->range(range());
         return ol;
@@ -979,12 +1031,16 @@ class UnorderedList : public List {
 public:
     UnorderedList() : List(Type::UNORDERED_LIST) { }
 
+    static std::shared_ptr<UnorderedList> create() {
+        return std::make_shared<UnorderedList>();
+    }
+
     bool can_contain(cobj_t obj) const {
         return obj->type() == Type::UNORDERED_LIST_ITEM;
     }
 
     obj_t clone() const {
-        auto ul = std::make_shared<UnorderedList>();
+        auto ul = create();
         ul->_copy_from(std::static_pointer_cast<const List>(shared_from_this()));
         ul->range(range());
         return ul;
@@ -1053,11 +1109,15 @@ private:
 //-------------------------------------------------------------------
 class CodeBlock : public EmbeddedDocument {
 public:
-    CodeBlock(const std::string& code, const std::string& language)
+    CodeBlock(const std::string& code, const std::string& language = "")
     : EmbeddedDocument(Type::CODE_BLOCK, code, language) { }
 
+    static std::shared_ptr<CodeBlock> create(const std::string& code, const std::string& language = "") {
+        return std::make_shared<CodeBlock>(code, language);
+    }
+
     obj_t clone() const {
-        auto obj = std::make_shared<CodeBlock>(code(), language());
+        auto obj = create(code(), language());
         obj->range(range());
         return obj;
     }
@@ -1075,11 +1135,15 @@ private:
 //-------------------------------------------------------------------
 class FrontMatter : public EmbeddedDocument {
 public:
-    FrontMatter(const std::string& code, const std::string& language)
+    FrontMatter(const std::string& code, const std::string& language = "")
     : EmbeddedDocument(Type::FRONT_MATTER, code, language) { }
 
+    static std::shared_ptr<FrontMatter> create(const std::string& code, const std::string& language = "") {
+        return std::make_shared<FrontMatter>(code, language);
+    }
+
     obj_t clone() const {
-        auto obj = std::make_shared<FrontMatter>(code(), language());
+        auto obj = create(code(), language());
         obj->range(range());
         return obj;
     }
@@ -1140,7 +1204,7 @@ public:
     }
 
     obj_t clone() const {
-        auto section = Section::create(level());
+        auto section = create(level());
         section->_copy_from(std::static_pointer_cast<const Section>(shared_from_this()));
         section->range(range());
         section->header()->_copy_from(std::static_pointer_cast<const Container>(cheader()));
@@ -1186,6 +1250,10 @@ class Document : public Container {
 public:
     Document() : Container(Type::DOCUMENT) { }
 
+    static std::shared_ptr<Document> create() {
+        return std::make_shared<Document>();
+    }
+
     bool can_contain(cobj_t obj) const {
         return obj->type() == Type::SECTION;
     }
@@ -1199,7 +1267,7 @@ public:
     }
 
     obj_t clone() const {
-        auto doc = std::make_shared<Document>();
+        auto doc = create();
         if (front_matter() != nullptr) {
             doc->front_matter(std::static_pointer_cast<FrontMatter>(front_matter()->clone()));
         }

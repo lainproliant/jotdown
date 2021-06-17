@@ -304,8 +304,8 @@ shared_class<object::Section> declare_section(
         return object::Section::create(level);
     }), py::arg("level") = 1)
     .def(py::init([](const std::string& header_text, int level) {
-        auto header = std::make_shared<object::TextContent>();
-        header->add(std::make_shared<object::Text>(header_text));
+        auto header = object::TextContent::create();
+        header->add(object::Text::create(header_text));
         auto section = object::Section::create(level);
         section->header(header);
         return section;
@@ -438,8 +438,8 @@ shared_class<object::TextContent> declare_text_content(
         m, "TextContent", container)
         .def(py::init<>())
         .def(py::init([](const std::string& text) {
-            auto content = std::make_shared<object::TextContent>();
-            content->add(std::make_shared<object::Text>(text));
+            auto content = object::TextContent::create();
+            content->add(object::Text::create(text));
             return content;
         }));
 
