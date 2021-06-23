@@ -27,15 +27,15 @@ void query_repl(std::shared_ptr<jotdown::Document> doc) {
             break;
         }
 
-        jotdown::query::Query query;
+        jotdown::Query query;
         try {
-            query = jotdown::query::parse(str);
+            query = jotdown::q::parse(str);
         } catch (const std::exception& e) {
             std::cout << "ERROR: " << e.what() << std::endl;
             continue;
         }
         std::cout << query.repr() << std::endl;
-        auto results = query.select({doc});
+        auto results = query.select(doc);
         for (auto result : results) {
             std::cout << result->repr() << std::endl;
         }

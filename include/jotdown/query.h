@@ -11,6 +11,7 @@
 #define __JOTDOWN_QUERY_H
 
 #include "moonlight/slice.h"
+#include "moonlight/classify.h"
 #include "jotdown/error.h"
 #include "jotdown/interfaces.h"
 #include "jotdown/object.h"
@@ -841,7 +842,7 @@ inline bool scan_offset_or_slice(Query& result, const std::string& token) {
 inline Query parse(std::vector<std::string>& tokens, int depth = -1) {
     Query query;
     Query sub_result;
-    Classifier<std::string> classify;
+    moonlight::Classifier<std::string> classify;
     int cycles = 0;
 
     auto startswith = [](const std::string& s) {
@@ -891,7 +892,7 @@ inline Query parse(std::vector<std::string>& tokens, int depth = -1) {
         cycles++;
         auto token = tokens.back();
         tokens.pop_back();
-        classify.match(token);
+        classify.apply(token);
     }
 
     return query;
