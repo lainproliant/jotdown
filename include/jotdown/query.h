@@ -912,6 +912,8 @@ inline Query parse(const std::string& str) {
 
 }
 
+typedef q::Query Query;
+
 }
 
 #endif /* !__JOTDOWN_QUERY_H */
