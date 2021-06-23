@@ -18,9 +18,7 @@
 #include "moonlight/json.h"
 
 namespace jotdown {
-namespace compiler {
 
-using namespace object;
 using jotdown::parser::Token;
 using jotdown::parser::token_t;
 
@@ -633,7 +631,6 @@ public:
     }
 };
 
-}
 }
 
 #endif /* !__JOTDOWN_COMPILER_H */

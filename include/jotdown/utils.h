@@ -15,6 +15,7 @@
 #include <map>
 #include <sstream>
 #include <memory>
+#include <optional>
 
 #include "tinyformat/tinyformat.h"
 

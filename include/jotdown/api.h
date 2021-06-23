@@ -17,11 +17,9 @@
 
 namespace jotdown {
 
-typedef object::Document Document;
-
 inline std::shared_ptr<Document> load(std::istream& infile, const std::string& filename = "<in>") {
     parser::Parser parser(infile, filename);
-    compiler::Compiler compiler;
+    Compiler compiler;
     return compiler.compile(parser.begin(), parser.end());
 }
 
@@ -35,14 +33,18 @@ inline void save(std::shared_ptr<const Document> doc, const std::string& filenam
     outfile << doc->to_jotdown();
 }
 
-inline std::vector<object::obj_t> q(const std::vector<object::obj_t>& objects,
-                                    const std::string& query_str) {
-    return query::parse(query_str).select(objects);
+inline q::Query query(const std::string& query_str) {
+    return q::parse(query_str);
 }
 
-inline std::vector<object::obj_t> q(object::obj_t obj,
-                                    const std::string& query_str) {
-    return q(std::vector<object::obj_t>{obj}, query_str);
+inline std::vector<obj_t> query(const std::vector<obj_t>& objects,
+                                const std::string& query_str) {
+    return q::parse(query_str).select(objects);
+}
+
+inline std::vector<obj_t> query(obj_t obj,
+                                const std::string& query_str) {
+    return query(std::vector<obj_t>{obj}, query_str);
 }
 
 }

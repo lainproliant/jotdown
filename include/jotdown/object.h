@@ -18,29 +18,24 @@
 #include <memory>
 
 namespace jotdown {
-namespace object {
 
 class Object;
 class Container;
 class TextContent;
 
-}
+typedef std::shared_ptr<Object> obj_t;
+typedef std::shared_ptr<const Object> cobj_t;
+typedef std::shared_ptr<Container> container_t;
+typedef std::shared_ptr<const Container> ccontainer_t;
+typedef std::shared_ptr<TextContent> text_t;
+typedef std::shared_ptr<const TextContent> ctext_t;
 
-typedef std::shared_ptr<object::Object> obj_t;
-typedef std::shared_ptr<const object::Object> cobj_t;
-typedef std::shared_ptr<object::Container> container_t;
-typedef std::shared_ptr<const object::Container> ccontainer_t;
-typedef std::shared_ptr<object::TextContent> text_t;
-typedef std::shared_ptr<const object::TextContent> ctext_t;
-
-namespace object {
-
-typedef std::shared_ptr<object::Object> obj_t;
-typedef std::shared_ptr<const object::Object> cobj_t;
-typedef std::shared_ptr<object::Container> container_t;
-typedef std::shared_ptr<const object::Container> ccontainer_t;
-typedef std::shared_ptr<object::TextContent> text_t;
-typedef std::shared_ptr<const object::TextContent> ctext_t;
+typedef std::shared_ptr<Object> obj_t;
+typedef std::shared_ptr<const Object> cobj_t;
+typedef std::shared_ptr<Container> container_t;
+typedef std::shared_ptr<const Container> ccontainer_t;
+typedef std::shared_ptr<TextContent> text_t;
+typedef std::shared_ptr<const TextContent> ctext_t;
 
 using jotdown::NOWHERE;
 
@@ -1291,7 +1286,6 @@ private:
     std::shared_ptr<FrontMatter> _front_matter;
 };
 
-}
 }
 
 #endif /* !__JOTDOWN_OBJECT_H */

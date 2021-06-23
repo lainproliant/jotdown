@@ -36,21 +36,21 @@ inline py::dict json_to_dict(const json::Object& json) {
 }
 
 //-------------------------------------------------------------------
-class ObjectTrampoline : public object::Object {
+class ObjectTrampoline : public Object {
 public:
-    using object::Object::Object;
+    using Object::Object;
 
-    object::obj_t clone() const override {
+    obj_t clone() const override {
         PYBIND11_OVERLOAD_PURE(
-            object::obj_t,
-            object::Object,
+            obj_t,
+            Object,
             clone
         );
     }
 };
 
 //-------------------------------------------------------------------
-using obj_class = shared_class<object::Object, ObjectTrampoline>;
+using obj_class = shared_class<Object, ObjectTrampoline>;
 
 
 //-------------------------------------------------------------------
@@ -67,8 +67,8 @@ void declare_api(py::module& m) {
                      const std::string& filename) {
         save(document, filename);
     });
-    m.def("q", [](const std::vector<object::obj_t>& objects, const std::string& query_str) {
-        return query::parse(query_str).select(objects);
+    m.def("q", [](const std::vector<obj_t>& objects, const std::string& query_str) {
+        return q::parse(query_str).select(objects);
     });
 }
 
@@ -76,17 +76,17 @@ void declare_api(py::module& m) {
 //-------------------------------------------------------------------
 // Object Declaration
 //
-py::class_<object::Config> declare_object_config(py::module& m) {
-    py::class_<object::Config> object_config(m, "ObjectConfig");
+py::class_<Config> declare_object_config(py::module& m) {
+    py::class_<Config> object_config(m, "ObjectConfig");
     object_config
         .def(py::init<>())
-        .def_readwrite("list_indent", &object::Config::list_indent);
+        .def_readwrite("list_indent", &Config::list_indent);
     return object_config;
 }
 
 //-------------------------------------------------------------------
 void declare_object_error(py::module& m) {
-    py::register_exception<object::ObjectError>(m, "ObjectError");
+    py::register_exception<ObjectError>(m, "ObjectError");
 }
 
 //-------------------------------------------------------------------
@@ -154,68 +154,65 @@ py::class_<Range> declare_range(py::module& m) {
 //-------------------------------------------------------------------
 obj_class declare_object(py::module& m) {
     auto object = obj_class(m, "Object");
-    py::enum_<object::Object::Type>(object, "Type")
-        .value("NONE", object::Object::Type::NONE)
-        .value("ANCHOR", object::Object::Type::ANCHOR)
-        .value("CODE", object::Object::Type::CODE)
-        .value("CODE_BLOCK", object::Object::Type::CODE_BLOCK)
-        .value("DOCUMENT", object::Object::Type::DOCUMENT)
-        .value("HASHTAG", object::Object::Type::HASHTAG)
-        .value("LINE_BREAK", object::Object::Type::LINE_BREAK)
-        .value("ORDERED_LIST", object::Object::Type::ORDERED_LIST)
-        .value("ORDERED_LIST_ITEM", object::Object::Type::ORDERED_LIST_ITEM)
-        .value("REF", object::Object::Type::REF)
-        .value("REF_INDEX", object::Object::Type::REF_INDEX)
-        .value("SECTION", object::Object::Type::SECTION)
-        .value("TEXT", object::Object::Type::TEXT)
-        .value("TEXT_BLOCK", object::Object::Type::TEXT_CONTENT)
-        .value("UNORDERED_LIST", object::Object::Type::UNORDERED_LIST)
-        .value("UNORDERED_LIST_ITEM", object::Object::Type::UNORDERED_LIST_ITEM);
+    py::enum_<Object::Type>(object, "Type")
+        .value("NONE", Object::Type::NONE)
+        .value("ANCHOR", Object::Type::ANCHOR)
+        .value("CODE", Object::Type::CODE)
+        .value("CODE_BLOCK", Object::Type::CODE_BLOCK)
+        .value("DOCUMENT", Object::Type::DOCUMENT)
+        .value("HASHTAG", Object::Type::HASHTAG)
+        .value("LINE_BREAK", Object::Type::LINE_BREAK)
+        .value("ORDERED_LIST", Object::Type::ORDERED_LIST)
+        .value("ORDERED_LIST_ITEM", Object::Type::ORDERED_LIST_ITEM)
+        .value("REF", Object::Type::REF)
+        .value("REF_INDEX", Object::Type::REF_INDEX)
+        .value("SECTION", Object::Type::SECTION)
+        .value("TEXT", Object::Type::TEXT)
+        .value("TEXT_BLOCK", Object::Type::TEXT_CONTENT)
+        .value("UNORDERED_LIST", Object::Type::UNORDERED_LIST)
+        .value("UNORDERED_LIST_ITEM", Object::Type::UNORDERED_LIST_ITEM);
 
-    object.def("type", &object::Object::type);
-    object.def("range", [](const object::Object& self) {
+    object.def("type", &Object::type);
+    object.def("range", [](const Object& self) {
         return self.range();
     });
     object.def_property(
         "range",
-        [](const object::Object& self) {
+        [](const Object& self) {
             return self.range();
         },
-        [](object::Object& self, const Range& range) {
+        [](Object& self, const Range& range) {
             self.range(range);
         });
     object.def_property_readonly(
         "parent",
-        [](const object::Object& self) {
+        [](const Object& self) {
             return self.cparent();
         });
-    object.def_static("type_name", [](object::Object::Type type) {
-        return object::Object::type_name(type);
+    object.def_static("type_name", [](Object::Type type) {
+        return Object::type_name(type);
     });
     object.def_property_static(
         "config",
         []() {
-            return object::Object::config();
+            return Object::config();
         },
-        [](const object::Config& config) {
-            object::Object::config() = config;
+        [](const Config& config) {
+            Object::config() = config;
         });
-    object.def("clone", [](const object::Object& obj) {
+    object.def("clone", [](const Object& obj) {
         return obj.clone();
     });
-    object.def("q", [](std::shared_ptr<object::Object> object, const std::string& query_str) {
-        return query::parse(query_str).select({object});
+    object.def("query", [](std::shared_ptr<Object> object, const std::string& query_str) {
+        return q::parse(query_str).select({object});
     });
-    object.def("to_json", [](const object::Object& obj) {
+    object.def("to_json", [](const Object& obj) {
         return json_to_dict(obj.to_json());
     });
-    object.def("to_jotdown", [](const object::Object& obj) {
+    object.def("to_jotdown", [](const Object& obj) {
         return obj.to_jotdown();
     });
-    object.def("query", [](object::obj_t obj, const std::string& query_str) {
-        return query::parse(query_str).select({obj});
-    });
-    object.def("__repr__", [](const object::Object& obj) {
+    object.def("__repr__", [](const Object& obj) {
         return obj.repr();
     });
 
@@ -226,39 +223,39 @@ obj_class declare_object(py::module& m) {
 //-------------------------------------------------------------------
 // Container Declaration
 //
-shared_class<object::Container> declare_container(
+shared_class<Container> declare_container(
     py::module& m, obj_class& obj) {
-    auto container = shared_class<object::Container>(m, "Container", obj)
-        .def_property_readonly("contents", [](const object::Container& self) {
+    auto container = shared_class<Container>(m, "Container", obj)
+        .def_property_readonly("contents", [](const Container& self) {
             return self.contents();
         })
-    .def("clear", [](object::Container& self) {
+    .def("clear", [](Container& self) {
         self.clear();
     })
-    .def("add", [](object::Container& self, object::obj_t obj) {
+    .def("add", [](Container& self, obj_t obj) {
         return self.add(obj);
     })
-    .def("insert_before", [](object::Container& self, object::cobj_t pivot, object::obj_t obj) {
+    .def("insert_before", [](Container& self, cobj_t pivot, obj_t obj) {
         return self.insert_before(pivot, obj);
     })
-    .def("insert_after", [](object::Container& self, object::cobj_t pivot, object::obj_t obj) {
+    .def("insert_after", [](Container& self, cobj_t pivot, obj_t obj) {
         return self.insert_after(pivot, obj);
     })
-    .def("remove", [](object::Container& self, object::obj_t obj) {
+    .def("remove", [](Container& self, obj_t obj) {
         self.remove(obj);
     }, py::arg("obj"))
-    .def("shift_up", [](object::Container& self, object::cobj_t obj) {
+    .def("shift_up", [](Container& self, cobj_t obj) {
         self.shift_up(obj);
     }, py::arg("obj"))
-    .def("shift_down", [](object::Container& self, object::cobj_t obj) {
+    .def("shift_down", [](Container& self, cobj_t obj) {
         self.shift_down(obj);
     }, py::arg("obj"))
-    .def("__call__", [](std::shared_ptr<object::Container> self) {
+    .def("__call__", [](std::shared_ptr<Container> self) {
         return self->contents();
     })
-    .def("__call__", [](std::shared_ptr<object::Container> self, py::args args) {
+    .def("__call__", [](std::shared_ptr<Container> self, py::args args) {
         for (auto arg : args) {
-            self->add(arg.cast<object::obj_t>());
+            self->add(arg.cast<obj_t>());
         }
         return self;
     });
@@ -270,18 +267,18 @@ shared_class<object::Container> declare_container(
 //-------------------------------------------------------------------
 // Document Declaration
 //
-shared_class<object::Document> declare_document(
+shared_class<Document> declare_document(
     py::module& m,
-    shared_class<object::Container>& container) {
+    shared_class<Container>& container) {
 
-    auto document = shared_class<object::Document>(m, "Document", container)
+    auto document = shared_class<Document>(m, "Document", container)
         .def(py::init<>())
         .def_property(
             "front_matter",
-            [](const object::Document& self) {
+            [](const Document& self) {
                 return self.front_matter();
             },
-            [](object::Document& self, std::shared_ptr<object::FrontMatter> front_matter) {
+            [](Document& self, std::shared_ptr<FrontMatter> front_matter) {
                 self.front_matter(front_matter);
             })
         .def("save", [](std::shared_ptr<const Document> document,
@@ -295,32 +292,32 @@ shared_class<object::Document> declare_document(
 //-------------------------------------------------------------------
 // Declare Section
 //
-shared_class<object::Section> declare_section(
+shared_class<Section> declare_section(
     py::module& m,
-    shared_class<object::Container>& container) {
+    shared_class<Container>& container) {
 
-    auto section = shared_class<object::Section>(m, "Section", container)
+    auto section = shared_class<Section>(m, "Section", container)
     .def(py::init([](int level) {
-        return object::Section::create(level);
+        return Section::create(level);
     }), py::arg("level") = 1)
     .def(py::init([](const std::string& header_text, int level) {
-        auto header = object::TextContent::create();
-        header->add(object::Text::create(header_text));
-        auto section = object::Section::create(level);
+        auto header = TextContent::create();
+        header->add(Text::create(header_text));
+        auto section = Section::create(level);
         section->header(header);
         return section;
     }), py::arg("header_text"), py::arg("level") = 1)
-    .def(py::init([](std::shared_ptr<object::TextContent> header, int level) {
-        auto section = object::Section::create(level);
+    .def(py::init([](std::shared_ptr<TextContent> header, int level) {
+        auto section = Section::create(level);
         section->header(header);
         return section;
     }), py::arg("header"), py::arg("level") = 1)
     .def_property(
         "header",
-        [](const object::Section& self) {
+        [](const Section& self) {
             return self.cheader();
         },
-        [&](object::Section& self, std::shared_ptr<object::TextContent> header) {
+        [&](Section& self, std::shared_ptr<TextContent> header) {
             self.header(header);
         });
 
@@ -331,45 +328,45 @@ shared_class<object::Section> declare_section(
 //-------------------------------------------------------------------
 // List Declaration
 //
-shared_class<object::List> declare_list(
+shared_class<List> declare_list(
     py::module& m,
-    shared_class<object::Container>& container) {
+    shared_class<Container>& container) {
 
-    auto list = shared_class<object::List>(m, "List", container)
-        .def_property_readonly("level", [](const object::List& list) {
+    auto list = shared_class<List>(m, "List", container)
+        .def_property_readonly("level", [](const List& list) {
             return list.level();
         });
     return list;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::ListItem> declare_list_item(
+shared_class<ListItem> declare_list_item(
     py::module& m,
-    shared_class<object::Container>& container) {
+    shared_class<Container>& container) {
 
-    auto li = shared_class<object::ListItem>(m, "ListItem", container)
+    auto li = shared_class<ListItem>(m, "ListItem", container)
         .def_property(
             "text",
-            [](const object::ListItem& li) {
+            [](const ListItem& li) {
                 return li.ctext();
             },
-            [](object::ListItem& li,
-               std::shared_ptr<object::TextContent> text) {
+            [](ListItem& li,
+               std::shared_ptr<TextContent> text) {
                 li.text(text);
             }
         )
         .def_property_readonly(
             "level",
-            [](const object::ListItem& li) {
+            [](const ListItem& li) {
                 return li.level();
             }
         )
         .def_property(
             "status",
-            [](const object::ListItem& li) {
+            [](const ListItem& li) {
                 return li.status();
             },
-            [](object::ListItem& li, const std::string& status) {
+            [](ListItem& li, const std::string& status) {
                 li.status(status);
             });
     return li;
@@ -379,23 +376,23 @@ shared_class<object::ListItem> declare_list_item(
 //-------------------------------------------------------------------
 // Declare OrderedList
 //
-shared_class<object::OrderedList> declare_ordered_list(
+shared_class<OrderedList> declare_ordered_list(
     py::module& m,
-    shared_class<object::List>& list) {
+    shared_class<List>& list) {
 
-    auto ol = shared_class<object::OrderedList>(m, "OrderedList", list)
+    auto ol = shared_class<OrderedList>(m, "OrderedList", list)
         .def(py::init<>());
     return ol;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::OrderedListItem> declare_ordered_list_item(
+shared_class<OrderedListItem> declare_ordered_list_item(
     py::module& m,
-    shared_class<object::ListItem>& li) {
+    shared_class<ListItem>& li) {
 
-    auto oli = shared_class<object::OrderedListItem>(m, "OrderedListItem", li)
+    auto oli = shared_class<OrderedListItem>(m, "OrderedListItem", li)
     .def(py::init([](const std::string& ordinal) {
-        return object::OrderedListItem::create(ordinal);
+        return OrderedListItem::create(ordinal);
     }), py::arg("ordinal"));
     return oli;
 }
@@ -404,24 +401,24 @@ shared_class<object::OrderedListItem> declare_ordered_list_item(
 //-------------------------------------------------------------------
 // Declare UnorderedList
 //
-shared_class<object::UnorderedList> declare_unordered_list(
+shared_class<UnorderedList> declare_unordered_list(
     py::module& m,
-    shared_class<object::List>& list) {
+    shared_class<List>& list) {
 
-    auto ul = shared_class<object::UnorderedList>(m, "UnorderedList", list)
+    auto ul = shared_class<UnorderedList>(m, "UnorderedList", list)
         .def(py::init<>());
     return ul;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::UnorderedListItem> declare_unordered_list_item(
+shared_class<UnorderedListItem> declare_unordered_list_item(
     py::module& m,
-    shared_class<object::ListItem>& li) {
+    shared_class<ListItem>& li) {
 
-    auto uli = shared_class<object::UnorderedListItem>(
+    auto uli = shared_class<UnorderedListItem>(
         m, "UnorderedListItem", li)
         .def(py::init([]() {
-            return object::UnorderedListItem::create();
+            return UnorderedListItem::create();
         }));
     return uli;
 }
@@ -430,16 +427,16 @@ shared_class<object::UnorderedListItem> declare_unordered_list_item(
 //-------------------------------------------------------------------
 // Declare TextContent
 //
-shared_class<object::TextContent> declare_text_content(
+shared_class<TextContent> declare_text_content(
     py::module& m,
-    shared_class<object::Container>& container) {
+    shared_class<Container>& container) {
 
-    auto text_content = shared_class<object::TextContent>(
+    auto text_content = shared_class<TextContent>(
         m, "TextContent", container)
         .def(py::init<>())
         .def(py::init([](const std::string& text) {
-            auto content = object::TextContent::create();
-            content->add(object::Text::create(text));
+            auto content = TextContent::create();
+            content->add(Text::create(text));
             return content;
         }));
 
@@ -450,91 +447,91 @@ shared_class<object::TextContent> declare_text_content(
 //-------------------------------------------------------------------
 // Declare Simple Types
 //
-shared_class<object::Anchor> declare_anchor(py::module& m, obj_class& obj) {
-    auto anchor = shared_class<object::Anchor>(m, "Anchor", obj)
+shared_class<Anchor> declare_anchor(py::module& m, obj_class& obj) {
+    auto anchor = shared_class<Anchor>(m, "Anchor", obj)
         .def(py::init<const std::string&>(), py::arg("name"))
-        .def_property_readonly("name", &object::Anchor::name);
+        .def_property_readonly("name", &Anchor::name);
     return anchor;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::Text> declare_text(py::module& m, obj_class& obj) {
-    auto text = shared_class<object::Text>(m, "Text", obj)
+shared_class<Text> declare_text(py::module& m, obj_class& obj) {
+    auto text = shared_class<Text>(m, "Text", obj)
         .def(py::init<const std::string&>(), py::arg("text"))
-        .def_property_readonly("text", &object::Text::text);
+        .def_property_readonly("text", &Text::text);
     return text;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::Hashtag> declare_hashtag(py::module& m, obj_class& obj) {
-    auto hashtag = shared_class<object::Hashtag>(m, "Hashtag", obj)
+shared_class<Hashtag> declare_hashtag(py::module& m, obj_class& obj) {
+    auto hashtag = shared_class<Hashtag>(m, "Hashtag", obj)
         .def(py::init<const std::string&>(), py::arg("tag"))
-        .def_property_readonly("tag", &object::Hashtag::tag);
+        .def_property_readonly("tag", &Hashtag::tag);
     return hashtag;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::LineBreak> declare_line_break(py::module& m, obj_class& obj) {
-    auto line_break = shared_class<object::LineBreak>(m, "LineBreak", obj)
+shared_class<LineBreak> declare_line_break(py::module& m, obj_class& obj) {
+    auto line_break = shared_class<LineBreak>(m, "LineBreak", obj)
         .def(py::init<>());
     return line_break;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::Code> declare_code(py::module& m, obj_class& obj) {
-    auto code = shared_class<object::Code>(m, "Code", obj)
+shared_class<Code> declare_code(py::module& m, obj_class& obj) {
+    auto code = shared_class<Code>(m, "Code", obj)
         .def(py::init<const std::string&>(), py::arg("code"))
-        .def_property_readonly("code", &object::Code::code);
+        .def_property_readonly("code", &Code::code);
     return code;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::Ref> declare_ref(py::module& m, obj_class& obj) {
-    auto ref = shared_class<object::Ref>(m, "Ref", obj)
+shared_class<Ref> declare_ref(py::module& m, obj_class& obj) {
+    auto ref = shared_class<Ref>(m, "Ref", obj)
         .def(py::init<const std::string&, const std::string&>(),
              py::arg("link"), py::arg("text") = "")
-        .def_property_readonly("link", &object::Ref::link)
-        .def_property_readonly("text", &object::Ref::text);
+        .def_property_readonly("link", &Ref::link)
+        .def_property_readonly("text", &Ref::text);
     return ref;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::IndexedRef> declare_indexed_ref(py::module& m, obj_class& obj) {
-    auto indexed_ref = shared_class<object::IndexedRef>(m, "IndexedRef", obj)
+shared_class<IndexedRef> declare_indexed_ref(py::module& m, obj_class& obj) {
+    auto indexed_ref = shared_class<IndexedRef>(m, "IndexedRef", obj)
         .def(py::init<const std::string&, const std::string&>(),
              py::arg("text"), py::arg("index_name"))
-        .def_property_readonly("index_name", &object::IndexedRef::index_name)
-        .def_property_readonly("text", &object::IndexedRef::text);
+        .def_property_readonly("index_name", &IndexedRef::index_name)
+        .def_property_readonly("text", &IndexedRef::text);
     return indexed_ref;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::CodeBlock> declare_code_block(py::module& m, obj_class& obj) {
-    auto code_block = shared_class<object::CodeBlock>(m, "CodeBlock", obj)
+shared_class<CodeBlock> declare_code_block(py::module& m, obj_class& obj) {
+    auto code_block = shared_class<CodeBlock>(m, "CodeBlock", obj)
         .def(py::init<const std::string&, const std::string&>(),
              py::arg("code"), py::arg("language") = "")
-        .def_property_readonly("code", &object::CodeBlock::code)
-        .def_property_readonly("language", &object::CodeBlock::language);
+        .def_property_readonly("code", &CodeBlock::code)
+        .def_property_readonly("language", &CodeBlock::language);
     return code_block;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::FrontMatter> declare_front_matter(py::module& m, obj_class& obj) {
-    auto code_block = shared_class<object::FrontMatter>(m, "FrontMatter", obj)
+shared_class<FrontMatter> declare_front_matter(py::module& m, obj_class& obj) {
+    auto code_block = shared_class<FrontMatter>(m, "FrontMatter", obj)
         .def(py::init<const std::string&, const std::string&>(),
              py::arg("code"), py::arg("language") = "")
-        .def_property_readonly("code", &object::FrontMatter::code)
-        .def_property_readonly("language", &object::FrontMatter::language);
+        .def_property_readonly("code", &FrontMatter::code)
+        .def_property_readonly("language", &FrontMatter::language);
     return code_block;
 }
 
 //-------------------------------------------------------------------
-shared_class<object::RefIndex> declare_ref_index(py::module& m, obj_class& obj) {
-    auto ref_index = shared_class<object::RefIndex>(m, "RefIndex", obj)
+shared_class<RefIndex> declare_ref_index(py::module& m, obj_class& obj) {
+    auto ref_index = shared_class<RefIndex>(m, "RefIndex", obj)
         .def(py::init<const std::string&, const std::string&>(),
              py::arg("name"), py::arg("link"))
-        .def_property_readonly("name", &object::RefIndex::name)
-        .def_property_readonly("link", &object::RefIndex::link);
+        .def_property_readonly("name", &RefIndex::name)
+        .def_property_readonly("link", &RefIndex::link);
     return ref_index;
 }
 

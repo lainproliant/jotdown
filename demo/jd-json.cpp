@@ -14,15 +14,15 @@
 #include "moonlight/core.h"
 #include "moonlight/cli.h"
 
-std::shared_ptr<jotdown::object::Document> load(std::istream& input, const std::string& name = "<input>") {
+std::shared_ptr<jotdown::Document> load(std::istream& input, const std::string& name = "<input>") {
     jotdown::parser::Parser parser(input, name);
-    jotdown::compiler::Compiler compiler;
+    jotdown::Compiler compiler;
     return compiler.compile(parser.begin(), parser.end());
 }
 
 int main(int argc, char** argv) {
     auto cmd = moonlight::cli::parse(argc, argv);
-    std::shared_ptr<jotdown::object::Document> doc;
+    std::shared_ptr<jotdown::Document> doc;
 
     if (cmd.args().size() != 1) {
         doc = load(std::cin);

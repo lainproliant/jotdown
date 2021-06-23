@@ -13,8 +13,6 @@
 #include "moonlight/test.h"
 
 using namespace moonlight::test;
-using Object = jotdown::object::Object;
-using obj_t = std::shared_ptr<Object>;
 
 // ------------------------------------------------------------------
 int main() {

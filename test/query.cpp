@@ -13,8 +13,7 @@
 #include "moonlight/test.h"
 
 using namespace moonlight::test;
-using Object = jotdown::object::Object;
-using obj_t = std::shared_ptr<Object>;
+using namespace jotdown;
 
 // ------------------------------------------------------------------
 std::vector<std::pair<std::string, std::string>> type_sequence_zip(
@@ -62,7 +61,7 @@ int main() {
     return TestSuite("jotdown queries")
     .test("children", []() {
         auto doc = jotdown::load("data/query/children.md");
-        auto results = jotdown::q(doc, ">/section/>");
+        auto results = jotdown::query(doc, ">/section/>");
         assert_type_sequence(results, {
             Object::Type::UNORDERED_LIST,
             Object::Type::LINE_BREAK,
@@ -72,7 +71,7 @@ int main() {
     })
     .test("descendents", []() {
         auto doc = jotdown::load("data/query/children.md");
-        auto results = jotdown::q(doc, ">>");
+        auto results = jotdown::query(doc, ">>");
         assert_type_sequence(results, {
             Object::Type::SECTION,
             Object::Type::UNORDERED_LIST,
@@ -87,7 +86,7 @@ int main() {
     })
     .test("antecedents", []() {
         auto doc = jotdown::load("data/query/children.md");
-        auto results = jotdown::q(doc, ">>/uli/level/2/<<");
+        auto results = jotdown::query(doc, ">>/uli/level/2/<<");
         assert_type_sequence(results, {
             Object::Type::UNORDERED_LIST,
             Object::Type::UNORDERED_LIST_ITEM,

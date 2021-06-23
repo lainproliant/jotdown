@@ -16,7 +16,7 @@
 #include "moonlight/core.h"
 #include "moonlight/cli.h"
 
-void query_repl(std::shared_ptr<jotdown::object::Document> doc) {
+void query_repl(std::shared_ptr<jotdown::Document> doc) {
     for (;;) {
         std::string str;
         std::cout << "jdq> ";
@@ -27,8 +27,6 @@ void query_repl(std::shared_ptr<jotdown::object::Document> doc) {
             break;
         }
 
-        auto tokens = jotdown::query::tokenize(str);
-        std::cout << moonlight::str::join(moonlight::collect::map<std::string>(tokens, [](auto token) -> std::string { return tfm::format("\"%s\"", jotdown::strliteral(token)); }), ",") << std::endl;
         jotdown::query::Query query;
         try {
             query = jotdown::query::parse(str);
@@ -44,16 +42,16 @@ void query_repl(std::shared_ptr<jotdown::object::Document> doc) {
     }
 }
 
-std::shared_ptr<jotdown::object::Document> load(std::istream& input, const std::string& name = "<input>") {
+std::shared_ptr<jotdown::Document> load(std::istream& input, const std::string& name = "<input>") {
     jotdown::parser::Parser parser(input, name);
-    jotdown::compiler::Compiler compiler;
+    jotdown::Compiler compiler;
     return compiler.compile(parser.begin(), parser.end());
 }
 
 int main(int argc, char** argv) {
     try {
         auto cmd = moonlight::cli::parse(argc, argv);
-        std::shared_ptr<jotdown::object::Document> doc;
+        std::shared_ptr<jotdown::Document> doc;
 
         if (cmd.args().size() != 1) {
             throw moonlight::core::Exception("Missing required argument.");

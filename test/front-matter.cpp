@@ -14,8 +14,7 @@
 #include "moonlight/json.h"
 
 using namespace moonlight::test;
-using Object = jotdown::object::Object;
-using obj_t = std::shared_ptr<Object>;
+using namespace jotdown;
 
 // ------------------------------------------------------------------
 int main() {

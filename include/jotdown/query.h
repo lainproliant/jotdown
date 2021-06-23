@@ -22,16 +22,13 @@
 #include <set>
 
 namespace jotdown {
-namespace query {
-
-using Object = object::Object;
-using ObjectType = object::Object::Type;
-using obj_t = object::obj_t;
 
 // ------------------------------------------------------------------
 class QueryError : public moonlight::core::Exception {
     using Exception::Exception;
 };
+
+namespace q {
 
 // ------------------------------------------------------------------
 class Selector {
@@ -93,6 +90,10 @@ public:
         return results;
     }
 
+    std::vector<obj_t> select(obj_t object) const {
+        return select(std::vector<obj_t>{object});
+    }
+
     std::string repr() const {
         std::vector<std::string> seq_reprs;
         for (auto& query : sequence) {
@@ -112,12 +113,12 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Type : public Selector {
+class TypeSelect : public Selector {
 public:
-    Type(ObjectType type) : type(type) { }
+    TypeSelect(Object::Type type) : type(type) { }
 
     Selector* clone() const {
-        return new Type(type);
+        return new TypeSelect(type);
     }
 
     bool choose(obj_t obj) const {
@@ -129,17 +130,17 @@ public:
     }
 
 private:
-    ObjectType type;
+    Object::Type type;
 };
 
 // ------------------------------------------------------------------
-class Slice : public Selector {
+class SliceSelect : public Selector {
 public:
-    Slice(const std::optional<int>& begin, const std::optional<int>& end)
+    SliceSelect(const std::optional<int>& begin, const std::optional<int>& end)
     : begin(begin), end(end) { }
 
     Selector* clone() const {
-        return new Slice(begin, end);
+        return new SliceSelect(begin, end);
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
@@ -166,9 +167,9 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Offset : public Selector {
+class OffsetSelector : public Selector {
 public:
-    Offset(int offset) : offset(offset) { }
+    OffsetSelector(int offset) : offset(offset) { }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
         try {
@@ -180,7 +181,7 @@ public:
     }
 
     Selector* clone() const {
-        return new Offset(offset);
+        return new OffsetSelector(offset);
     }
 
     std::string repr() const {
@@ -192,9 +193,9 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Label : public Selector {
+class LabelSelector : public Selector {
     Selector* clone() const {
-        return new Label();
+        return new LabelSelector();
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
@@ -216,9 +217,9 @@ class Label : public Selector {
 };
 
 // ------------------------------------------------------------------
-class Parents : public Selector {
+class ParentSelector : public Selector {
     Selector* clone() const {
-        return new Parents();
+        return new ParentSelector();
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
@@ -248,12 +249,12 @@ class Parents : public Selector {
 };
 
 // ------------------------------------------------------------------
-class Children : public Selector {
+class ChildrenSelector : public Selector {
 public:
-    Children(bool include_labels = false) : include_labels(include_labels) { }
+    ChildrenSelector(bool include_labels = false) : include_labels(include_labels) { }
 
     Selector* clone() const {
-        return new Children(include_labels);
+        return new ChildrenSelector(include_labels);
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
@@ -265,7 +266,7 @@ public:
                 std::copy(sub_results.begin(), sub_results.end(), std::back_inserter(results));
             }
             if (obj->is_container()) {
-                auto container = std::static_pointer_cast<object::Container>(obj);
+                auto container = std::static_pointer_cast<Container>(obj);
                 auto& contents = container->contents();
                 std::copy(contents.begin(), contents.end(), std::back_inserter(results));
             }
@@ -287,12 +288,12 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Descendants : public Selector {
+class DescendantsSelector : public Selector {
 public:
-    Descendants(bool include_labels = false) : include_labels(include_labels) { }
+    DescendantsSelector(bool include_labels = false) : include_labels(include_labels) { }
 
     Selector* clone() const {
-        return new Descendants(include_labels);
+        return new DescendantsSelector(include_labels);
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
@@ -304,7 +305,7 @@ public:
                 std::copy(sub_results.begin(), sub_results.end(), std::back_inserter(results));
             }
             if (obj->is_container()) {
-                auto container = std::static_pointer_cast<object::Container>(obj);
+                auto container = std::static_pointer_cast<Container>(obj);
                 auto& contents = container->contents();
                 std::copy(contents.begin(), contents.end(), std::back_inserter(results));
                 auto sub_results = select(contents);
@@ -328,10 +329,10 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Antecedents : public Selector {
+class AntecedentsSelector : public Selector {
 public:
     Selector* clone() const {
-        return new Antecedents();
+        return new AntecedentsSelector();
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
@@ -363,22 +364,22 @@ public:
 };
 
 // ------------------------------------------------------------------
-class Level : public Selector {
+class LevelSelector : public Selector {
 public:
-    Level(int level) : level(level) { }
+    LevelSelector(int level) : level(level) { }
 
     Selector* clone() const {
-        return new Level(level);
+        return new LevelSelector(level);
     }
 
     bool choose(obj_t obj) const {
-        if (obj->type() == ObjectType::ORDERED_LIST_ITEM ||
-            obj->type() == ObjectType::UNORDERED_LIST_ITEM) {
-            auto list_item = std::static_pointer_cast<object::ListItem>(obj);
+        if (obj->type() == Object::Type::ORDERED_LIST_ITEM ||
+            obj->type() == Object::Type::UNORDERED_LIST_ITEM) {
+            auto list_item = std::static_pointer_cast<ListItem>(obj);
             return list_item->level() == level;
 
-        } else if (obj->type() == ObjectType::SECTION) {
-            auto section = std::static_pointer_cast<object::Section>(obj);
+        } else if (obj->type() == Object::Type::SECTION) {
+            auto section = std::static_pointer_cast<Section>(obj);
             return section->level() == level;
         }
 
@@ -394,12 +395,12 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Search : public Selector {
+class RegexSelector : public Selector {
 public:
-    Search(const std::string& rx) : str_rx(rx), rx(rx) { }
+    RegexSelector(const std::string& rx) : str_rx(rx), rx(rx) { }
 
     Selector* clone() const {
-        return new Search(str_rx, rx);
+        return new RegexSelector(str_rx, rx);
     }
 
     bool choose(obj_t obj) const {
@@ -415,31 +416,31 @@ public:
     }
 
 private:
-    Search(const std::string& str_rx, const std::regex& rx) : str_rx(str_rx), rx(rx) { }
+    RegexSelector(const std::string& str_rx, const std::regex& rx) : str_rx(str_rx), rx(rx) { }
 
     std::string str_rx;
     std::regex rx;
 };
 
 // ------------------------------------------------------------------
-class Hashtag : public Selector {
+class HashtagSelector : public Selector {
 public:
-    Hashtag(const std::string& tag) : tag(tag) { }
+    HashtagSelector(const std::string& tag) : tag(tag) { }
 
     Selector* clone() const {
-        return new Hashtag(tag);
+        return new HashtagSelector(tag);
     }
 
     bool choose(obj_t obj) const {
-        if (obj->type() == ObjectType::HASHTAG) {
-            auto hashtag = std::static_pointer_cast<object::Hashtag>(obj);
+        if (obj->type() == Object::Type::HASHTAG) {
+            auto hashtag = std::static_pointer_cast<Hashtag>(obj);
             return tag == "" || moonlight::str::to_lower(hashtag->tag()) == moonlight::str::to_lower(tag);
         }
         return false;
     }
 
     std::string repr() const {
-        return tfm::format("Hashtag<\"%s\">", tag);
+        return tfm::format("HashtagSelector<\"%s\">", tag);
     }
 
 private:
@@ -447,25 +448,25 @@ private:
 };
 
 // ------------------------------------------------------------------
-class List : public Selector {
+class ListSelector : public Selector {
 public:
-    List() : type(ObjectType::NONE) { }
+    ListSelector() : type(Object::Type::NONE) { }
 
     static Query Ordered() {
-        return Query().by(List(ObjectType::ORDERED_LIST));
+        return Query().by(ListSelector(Object::Type::ORDERED_LIST));
     }
 
     static Query Unordered() {
-        return Query().by(List(ObjectType::UNORDERED_LIST));
+        return Query().by(ListSelector(Object::Type::UNORDERED_LIST));
     }
 
     Selector* clone() const {
-        return new List(type);
+        return new ListSelector(type);
     }
 
     bool choose(obj_t obj) const {
-        if (type == ObjectType::NONE) {
-            return obj->type() == ObjectType::ORDERED_LIST || obj->type() == ObjectType::UNORDERED_LIST;
+        if (type == Object::Type::NONE) {
+            return obj->type() == Object::Type::ORDERED_LIST || obj->type() == Object::Type::UNORDERED_LIST;
 
         } else {
             return obj->type() == type;
@@ -473,37 +474,37 @@ public:
     }
 
     std::string repr() const {
-        if (type == ObjectType::NONE) {
-            return "List";
+        if (type == Object::Type::NONE) {
+            return "ListSelector";
         } else {
             return Object::type_name(type);
         }
     }
 
 private:
-    List(ObjectType type) : type(type) { }
-    ObjectType type;
+    ListSelector(Object::Type type) : type(type) { }
+    Object::Type type;
 };
 
 // ------------------------------------------------------------------
-class Item : public Selector {
+class ListItemSelector : public Selector {
 public:
-    Item() : type(ObjectType::NONE) { }
+    ListItemSelector() : type(Object::Type::NONE) { }
 
     static Query Ordered(const std::string& ordinal = "") {
-        return Query().by(Item(ObjectType::ORDERED_LIST_ITEM, ordinal));
+        return Query().by(ListItemSelector(Object::Type::ORDERED_LIST_ITEM, ordinal));
     }
 
     static Query Unordered() {
-        return Query().by(Item(ObjectType::UNORDERED_LIST_ITEM));
+        return Query().by(ListItemSelector(Object::Type::UNORDERED_LIST_ITEM));
     }
 
     static Query Checklist(const std::string& status = "") {
-        return Query().by(Item(ObjectType::NONE, "", true, status));
+        return Query().by(ListItemSelector(Object::Type::NONE, "", true, status));
     }
 
     Selector* clone() const {
-        return new Item(type, ordinal, checklist_item, status);
+        return new ListItemSelector(type, ordinal, checklist_item, status);
     }
 
     bool choose(obj_t obj) const {
@@ -511,15 +512,15 @@ public:
             return false;
         }
 
-        if (type == ObjectType::ORDERED_LIST_ITEM && ordinal.size() > 0) {
-            auto oli = std::static_pointer_cast<object::OrderedListItem>(obj);
+        if (type == Object::Type::ORDERED_LIST_ITEM && ordinal.size() > 0) {
+            auto oli = std::static_pointer_cast<OrderedListItem>(obj);
             if (oli->ordinal() != ordinal) {
                 return false;
             }
         }
 
         if (checklist_item) {
-            auto item = std::static_pointer_cast<object::ListItem>(obj);
+            auto item = std::static_pointer_cast<ListItem>(obj);
             return item->status() != "" && (status == "" || item->status() == status);
         }
 
@@ -535,11 +536,11 @@ public:
             }
         }
 
-        if (type == ObjectType::UNORDERED_LIST_ITEM) {
+        if (type == Object::Type::UNORDERED_LIST_ITEM) {
             return "UnorderedListItem";
         }
 
-        if (type == ObjectType::ORDERED_LIST_ITEM) {
+        if (type == Object::Type::ORDERED_LIST_ITEM) {
             if (ordinal != "") {
                 return "OrderedListItem";
             } else {
@@ -552,35 +553,35 @@ public:
 
 private:
     bool is_correct_type(obj_t obj) const {
-        if (type == ObjectType::NONE) {
-            return obj->type() == ObjectType::ORDERED_LIST_ITEM || obj->type() == ObjectType::UNORDERED_LIST_ITEM;
+        if (type == Object::Type::NONE) {
+            return obj->type() == Object::Type::ORDERED_LIST_ITEM || obj->type() == Object::Type::UNORDERED_LIST_ITEM;
 
         } else {
             return obj->type() == type;
         }
     }
 
-    Item(ObjectType type, const std::string& ordinal = "", bool checklist_item = false, const std::string& status = "")
+    ListItemSelector(Object::Type type, const std::string& ordinal = "", bool checklist_item = false, const std::string& status = "")
     : type(type), ordinal(ordinal), checklist_item(checklist_item), status(status) { }
 
-    ObjectType type;
+    Object::Type type;
     std::string ordinal;
     bool checklist_item = false;
     std::string status;
 };
 
 // ------------------------------------------------------------------
-class Anchor : public Selector {
+class AnchorSelector : public Selector {
 public:
-    Anchor(const std::string& name) : name(name) { }
+    AnchorSelector(const std::string& name) : name(name) { }
 
     Selector* clone() const {
-        return new Anchor(name);
+        return new AnchorSelector(name);
     }
 
     bool choose(obj_t obj) const {
-        if (obj->type() == ObjectType::HASHTAG) {
-            auto anchor = std::static_pointer_cast<object::Anchor>(obj);
+        if (obj->type() == Object::Type::HASHTAG) {
+            auto anchor = std::static_pointer_cast<Anchor>(obj);
             return name == "" || anchor->name() == name;
         }
         return false;
@@ -588,10 +589,10 @@ public:
 
     std::string repr() const {
         if (name != "") {
-            return tfm::format("Anchor<\"%s\">", name);
+            return tfm::format("AnchorSelector<\"%s\">", name);
 
         } else {
-            return "Anchor";
+            return "AnchorSelector";
         }
     }
 
@@ -600,17 +601,17 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Reference : public Selector {
+class ReferenceSelector : public Selector {
 public:
-    Reference(const std::string& ref_search) : ref_search(ref_search) { }
+    ReferenceSelector(const std::string& ref_search) : ref_search(ref_search) { }
 
     Selector* clone() const {
-        return new Reference(ref_search);
+        return new ReferenceSelector(ref_search);
     }
 
     bool choose(obj_t obj) const {
-        if (obj->type() == ObjectType::REF) {
-            auto ref = std::static_pointer_cast<object::Ref>(obj);
+        if (obj->type() == Object::Type::REF) {
+            auto ref = std::static_pointer_cast<Ref>(obj);
             auto& link = ref->link();
             return ref_search == "" || link.find(ref_search) != std::string::npos;
         }
@@ -630,12 +631,12 @@ private:
 };
 
 // ------------------------------------------------------------------
-class Not : public Selector {
+class LogicalNot : public Selector {
 public:
-    Not(const Query& query) : query(query.clone()) { }
+    LogicalNot(const Query& query) : query(query.clone()) { }
 
     Selector* clone() const {
-        return new Not(query.get());
+        return new LogicalNot(query.get());
     }
 
     std::vector<obj_t> select(const std::vector<obj_t>& objects) const {
@@ -654,7 +655,7 @@ public:
     }
 
 private:
-    Not(const Selector* selector) : query(selector->clone()) { }
+    LogicalNot(const Selector* selector) : query(selector->clone()) { }
     std::unique_ptr<Selector> query;
 };
 
@@ -669,7 +670,7 @@ public:
 
     bool choose(obj_t obj) const {
         if (obj->is_container()) {
-            auto container = std::static_pointer_cast<object::Container>(obj);
+            auto container = std::static_pointer_cast<Container>(obj);
             return query->select(container->contents()).size() > 0;
         }
         return false;
@@ -684,8 +685,10 @@ private:
     std::unique_ptr<Selector> query;
 };
 
+namespace _private {
+
 // ------------------------------------------------------------------
-inline std::vector<std::string> tokenize(const std::string& query) {
+inline std::vector<std::string> tokenize_query(const std::string& query) {
     std::istringstream sinput(query);
     moonlight::file::BufferedInput input(sinput);
     std::vector<std::string> tokens;
@@ -756,18 +759,18 @@ inline std::vector<std::string> tokenize(const std::string& query) {
 }
 
 // ------------------------------------------------------------------
-inline Search build_search_query(std::vector<std::string>& tokens) {
+inline RegexSelector build_search_query(std::vector<std::string>& tokens) {
     if (tokens.size() == 0) {
         throw QueryError("/search query requires an argument.");
     }
 
     auto rx = tokens.back();
     tokens.pop_back();
-    return Search(rx);
+    return RegexSelector(rx);
 }
 
 // ------------------------------------------------------------------
-inline Level build_level_query(std::vector<std::string>& tokens) {
+inline LevelSelector build_level_query(std::vector<std::string>& tokens) {
     if (tokens.size() == 0) {
         throw QueryError("/level query requires an argument.");
     }
@@ -775,7 +778,7 @@ inline Level build_level_query(std::vector<std::string>& tokens) {
     try {
         auto level = std::stoi(tokens.back());
         tokens.pop_back();
-        return Level(level);
+        return LevelSelector(level);
 
     } catch (const std::exception& e) {
         throw QueryError("Failed to parse /level query parameter as integer.");
@@ -791,7 +794,7 @@ inline Query build_ordinal_list_item_query(std::vector<std::string>& tokens) {
     auto ordinal = tokens.back();
     tokens.pop_back();
 
-    return Item::Ordered(ordinal);
+    return ListItemSelector::Ordered(ordinal);
 }
 
 // ------------------------------------------------------------------
@@ -803,7 +806,7 @@ inline Query build_status_list_item_query(std::vector<std::string>& tokens) {
     auto status = tokens.back();
     tokens.pop_back();
 
-    return Item::Checklist(status);
+    return ListItemSelector::Checklist(status);
 }
 
 // ------------------------------------------------------------------
@@ -813,7 +816,7 @@ inline bool scan_offset_or_slice(Query& result, const std::string& token) {
     case 2:
         try {
             result = Query().by(
-                Slice(parts[0] == "" ? std::optional<int>() : std::stoi(parts[0]),
+                SliceSelect(parts[0] == "" ? std::optional<int>() : std::stoi(parts[0]),
                       parts[1] == "" ? std::optional<int>() : std::stoi(parts[1])));
             return true;
         } catch (...) {
@@ -822,7 +825,7 @@ inline bool scan_offset_or_slice(Query& result, const std::string& token) {
 
     case 1:
         try {
-            result = Query().by(Offset(std::stoi(parts[0])));
+            result = Query().by(OffsetSelector(std::stoi(parts[0])));
             return true;
 
         } catch (...) {
@@ -835,7 +838,7 @@ inline bool scan_offset_or_slice(Query& result, const std::string& token) {
 }
 
 // ------------------------------------------------------------------
-inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
+inline Query parse(std::vector<std::string>& tokens, int depth = -1) {
     Query query;
     Query sub_result;
     Classifier<std::string> classify;
@@ -847,38 +850,38 @@ inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
         };
     };
 
-    classify("*") = [&]() { query.by(Children(true)); };
-    classify("**") = [&]() { query.by(Descendants(true)); };
-    classify(">") = [&]() { query.by(Children(false)); };
-    classify(">>") = [&]() { query.by(Descendants(false)); };
-    classify("<") = [&]() { query.by(Parents()); };
-    classify("<<") = [&]() { query.by(Antecedents()); };
-    classify("label") = [&]() { query.by(Label()); };
-    classify("contains") = [&]() { query.by(Contains(_parse(tokens))); };
-    classify("not", "!") = [&]() { query.by(Not(_parse(tokens, 1))); };
+    classify("*") = [&]() { query.by(ChildrenSelector(true)); };
+    classify("**") = [&]() { query.by(DescendantsSelector(true)); };
+    classify(">") = [&]() { query.by(ChildrenSelector(false)); };
+    classify(">>") = [&]() { query.by(DescendantsSelector(false)); };
+    classify("<") = [&]() { query.by(ParentSelector()); };
+    classify("<<") = [&]() { query.by(AntecedentsSelector()); };
+    classify("label") = [&]() { query.by(LabelSelector()); };
+    classify("contains") = [&]() { query.by(Contains(parse(tokens))); };
+    classify("not", "!") = [&]() { query.by(LogicalNot(parse(tokens, 1))); };
     classify("search") = [&]() { query.by(build_search_query(tokens)); };
     classify("level") = [&]() { query.by(build_level_query(tokens)); };
-    classify("line_break", "br") = [&]() { query.by(Type(ObjectType::LINE_BREAK)); };
-    classify("text", "t") = [&]() { query.by(Type(ObjectType::TEXT)); };
-    classify("content") = [&]() { query.by(Type(ObjectType::TEXT_CONTENT)); };
-    classify("list") = [&]() { query.by(List()); };
-    classify("ordered_list", "ol") = [&]() { query.by(List::Ordered()); };
-    classify("unordered_list", "ul") = [&]() { query.by(List::Unordered()); };
-    classify("check_list", "task_list") = [&]() { query.by(Contains(Item::Checklist())); };
+    classify("line_break", "br") = [&]() { query.by(TypeSelect(Object::Type::LINE_BREAK)); };
+    classify("text", "t") = [&]() { query.by(TypeSelect(Object::Type::TEXT)); };
+    classify("content") = [&]() { query.by(TypeSelect(Object::Type::TEXT_CONTENT)); };
+    classify("list") = [&]() { query.by(ListSelector()); };
+    classify("ordered_list", "ol") = [&]() { query.by(ListSelector::Ordered()); };
+    classify("unordered_list", "ul") = [&]() { query.by(ListSelector::Unordered()); };
+    classify("check_list", "task_list") = [&]() { query.by(Contains(ListItemSelector::Checklist())); };
     classify("status") = [&]() { query.by(build_status_list_item_query(tokens)); };
-    classify("item", "list_item", "li") = [&]() { query.by(Item()); };
+    classify("item", "list_item", "li") = [&]() { query.by(ListItemSelector()); };
     classify("ordinal", "ord") = [&]() { query.by(build_ordinal_list_item_query(tokens)); };
-    classify("ordered_list_item", "oli") = [&]() { query.by(Item::Ordered()); };
-    classify("unordered_list_item", "uli") = [&]() { query.by(Item::Unordered()); };
-    classify("section", "s") = [&]() { query.by(Type(ObjectType::SECTION)); };
-    classify("task", "check_item", "task_item") = [&]() { query.by(Item::Checklist()); };
+    classify("ordered_list_item", "oli") = [&]() { query.by(ListItemSelector::Ordered()); };
+    classify("unordered_list_item", "uli") = [&]() { query.by(ListItemSelector::Unordered()); };
+    classify("section", "s") = [&]() { query.by(TypeSelect(Object::Type::SECTION)); };
+    classify("task", "check_item", "task_item") = [&]() { query.by(ListItemSelector::Checklist()); };
     classify(startswith("(")) = [&](const std::string& token) {
-        auto subquery_tokens = tokenize(moonlight::slice(token, 1, -1));
-        query.by(Query(_parse(subquery_tokens)));
+        auto subquery_tokens = tokenize_query(moonlight::slice(token, 1, -1));
+        query.by(Query(parse(subquery_tokens)));
     };
-    classify(startswith("~")) = [&](const std::string& token) { query.by(Search(moonlight::slice(token, 1, {}))); };
-    classify(startswith("#")) = [&](const std::string& token) { query.by(Hashtag(moonlight::slice(token, 1, {}))); };
-    classify(startswith("@")) = [&](const std::string& token) { query.by(Reference(moonlight::slice(token, 1, {}))); };
+    classify(startswith("~")) = [&](const std::string& token) { query.by(RegexSelector(moonlight::slice(token, 1, {}))); };
+    classify(startswith("#")) = [&](const std::string& token) { query.by(HashtagSelector(moonlight::slice(token, 1, {}))); };
+    classify(startswith("@")) = [&](const std::string& token) { query.by(ReferenceSelector(moonlight::slice(token, 1, {}))); };
     classify(([&](const std::string& token) { return scan_offset_or_slice(sub_result, token); })) = [&]() { query.by(sub_result); };
     classify.otherwise() = [](const std::string& token) {
         throw QueryError(tfm::format("Unrecognized query token: \"%s\"", strliteral(token)));
@@ -894,14 +897,21 @@ inline Query _parse(std::vector<std::string>& tokens, int depth = -1) {
     return query;
 }
 
-// ------------------------------------------------------------------
-inline Query parse(const std::string& str) {
-    auto tokens = tokenize(str);
-    std::reverse(tokens.begin(), tokens.end());
-    return _parse(tokens);
 }
 
 }
+
+namespace q {
+
+// ------------------------------------------------------------------
+inline Query parse(const std::string& str) {
+    auto tokens = _private::tokenize_query(str);
+    std::reverse(tokens.begin(), tokens.end());
+    return _private::parse(tokens);
+}
+
+}
+
 }
 
 #endif /* !__JOTDOWN_QUERY_H */
