@@ -24,14 +24,11 @@ INCLUDES = [
     "-I./pybind11/include",
 ]
 
-LDFLAGS=('-rdynamic', '-g', '-ldl')
+LDFLAGS = ("-rdynamic", "-g", "-ldl")
 
-RELEASE_CFLAGS=(
-    *INCLUDES,
-    "--std=c++2a"
-)
+RELEASE_CFLAGS = (*INCLUDES, "--std=c++2a")
 
-TEST_CFLAGS=(
+TEST_CFLAGS = (
     *RELEASE_CFLAGS,
     "-DMOONLIGHT_AUTOMATA_DEBUG",
     "-DMOONLIGHT_DEBUG",
@@ -40,17 +37,9 @@ TEST_CFLAGS=(
     "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION",
 )
 
-RELEASE_ENV = dict(
-    CC="clang++",
-    CFLAGS=RELEASE_CFLAGS,
-    LDFLAGS=LDFLAGS
-)
+RELEASE_ENV = dict(CC="clang++", CFLAGS=RELEASE_CFLAGS, LDFLAGS=LDFLAGS)
 
-TEST_ENV = dict(
-    CC="clang++",
-    CFLAGS=TEST_CFLAGS,
-    LDFLAGS=LDFLAGS
-)
+TEST_ENV = dict(CC="clang++", CFLAGS=TEST_CFLAGS, LDFLAGS=LDFLAGS)
 
 # -------------------------------------------------------------------
 def compile_app(src, headers, env):
@@ -68,15 +57,18 @@ def compile_app(src, headers, env):
 def compile_test(src, headers, env):
     return compile_app(src, headers, TEST_ENV)
 
+
 # -------------------------------------------------------------------
 @factory
 def compile_demo(src, headers, env):
     return compile_app(src, headers, RELEASE_ENV)
 
+
 # -------------------------------------------------------------------
 @factory
 def run_test(app):
     return sh("{test}", test=app, cwd="test", interactive=True)
+
 
 # -------------------------------------------------------------------
 @factory
@@ -150,14 +142,19 @@ def test_sources():
 
 # -------------------------------------------------------------------
 @target
-def demos(demo_sources, headers):
-    return [compile_demo(src, headers, RELEASE_ENV) for src in demo_sources]
+def demos(demo_sources, headers, submodules):
+    return Recipe(
+        [compile_demo(src, headers, RELEASE_ENV) for src in demo_sources],
+        setup=submodules,
+    )
 
 
 # -------------------------------------------------------------------
 @target
 def tests(test_sources, headers, submodules):
-    return Recipe([compile_test(src, headers, TEST_ENV) for src in test_sources], setup=submodules)
+    return Recipe(
+        [compile_test(src, headers, TEST_ENV) for src in test_sources], setup=submodules
+    )
 
 
 # -------------------------------------------------------------------
@@ -165,14 +162,19 @@ def tests(test_sources, headers, submodules):
 def run_tests(tests):
     return [run_test(app) for app in tests]
 
+
 # -------------------------------------------------------------------
 @target
 def pybind11_tests(submodules):
-    return Recipe([
-        sh("mkdir -p {output}", output="pybind11-test-build"),
-        sh("cmake ../pybind11", cwd=Path("pybind11-test-build")),
-        sh("make check -j 4", cwd=Path("pybind11-test-build"), interactive=True),
-    ], synchronous=True, setup=submodules)
+    return Recipe(
+        [
+            sh("mkdir -p {output}", output="pybind11-test-build"),
+            sh("cmake ../pybind11", cwd=Path("pybind11-test-build")),
+            sh("make check -j 4", cwd=Path("pybind11-test-build"), interactive=True),
+        ],
+        synchronous=True,
+        setup=submodules,
+    )
 
 
 # -------------------------------------------------------------------
@@ -184,7 +186,10 @@ def pymodule_sources(submodules):
 # -------------------------------------------------------------------
 @target
 def pymodule_objects(pymodule_sources, headers, run_tests):
-    return [compile_pybind11_module_object(src, headers, run_tests) for src in pymodule_sources]
+    return [
+        compile_pybind11_module_object(src, headers, run_tests)
+        for src in pymodule_sources
+    ]
 
 
 # -------------------------------------------------------------------
@@ -219,7 +224,7 @@ def upload_to_pypi(latest_tarball, pypi_password):
         PYPI_USERNAME=PYPI_USERNAME,
         password=pypi_password,
         input=latest_tarball,
-        redacted=['password']
+        redacted=["password"],
     )
 
 
