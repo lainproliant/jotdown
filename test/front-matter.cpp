@@ -22,17 +22,17 @@ int main() {
     .test("front-matter no langspec", []() {
         auto doc = jotdown::load("data/front-matter/front-matter-no-langspec.md");
         auto front_matter = doc->front_matter();
-        assert_true(front_matter != nullptr);
+        ASSERT(front_matter != nullptr);
         return true;
     })
     .test("front-matter json", []() {
         auto doc = jotdown::load("data/front-matter/front-matter-json.md");
         auto front_matter = doc->front_matter();
-        assert_true(front_matter != nullptr);
-        assert_equal(front_matter->language(), std::string("json"));
+        ASSERT(front_matter != nullptr);
+        ASSERT_EQUAL(front_matter->language(), std::string("json"));
         auto json = moonlight::json::read<moonlight::json::Object>(front_matter->code());
-        assert_equal(json.get<std::string>("name"), std::string("Front Matter JSON"));
-        assert_equal(json.get<std::string>("author"), std::string("Lain Musgrove"));
+        ASSERT_EQUAL(json.get<std::string>("name"), std::string("Front Matter JSON"));
+        ASSERT_EQUAL(json.get<std::string>("author"), std::string("Lain Musgrove"));
     })
     .run();
 }

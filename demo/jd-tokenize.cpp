@@ -12,7 +12,6 @@
 #include "jotdown/parser.h"
 #include "jotdown/compiler.h"
 #include "jotdown/object.h"
-#include "moonlight/core.h"
 #include "moonlight/cli.h"
 
 std::vector<jotdown::parser::token_t> load(std::istream& infile, const std::string& name = "<input>") {

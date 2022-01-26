@@ -13,7 +13,6 @@
 #include "jotdown/object.h"
 #include "jotdown/query.h"
 #include "jotdown/utils.h"
-#include "moonlight/core.h"
 #include "moonlight/cli.h"
 
 void query_repl(std::shared_ptr<jotdown::Document> doc) {

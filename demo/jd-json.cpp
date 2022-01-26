@@ -11,7 +11,6 @@
 #include "jotdown/parser.h"
 #include "jotdown/compiler.h"
 #include "jotdown/object.h"
-#include "moonlight/core.h"
 #include "moonlight/cli.h"
 
 std::shared_ptr<jotdown::Document> load(std::istream& input, const std::string& name = "<input>") {

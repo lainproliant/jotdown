@@ -176,7 +176,7 @@ public:
         try {
             return {moonlight::slice(objects, offset)};
 
-        } catch (const moonlight::SliceError& e) {
+        } catch (const moonlight::core::IndexError& e) {
             return {};
         }
     }

@@ -47,12 +47,9 @@ void assert_type_sequence(const std::vector<obj_t>& objects,
     for (const auto& repr : reprs) {
         tfm::printf("%20s %-20s\n", repr.first, repr.second);
     }
-    assert_equal(objects.size(), types.size(), tfm::format("type sequence size %d == objects size %d",
-                                                  types.size(), objects.size()));
+    ASSERT_EQUAL(objects.size(), types.size());
     for (size_t x = 0; x < types.size(); x++) {
-        assert_equal(types[x], objects[x]->type(),
-                     tfm::format("%s == %s", Object::type_name(types[x]),
-                                 Object::type_name(objects[x]->type())));
+        ASSERT_EQUAL(types[x], objects[x]->type());
     }
 }
 
