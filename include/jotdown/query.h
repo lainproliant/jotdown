@@ -24,10 +24,7 @@
 
 namespace jotdown {
 
-// ------------------------------------------------------------------
-class QueryError : public moonlight::core::Exception {
-    using Exception::Exception;
-};
+EXCEPTION_TYPE(QueryError);
 
 namespace q {
 

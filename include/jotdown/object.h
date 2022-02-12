@@ -47,13 +47,9 @@ struct Config {
 };
 
 //-------------------------------------------------------------------
-class ObjectError : public moonlight::core::Exception {
-public:
-    using Exception::Exception;
-};
+EXCEPTION_TYPE(ObjectError)
 
 //-------------------------------------------------------------------
-
 class Object : public std::enable_shared_from_this<Object> {
 public:
     enum class Type {
@@ -218,7 +214,7 @@ public:
         _check_can_contain(obj);
         auto iter = std::find(_contents.begin(), _contents.end(), pivot);
         if (iter == _contents.end()) {
-            throw ObjectError("Pivot object does not exist in container.");
+            THROW(ObjectError, "Pivot object does not exist in container.");
         }
         _contents.insert(iter, obj);
         return obj;
@@ -229,7 +225,7 @@ public:
         _check_can_contain(obj);
         auto iter = std::find(_contents.begin(), _contents.end(), pivot);
         if (iter == _contents.end()) {
-            throw ObjectError("Pivot object does not exist in container.");
+            THROW(ObjectError, "Pivot object does not exist in container.");
         }
         _contents.insert(std::next(iter), obj);
         return obj;
@@ -258,10 +254,10 @@ public:
     void shift_up(cobj_t obj) {
         auto iter = std::find(_contents.begin(), _contents.end(), obj);
         if (iter == _contents.end()) {
-            throw ObjectError("Object does not exist in this container.");
+            THROW(ObjectError, "Object does not exist in this container.");
         }
         if (iter == _contents.begin()) {
-            throw ObjectError("Object is already the first in the container.");
+            THROW(ObjectError, "Object is already the first in the container.");
         }
         std::iter_swap(std::prev(iter), iter);
     }
@@ -275,10 +271,10 @@ public:
     void shift_down(cobj_t obj) {
         auto iter = std::find(_contents.begin(), _contents.end(), obj);
         if (iter == _contents.end()) {
-            throw ObjectError("Object does not exist in this container.");
+            THROW(ObjectError, "Object does not exist in this container.");
         }
         if (std::next(iter) == _contents.end()) {
-            throw ObjectError("Object is already the last in the container.");
+            THROW(ObjectError, "Object is already the last in the container.");
         }
         std::iter_swap(std::next(iter), iter);
     }
@@ -292,7 +288,7 @@ public:
     void remove(obj_t obj) {
         auto iter = std::find(_contents.begin(), _contents.end(), obj);
         if (iter == _contents.end()) {
-            throw ObjectError("Object is not in the container.");
+            THROW(ObjectError, "Object is not in the container.");
         }
         _contents.erase(iter);
         if ((*iter)->has_parent() && (*iter)->parent() == shared_from_this()) {
@@ -347,7 +343,7 @@ protected:
 
     void _check_can_contain(cobj_t obj) const {
         if (! can_contain(obj)) {
-            throw ObjectError(tfm::format("%s cannot contain %s.",
+            THROW(ObjectError, tfm::format("%s cannot contain %s.",
                                           type_name(type()),
                                           obj->type_name(obj->type())));
         }

@@ -14,10 +14,7 @@
 
 namespace jotdown {
 
-// ------------------------------------------------------------------
-class JotdownError : public moonlight::core::Exception {
-    using Exception::Exception;
-};
+EXCEPTION_TYPE(JotdownError)
 
 }
 

@@ -28,8 +28,8 @@ namespace parser {
 // ------------------------------------------------------------------
 class ParserError : public JotdownError {
 public:
-    ParserError(const std::string& message, const Location& location)
-    : JotdownError(format_message(message, location)),
+    ParserError(const std::string& message, const Location& location, const moonlight::debug::Source& where = {})
+    : JotdownError(format_message(message, location), where, moonlight::type_name<ParserError>()),
     _location(location) { }
 
     const Location& location() const {

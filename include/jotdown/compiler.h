@@ -25,8 +25,8 @@ using jotdown::parser::token_t;
 //-------------------------------------------------------------------
 class CompilerError : public JotdownError {
 public:
-    CompilerError(const std::string& message, const Location& location)
-    : JotdownError(format_message(message, location)),
+    CompilerError(const std::string& message, const Location& location, const moonlight::debug::Source& where = {})
+    : JotdownError(format_message(message, location), where, moonlight::type_name<CompilerError>()),
     _location(location) { }
 
     const Location& location() const {
@@ -107,12 +107,14 @@ struct Context {
 //-------------------------------------------------------------------
 class CompileState : public moonlight::automata::State<Context> {
 protected:
-    CompilerError unexpected_token(token_t tk, const std::string& doing) {
+    CompilerError unexpected_token(token_t tk, const std::string& doing,
+                                   const moonlight::debug::Source& where = {}) {
         return CompilerError(
             tfm::format("Unexpected '%s' token: %s.",
                         tk->type_name(tk->type()),
                         doing),
-            tk->begin());
+            tk->begin(),
+            where);
     }
 };
 
@@ -163,7 +165,7 @@ public:
         default:
             if (tk->type() != _terminal_type && _terminal_type != Token::Type::NONE) {
                 throw unexpected_token(
-                    tk, "expecting " + tk->type_name(_terminal_type));
+                    tk, "expecting " + tk->type_name(_terminal_type), LOCATION);
 
             } else if (tk->type() == _terminal_type) {
                 context().tokens.advance();
@@ -274,7 +276,7 @@ public:
 
     void _process_list_item(std::shared_ptr<parser::ListItemToken> li_tk) {
         if (li_tk->type() != Token::Type::OL_ITEM) {
-            throw unexpected_token(li_tk, "compiling ordered list at the same level");
+            throw unexpected_token(li_tk, "compiling ordered list at the same level", LOCATION);
         }
         std::shared_ptr<parser::OrderedListItemToken> oli_tk = (
             std::dynamic_pointer_cast<parser::OrderedListItemToken>(li_tk));
@@ -307,7 +309,7 @@ public:
 
     void _process_list_item(std::shared_ptr<parser::ListItemToken> li_tk) {
         if (li_tk->type() != Token::Type::UL_ITEM) {
-            throw unexpected_token(li_tk, "compiling unordered list at the same level");
+            throw unexpected_token(li_tk, "compiling unordered list at the same level", LOCATION);
         }
         auto uli = UnorderedListItem::create();
         uli->level(level);
@@ -348,7 +350,7 @@ public:
             transition<CompileUnorderedList>(unordered_list);
 
         } else {
-            throw unexpected_token(tk, "parsing top-level list");
+            throw unexpected_token(tk, "parsing top-level list", LOCATION);
         }
     }
 
@@ -366,7 +368,7 @@ public:
     void run() {
         auto tk = context().tokens.get();
         if (tk == nullptr || tk->type() != Token::Type::FRONT_MATTER) {
-            throw unexpected_token(tk, "compiling front matter, expected FRONT_MATTER");
+            throw unexpected_token(tk, "compiling front matter, expected FRONT_MATTER", LOCATION);
         }
 
         std::shared_ptr<parser::EmbeddedDocumentToken> front_matter_tk = (
@@ -391,7 +393,7 @@ public:
     void run() {
         auto tk = context().tokens.get();
         if (tk == nullptr || tk->type() != Token::Type::CODE_BLOCK) {
-            throw unexpected_token(tk, "compiling code block, expected CODE_BLOCK");
+            throw unexpected_token(tk, "compiling code block, expected CODE_BLOCK", LOCATION);
         }
         std::shared_ptr<parser::EmbeddedDocumentToken> code_tk = (
             std::dynamic_pointer_cast<parser::EmbeddedDocumentToken>(tk)
@@ -461,7 +463,7 @@ public:
             break;
 
         default:
-            throw unexpected_token(tk, "parsing section");
+            throw unexpected_token(tk, "parsing section", LOCATION);
         }
     }
 
