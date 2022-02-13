@@ -129,8 +129,20 @@ public:
         return false;
     }
 
-    static const std::string& type_name(Type type) {
-        static const std::string names[] = {
+    virtual bool is_list_item() const {
+        return false;
+    }
+
+    virtual bool is_list() const {
+        return false;
+    }
+
+    virtual bool is(Type type_check) const {
+        return type() == type_check;
+    }
+
+    static const std::vector<std::string>& type_names() {
+        static const std::vector<std::string> names = {
             "NONE",
             "Anchor",
             "Code",
@@ -151,7 +163,16 @@ public:
             "NUM_TYPES"
         };
 
-        return names[static_cast<unsigned int>(type)];
+        return names;
+    }
+
+    static const std::string& type_name(Type type) {
+        return type_names()[static_cast<unsigned int>(type)];
+    }
+
+    static const std::map<std::string, Type>& type_names_map() {
+        static const std::map<std::string, Type> names_map = make_type_names_map();
+        return names_map;
     }
 
     static Config& config() {
@@ -179,6 +200,17 @@ public:
     }
 
 private:
+    static const std::map<std::string, Type> make_type_names_map() {
+        const auto names = type_names();
+        static std::map<std::string, Type> type_names_map;
+
+        for (int x = 0; x < names.size(); x++) {
+            type_names_map.insert({names[x], static_cast<Type>(x)});
+        }
+
+        return type_names_map;
+    }
+
     Type _type;
     container_t _parent = nullptr;
     Range _range = {NOWHERE, NOWHERE};
@@ -772,7 +804,11 @@ class List : public Container {
 public:
     List(Type type) : Container(type) { }
 
-    std::string to_jotdown() const {
+    bool is_list() const override {
+        return true;
+    }
+
+    std::string to_jotdown() const override {
         std::stringstream sb;
         for (auto obj : contents()) {
             sb << std::static_pointer_cast<Object>(obj)->to_jotdown();
@@ -797,12 +833,12 @@ class ListItem : public Container {
 public:
     virtual std::string crown() const = 0;
 
-    bool can_contain(cobj_t obj) const {
-        static const std::vector<Type> cont = {
-            Type::ORDERED_LIST,
-            Type::UNORDERED_LIST
-        };
-        return std::find(cont.begin(), cont.end(), obj->type()) != cont.end();
+    bool is_list_item() const override {
+        return true;
+    }
+
+    bool can_contain(cobj_t obj) const override {
+        return obj->is_list();
     }
 
     std::shared_ptr<TextContent> text() {
