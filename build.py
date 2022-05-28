@@ -21,6 +21,7 @@ PYPI_KEY_NAME = "pypi"
 INCLUDES = [
     "-I./include",
     "-I./moonlight/include",
+    "-I./moonlight/deps",
     "-I./pybind11/include",
 ]
 
@@ -233,6 +234,11 @@ def upload_to_pypi(latest_tarball, pypi_password):
 def all(demos, pymodule_dev):
     return [demos, pymodule_dev]
 
+
+# -------------------------------------------------------------------
+@target
+def cc_json():
+    return sh("intercept-build ./build.py compile\* -R; ./build.py -c compile\*")
 
 # -------------------------------------------------------------------
 build()
