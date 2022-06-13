@@ -67,9 +67,9 @@ void declare_api(py::module& m) {
                      const std::string& filename) {
         save(document, filename);
     });
-    m.def("q", [](const std::vector<obj_t>& objects, const std::string& query_str) {
-        return q::parse(query_str).select(objects);
-    });
+/*    m.def("q", [](const std::vector<obj_t>& objects, const std::string& query_str) {*/
+/*        return q::parse(query_str).select(objects);*/
+/*    });*/
 }
 
 
@@ -203,9 +203,9 @@ obj_class declare_object(py::module& m) {
     object.def("clone", [](const Object& obj) {
         return obj.clone();
     });
-    object.def("query", [](std::shared_ptr<Object> object, const std::string& query_str) {
-        return q::parse(query_str).select({object});
-    });
+/*    object.def("query", [](std::shared_ptr<Object> object, const std::string& query_str) {*/
+/*        return q::parse(query_str).select({object});*/
+/*    });*/
     object.def("to_json", [](const Object& obj) {
         return json_to_dict(obj.to_json());
     });

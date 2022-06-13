@@ -34,26 +34,49 @@ inline lex::Grammar::Pointer make_lex_grammar() {
     auto root = lex::Grammar::create();
 
     auto ignore_whitespace = lex::ignore("\\s");
-    auto string_literal = root->sub();
-    auto string_escape_seq = string_literal->sub();
+    auto string = root->sub();
+    auto string_escape_seq = string->sub();
+    auto block = root->sub();
+    auto parenthesis = root->sub();
+    auto bracket = root->sub();
 
     root
         ->def(ignore_whitespace)
-        ->def(lex::push("\"", string_literal), "str-literal-begin")
-        ->def(lex::match("[^\"]+"), "bare")
+        ->def(lex::push("\"", string), "string-begin")
+        ->def(lex::push("\\{", block), "block-start")
+        ->def(lex::push("\\(", parenthesis), "parenthesis-start")
+        ->def(lex::push("\\[", bracket), "bracket-start")
+        ->def(lex::match("[0-9]+\\.?[0-9]*"), "number")
+        ->def(lex::match("[_\\-a-zA-Z0-9]+"), "bare")
+        ->def(lex::match(","), "comma")
         ;
 
-    string_literal
-        ->def(lex::push("\\", string_escape_seq), "escape-seq")
-        ->def(lex::match("[^\"\\]+"), "string-content")
-        ->def(lex::pop("\""), "str-literal-end")
+    string
+        ->def(lex::push("\\\\", string_escape_seq), "escape-seq")
+        ->def(lex::match("[^\"\\\\]+"), "string-content")
+        ->def(lex::pop("\""), "string-end")
         ;
 
     string_escape_seq
         ->def(lex::pop("n"), "newline")
         ->def(lex::pop("t"), "tab")
         ->def(lex::pop("\""), "double-quote")
-        ->def(lex::pop("\\"), "backslash")
+        ->def(lex::pop("\\\\"), "backslash")
+        ;
+
+    block
+        ->inherit(root)
+        ->def(lex::pop("\\}"), "block-end")
+        ;
+
+    parenthesis
+        ->inherit(root)
+        ->def(lex::pop("\\)"), "parenthesis-end")
+        ;
+
+    bracket
+        ->inherit(root)
+        ->def(lex::pop("\\]"), "bracket-end")
         ;
 
     return root;

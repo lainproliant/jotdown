@@ -61,7 +61,7 @@ def compile_test(src, headers, env):
 
 # -------------------------------------------------------------------
 @factory
-def compile_demo(src, headers, env):
+def compile_lab(src, headers, env):
     return compile_app(src, headers, RELEASE_ENV)
 
 
@@ -131,8 +131,8 @@ def headers():
 
 # -------------------------------------------------------------------
 @provide
-async def demo_sources():
-    return Path.cwd().glob("demo/*.cpp")
+async def lab_sources():
+    return Path.cwd().glob("lab/*.cpp")
 
 
 # -------------------------------------------------------------------
@@ -143,9 +143,9 @@ def test_sources():
 
 # -------------------------------------------------------------------
 @target
-def demos(demo_sources, headers, submodules):
+def labs(lab_sources, headers, submodules):
     return Recipe(
-        [compile_demo(src, headers, RELEASE_ENV) for src in demo_sources],
+        [compile_lab(src, headers, RELEASE_ENV) for src in lab_sources],
         setup=submodules,
     )
 
@@ -231,8 +231,8 @@ def upload_to_pypi(latest_tarball, pypi_password):
 
 # -------------------------------------------------------------------
 @default
-def all(demos, pymodule_dev):
-    return [demos, pymodule_dev]
+def all(labs, pymodule_dev):
+    return [labs, pymodule_dev]
 
 
 # -------------------------------------------------------------------
