@@ -22,6 +22,7 @@ INCLUDES = [
     "-I./include",
     "-I./moonlight/include",
     "-I./pybind11/include",
+    "-I./moonlight/deps"
 ]
 
 LDFLAGS = ("-rdynamic", "-g", "-ldl")
@@ -42,7 +43,8 @@ RELEASE_ENV = dict(CC="clang++", CFLAGS=RELEASE_CFLAGS, LDFLAGS=LDFLAGS)
 TEST_ENV = dict(CC="clang++", CFLAGS=TEST_CFLAGS, LDFLAGS=LDFLAGS)
 
 # -------------------------------------------------------------------
-def compile_app(src, headers, env):
+@factory
+def compile(src, headers, env):
     return sh(
         "{CC} {CFLAGS} {src} {LDFLAGS} -o {output}",
         env=env,
@@ -50,18 +52,6 @@ def compile_app(src, headers, env):
         output=Path(src).with_suffix(""),
         includes=headers,
     )
-
-
-# -------------------------------------------------------------------
-@factory
-def compile_test(src, headers, env):
-    return compile_app(src, headers, TEST_ENV)
-
-
-# -------------------------------------------------------------------
-@factory
-def compile_demo(src, headers, env):
-    return compile_app(src, headers, RELEASE_ENV)
 
 
 # -------------------------------------------------------------------
@@ -144,7 +134,7 @@ def test_sources():
 @target
 def demos(demo_sources, headers, submodules):
     return Recipe(
-        [compile_demo(src, headers, RELEASE_ENV) for src in demo_sources],
+        [compile(src, headers, RELEASE_ENV) for src in demo_sources],
         setup=submodules,
     )
 
@@ -153,7 +143,7 @@ def demos(demo_sources, headers, submodules):
 @target
 def tests(test_sources, headers, submodules):
     return Recipe(
-        [compile_test(src, headers, TEST_ENV) for src in test_sources], setup=submodules
+        [compile(src, headers, TEST_ENV) for src in test_sources], setup=submodules
     )
 
 
@@ -232,6 +222,12 @@ def upload_to_pypi(latest_tarball, pypi_password):
 @default
 def all(demos, pymodule_dev):
     return [demos, pymodule_dev]
+
+
+# -------------------------------------------------------------------
+@target
+def cc_json():
+    return sh("intercept-build ./build.py compile:\* -R; ./build.py -c compile:\*")
 
 
 # -------------------------------------------------------------------

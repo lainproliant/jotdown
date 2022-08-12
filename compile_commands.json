@@ -1,149 +1,37 @@
 [
     {
-        "arguments": [
-            "c++",
-            "-c",
-            "-I./include",
-            "-I./moonlight/include",
-            "-I./pybind11/include",
-            "--std=c++2a",
-            "-DMOONLIGHT_AUTOMATA_DEBUG",
-            "-DMOONLIGHT_DEBUG",
-            "-DMOONLIGHT_ENABLE_STACKTRACE",
-            "-DMOONLIGHT_AUTOMATA_DEBUG",
-            "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION",
-            "-g",
-            "-o",
-            "/home/lainproliant/proj/jotdown/test/links",
-            "test/links.cpp"
-        ],
-        "directory": "/home/lainproliant/proj/jotdown",
-        "file": "test/links.cpp"
+        "command": "c++ -c -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -g -o /home/lainproliant/sync/lain/proj/jotdown/demo/jd-roundtrip /home/lainproliant/sync/lain/proj/jotdown/demo/jd-roundtrip.cpp",
+        "directory": "/home/lainproliant/sync/lain/proj/jotdown",
+        "file": "/home/lainproliant/sync/lain/proj/jotdown/demo/jd-roundtrip.cpp"
     },
     {
-        "arguments": [
-            "c++",
-            "-c",
-            "-I./include",
-            "-I./moonlight/include",
-            "-I./pybind11/include",
-            "--std=c++2a",
-            "-g",
-            "-o",
-            "/home/lainproliant/proj/jotdown/demo/jd-json",
-            "demo/jd-json.cpp"
-        ],
-        "directory": "/home/lainproliant/proj/jotdown",
-        "file": "demo/jd-json.cpp"
+        "command": "c++ -c -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -g -o /home/lainproliant/sync/lain/proj/jotdown/demo/jd-tokenize /home/lainproliant/sync/lain/proj/jotdown/demo/jd-tokenize.cpp",
+        "directory": "/home/lainproliant/sync/lain/proj/jotdown",
+        "file": "/home/lainproliant/sync/lain/proj/jotdown/demo/jd-tokenize.cpp"
     },
     {
-        "arguments": [
-            "c++",
-            "-c",
-            "-O3",
-            "-Wall",
-            "-std=c++2a",
-            "-fPIC",
-            "-I./include",
-            "-I./moonlight/include",
-            "-I./pybind11/include",
-            "-I/usr/include/python3.10",
-            "-I/usr/include/python3.10",
-            "-o",
-            "/home/lainproliant/proj/jotdown/src/jotdown.o",
-            "src/jotdown.cpp"
-        ],
-        "directory": "/home/lainproliant/proj/jotdown",
-        "file": "src/jotdown.cpp"
+        "command": "c++ -c -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -g -o /home/lainproliant/sync/lain/proj/jotdown/demo/jd-json /home/lainproliant/sync/lain/proj/jotdown/demo/jd-json.cpp",
+        "directory": "/home/lainproliant/sync/lain/proj/jotdown",
+        "file": "/home/lainproliant/sync/lain/proj/jotdown/demo/jd-json.cpp"
     },
     {
-        "arguments": [
-            "c++",
-            "-c",
-            "-I./include",
-            "-I./moonlight/include",
-            "-I./pybind11/include",
-            "--std=c++2a",
-            "-DMOONLIGHT_AUTOMATA_DEBUG",
-            "-DMOONLIGHT_DEBUG",
-            "-DMOONLIGHT_ENABLE_STACKTRACE",
-            "-DMOONLIGHT_AUTOMATA_DEBUG",
-            "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION",
-            "-g",
-            "-o",
-            "/home/lainproliant/proj/jotdown/test/front-matter",
-            "test/front-matter.cpp"
-        ],
-        "directory": "/home/lainproliant/proj/jotdown",
-        "file": "test/front-matter.cpp"
+        "command": "c++ -c -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -g -o /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp",
+        "directory": "/home/lainproliant/sync/lain/proj/jotdown",
+        "file": "/home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp"
     },
     {
-        "arguments": [
-            "c++",
-            "-c",
-            "-I./include",
-            "-I./moonlight/include",
-            "-I./pybind11/include",
-            "--std=c++2a",
-            "-g",
-            "-o",
-            "/home/lainproliant/proj/jotdown/demo/jd-roundtrip",
-            "demo/jd-roundtrip.cpp"
-        ],
-        "directory": "/home/lainproliant/proj/jotdown",
-        "file": "demo/jd-roundtrip.cpp"
+        "command": "c++ -c -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_DEBUG -DMOONLIGHT_ENABLE_STACKTRACE -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_STACKTRACE_IN_DESCRIPTION -g -o /home/lainproliant/sync/lain/proj/jotdown/test/links /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp",
+        "directory": "/home/lainproliant/sync/lain/proj/jotdown",
+        "file": "/home/lainproliant/sync/lain/proj/jotdown/test/links.cpp"
     },
     {
-        "arguments": [
-            "c++",
-            "-c",
-            "-I./include",
-            "-I./moonlight/include",
-            "-I./pybind11/include",
-            "--std=c++2a",
-            "-DMOONLIGHT_AUTOMATA_DEBUG",
-            "-DMOONLIGHT_DEBUG",
-            "-DMOONLIGHT_ENABLE_STACKTRACE",
-            "-DMOONLIGHT_AUTOMATA_DEBUG",
-            "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION",
-            "-g",
-            "-o",
-            "/home/lainproliant/proj/jotdown/test/query",
-            "test/query.cpp"
-        ],
-        "directory": "/home/lainproliant/proj/jotdown",
-        "file": "test/query.cpp"
+        "command": "c++ -c -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_DEBUG -DMOONLIGHT_ENABLE_STACKTRACE -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_STACKTRACE_IN_DESCRIPTION -g -o /home/lainproliant/sync/lain/proj/jotdown/test/query /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp",
+        "directory": "/home/lainproliant/sync/lain/proj/jotdown",
+        "file": "/home/lainproliant/sync/lain/proj/jotdown/test/query.cpp"
     },
     {
-        "arguments": [
-            "c++",
-            "-c",
-            "-I./include",
-            "-I./moonlight/include",
-            "-I./pybind11/include",
-            "--std=c++2a",
-            "-g",
-            "-o",
-            "/home/lainproliant/proj/jotdown/demo/jd-query",
-            "demo/jd-query.cpp"
-        ],
-        "directory": "/home/lainproliant/proj/jotdown",
-        "file": "demo/jd-query.cpp"
-    },
-    {
-        "arguments": [
-            "c++",
-            "-c",
-            "-I./include",
-            "-I./moonlight/include",
-            "-I./pybind11/include",
-            "--std=c++2a",
-            "-g",
-            "-o",
-            "/home/lainproliant/proj/jotdown/demo/jd-tokenize",
-            "demo/jd-tokenize.cpp"
-        ],
-        "directory": "/home/lainproliant/proj/jotdown",
-        "file": "demo/jd-tokenize.cpp"
+        "command": "c++ -c -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_DEBUG -DMOONLIGHT_ENABLE_STACKTRACE -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_STACKTRACE_IN_DESCRIPTION -g -o /home/lainproliant/sync/lain/proj/jotdown/test/front-matter /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp",
+        "directory": "/home/lainproliant/sync/lain/proj/jotdown",
+        "file": "/home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp"
     }
 ]
