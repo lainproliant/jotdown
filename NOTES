@@ -6,20 +6,20 @@ Query result set starts with all contents of the given document name.
 filename.md/section
 
 # Get all level 2 sections in a document
-//section/level=2
-filename.md/section/level=2
+//section(2)
+filename.md/section(2)
 
 # Get all sections below the section named "Tutorials"
-filename.md/section/name=Tutorials/all/section
+filename.md/section/name(Tutorials)//section
 
 # Get all sections that are directly below the section named "Tutorials" (non-recursive)
-filename.md/section/=Tutorials/children/section
+filename.md/section/name(Tutorials)/children/section
 
 # Get the third section directly below the section named "Tutorials" (non-recursive)
-filename.md/section/=Tutorials/children/section/3
+filename.md/section/rx(Tutorials)//section/at(3)
 
 # Get all sections where the name matches a regular expression.
-filename.md/section/~.*Tutorial.*/
+filename.md/section/rx(.*Tutorial.*)/
 
 # Get all top level sections.
-filename.md/root/section
+filename.md/children/section

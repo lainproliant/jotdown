@@ -1,2 +1,0 @@
-- [ ] This is a task item.
-    - url: @https://google.com/task

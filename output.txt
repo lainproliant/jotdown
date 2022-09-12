@@ -1,0 +1,1511 @@
+[git] git submodule update --init --recursive
+[git] ok
+[compile:links] clang++ -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_DEBUG -DMOONLIGHT_ENABLE_STACKTRACE -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_STACKTRACE_IN_DESCRIPTION /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp -rdynamic -g -ldl -o /home/lainproliant/sync/lain/proj/jotdown/test/links
+[compile:query] clang++ -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_DEBUG -DMOONLIGHT_ENABLE_STACKTRACE -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_STACKTRACE_IN_DESCRIPTION /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp -rdynamic -g -ldl -o /home/lainproliant/sync/lain/proj/jotdown/test/query
+[compile:front-matter] clang++ -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_DEBUG -DMOONLIGHT_ENABLE_STACKTRACE -DMOONLIGHT_AUTOMATA_DEBUG -DMOONLIGHT_STACKTRACE_IN_DESCRIPTION /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp -rdynamic -g -ldl -o /home/lainproliant/sync/lain/proj/jotdown/test/front-matter
+[compile:jd-roundtrip] clang++ -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a /home/lainproliant/sync/lain/proj/jotdown/demo/jd-roundtrip.cpp -rdynamic -g -ldl -o /home/lainproliant/sync/lain/proj/jotdown/demo/jd-roundtrip
+[compile:jd-tokenize] clang++ -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a /home/lainproliant/sync/lain/proj/jotdown/demo/jd-tokenize.cpp -rdynamic -g -ldl -o /home/lainproliant/sync/lain/proj/jotdown/demo/jd-tokenize
+[compile:jd-json] clang++ -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a /home/lainproliant/sync/lain/proj/jotdown/demo/jd-json.cpp -rdynamic -g -ldl -o /home/lainproliant/sync/lain/proj/jotdown/demo/jd-json
+[compile:jd-query] clang++ -I./include -I./moonlight/include -I./pybind11/include -I./moonlight/deps --std=c++2a /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp -rdynamic -g -ldl -o /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] In file included from ./include/jotdown/object.h:13:
+[compile:links] In file included from ./include/jotdown/parser.h:13:
+[compile:links] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::basic_string<char>>' is deprecated [-Wdeprecated-declarations]
+[compile:links] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:links]                              ^
+[compile:links] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::basic_string<char>>' requested here
+[compile:links]     gen::Iterator<T> _begin;
+[compile:links]                      ^
+[compile:links] ./moonlight/include/moonlight/json/object.h:155:30: note: in instantiation of template class 'moonlight::gen::Stream<std::basic_string<char>>' requested here
+[compile:links]     gen::Stream<std::string> iterate_keys() const {
+[compile:links]                              ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::basic_string<char>>' has been explicitly marked deprecated here
+[compile:links]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:links]            ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:links] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:links]                                  ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] In file included from ./include/jotdown/object.h:13:
+[compile:links] In file included from ./include/jotdown/parser.h:13:
+[compile:links] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' is deprecated [-Wdeprecated-declarations]
+[compile:links] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:links]                              ^
+[compile:links] ./include/jotdown/parser.h:1269:27: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::parser::Token>>' requested here
+[compile:links]     static const Iterator end() {
+[compile:links]                           ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' has been explicitly marked deprecated here
+[compile:links]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:links]            ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:links] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:links]                                  ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] ./include/jotdown/object.h:868:12: warning: 'label' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:links]     text_t label() const {
+[compile:links]            ^
+[compile:links] ./include/jotdown/object.h:120:20: note: overridden virtual function is here
+[compile:links]     virtual text_t label() const {
+[compile:links]                    ^
+[compile:links] ./include/jotdown/object.h:872:13: warning: 'clabel' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:links]     ctext_t clabel() const {
+[compile:links]             ^
+[compile:links] ./include/jotdown/object.h:124:21: note: overridden virtual function is here
+[compile:links]     virtual ctext_t clabel() const {
+[compile:links]                     ^
+[compile:links] ./include/jotdown/object.h:884:26: warning: 'to_json' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:links]     virtual json::Object to_json() const {
+[compile:links]                          ^
+[compile:links] ./include/jotdown/object.h:344:18: note: overridden virtual function is here
+[compile:links]     json::Object to_json() const {
+[compile:links]                  ^
+[compile:links] ./include/jotdown/object.h:893:17: warning: 'to_jotdown' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:links]     std::string to_jotdown() const {
+[compile:links]                 ^
+[compile:links] ./include/jotdown/object.h:195:25: note: overridden virtual function is here
+[compile:links]     virtual std::string to_jotdown() const = 0;
+[compile:links]                         ^
+[compile:links] ./include/jotdown/object.h:945:17: warning: 'to_search_string' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:links]     std::string to_search_string() const {
+[compile:links]                 ^
+[compile:links] ./include/jotdown/object.h:354:17: note: overridden virtual function is here
+[compile:links]     std::string to_search_string() const {
+[compile:links]                 ^
+[compile:links] ./include/jotdown/object.h:957:17: warning: 'repr' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:links]     std::string repr() const {
+[compile:links]                 ^
+[compile:links] ./include/jotdown/object.h:362:17: note: overridden virtual function is here
+[compile:links]     std::string repr() const {
+[compile:links]                 ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] In file included from ./include/jotdown/object.h:13:
+[compile:links] In file included from ./include/jotdown/parser.h:13:
+[compile:links] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::Object>>' is deprecated [-Wdeprecated-declarations]
+[compile:links] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:links]                              ^
+[compile:links] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::Object>>' requested here
+[compile:links]     gen::Iterator<T> _begin;
+[compile:links]                      ^
+[compile:links] ./include/jotdown/query.h:316:18: note: in instantiation of template class 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>' requested here
+[compile:links]     ResultStream _results;
+[compile:links]                  ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::Object>>' has been explicitly marked deprecated here
+[compile:links]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:links]            ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:links] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:links]                                  ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:16:
+[compile:links] ./include/jotdown/query.h:63:10: error: expected ';' after expression
+[compile:links]         }
+[compile:links]          ^
+[compile:links]          ;
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] In file included from ./include/jotdown/object.h:13:
+[compile:links] In file included from ./include/jotdown/parser.h:13:
+[compile:links] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::pair<const std::basic_string<char>, jotdown::Object::Type>>' is deprecated [-Wdeprecated-declarations]
+[compile:links] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:links]                              ^
+[compile:links] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::pair<const std::basic_string<char>, jotdown::Object::Type>>' requested here
+[compile:links]     gen::Iterator<T> _begin;
+[compile:links]                      ^
+[compile:links] ./include/jotdown/query.h:92:32: note: in instantiation of template class 'moonlight::gen::Stream<std::pair<const std::basic_string<char>, jotdown::Object::Type>>' requested here
+[compile:links]         const auto lower_map = gen::stream(Object::type_names_map())
+[compile:links]                                ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::pair<const std::basic_string<char>, jotdown::Object::Type>>' has been explicitly marked deprecated here
+[compile:links]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:links]            ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:links] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:links]                                  ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] In file included from ./include/jotdown/object.h:13:
+[compile:links] In file included from ./include/jotdown/parser.h:13:
+[compile:links] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' is deprecated [-Wdeprecated-declarations]
+[compile:links] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:links]                              ^
+[compile:links] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:links]     gen::Iterator<T> _begin;
+[compile:links]                      ^
+[compile:links] ./include/jotdown/query.h:169:31: note: in instantiation of template class 'moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:links]             return gen::merge(gen::stream(iterables));
+[compile:links]                               ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' has been explicitly marked deprecated here
+[compile:links]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:links]            ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:links] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:links]                                  ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] ./include/jotdown/api.h:36:8: error: use of undeclared identifier 'q'
+[compile:links] inline q::Query query(const std::string& query_str) {
+[compile:links]        ^
+[compile:links] ./include/jotdown/api.h:37:12: error: use of undeclared identifier 'q'
+[compile:links]     return q::parse(query_str);
+[compile:links]            ^
+[compile:links] ./include/jotdown/api.h:42:12: error: use of undeclared identifier 'q'
+[compile:links]     return q::parse(query_str).select(objects);
+[compile:links]            ^
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:11:
+[compile:jd-roundtrip] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-roundtrip.cpp:11:
+[compile:jd-query] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-roundtrip] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::basic_string<char>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-roundtrip] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::basic_string<char>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-roundtrip] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-query]                              ^
+[compile:jd-roundtrip]                              ^
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::basic_string<char>>' requested here
+[compile:jd-roundtrip] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::basic_string<char>>' requested here
+[compile:jd-query]     gen::Iterator<T> _begin;
+[compile:jd-roundtrip]     gen::Iterator<T> _begin;
+[compile:jd-query]                      ^
+[compile:jd-roundtrip]                      ^
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:jd-query] ./moonlight/include/moonlight/json/object.h:155:30: note: in instantiation of template class 'moonlight::gen::Stream<std::basic_string<char>>' requested here
+[compile:jd-roundtrip] ./moonlight/include/moonlight/json/object.h:155:30: note: in instantiation of template class 'moonlight::gen::Stream<std::basic_string<char>>' requested here
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:jd-query]     gen::Stream<std::string> iterate_keys() const {
+[compile:jd-roundtrip]     gen::Stream<std::string> iterate_keys() const {
+[compile:query] In file included from ./include/jotdown/object.h:13:
+[compile:jd-query]                              ^
+[compile:jd-roundtrip]                              ^
+[compile:query] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::basic_string<char>>' has been explicitly marked deprecated here
+[compile:jd-roundtrip] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::basic_string<char>>' has been explicitly marked deprecated here
+[compile:query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::basic_string<char>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-roundtrip]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-query]            ^
+[compile:jd-roundtrip]            ^
+[compile:query]                              ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-roundtrip] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::basic_string<char>>' requested here
+[compile:jd-query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-roundtrip] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:query]     gen::Iterator<T> _begin;
+[compile:jd-query]                                  ^
+[compile:jd-roundtrip]                                  ^
+[compile:query]                      ^
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:query] ./moonlight/include/moonlight/json/object.h:155:30: note: in instantiation of template class 'moonlight::gen::Stream<std::basic_string<char>>' requested here
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:query]     gen::Stream<std::string> iterate_keys() const {
+[compile:front-matter] In file included from ./include/jotdown/object.h:13:
+[compile:query]                              ^
+[compile:front-matter] In file included from ./include/jotdown/parser.h:13:
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::basic_string<char>>' has been explicitly marked deprecated here
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::basic_string<char>>' is deprecated [-Wdeprecated-declarations]
+[compile:query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:query]            ^
+[compile:front-matter]                              ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::basic_string<char>>' requested here
+[compile:query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:front-matter]     gen::Iterator<T> _begin;
+[compile:query]                                  ^
+[compile:front-matter]                      ^
+[compile:front-matter] ./moonlight/include/moonlight/json/object.h:155:30: note: in instantiation of template class 'moonlight::gen::Stream<std::basic_string<char>>' requested here
+[compile:front-matter]     gen::Stream<std::string> iterate_keys() const {
+[compile:front-matter]                              ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::basic_string<char>>' has been explicitly marked deprecated here
+[compile:front-matter]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter]            ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:front-matter]                                  ^
+[compile:jd-json] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-json.cpp:11:
+[compile:jd-json] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-json] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::basic_string<char>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-json] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-json]                              ^
+[compile:jd-json] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::basic_string<char>>' requested here
+[compile:jd-json]     gen::Iterator<T> _begin;
+[compile:jd-json]                      ^
+[compile:jd-json] ./moonlight/include/moonlight/json/object.h:155:30: note: in instantiation of template class 'moonlight::gen::Stream<std::basic_string<char>>' requested here
+[compile:jd-json]     gen::Stream<std::string> iterate_keys() const {
+[compile:jd-json]                              ^
+[compile:jd-json] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::basic_string<char>>' has been explicitly marked deprecated here
+[compile:jd-json]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-json]            ^
+[compile:jd-json] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-json] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-json]                                  ^
+[compile:jd-tokenize] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-tokenize.cpp:12:
+[compile:jd-tokenize] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-tokenize] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::basic_string<char>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-tokenize] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-tokenize]                              ^
+[compile:jd-tokenize] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::basic_string<char>>' requested here
+[compile:jd-tokenize]     gen::Iterator<T> _begin;
+[compile:jd-tokenize]                      ^
+[compile:jd-tokenize] ./moonlight/include/moonlight/json/object.h:155:30: note: in instantiation of template class 'moonlight::gen::Stream<std::basic_string<char>>' requested here
+[compile:jd-tokenize]     gen::Stream<std::string> iterate_keys() const {
+[compile:jd-tokenize]                              ^
+[compile:jd-tokenize] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::basic_string<char>>' has been explicitly marked deprecated here
+[compile:jd-tokenize]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-tokenize]            ^
+[compile:jd-tokenize] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-tokenize] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-tokenize]                                  ^
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:11:
+[compile:jd-roundtrip] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-roundtrip.cpp:11:
+[compile:jd-query] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-roundtrip] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-roundtrip] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-roundtrip] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-query]                              ^
+[compile:jd-roundtrip]                              ^
+[compile:jd-query] ./include/jotdown/parser.h:1269:27: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::parser::Token>>' requested here
+[compile:jd-roundtrip] ./include/jotdown/parser.h:1269:27: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::parser::Token>>' requested here
+[compile:jd-query]     static const Iterator end() {
+[compile:jd-roundtrip]     static const Iterator end() {
+[compile:jd-query]                           ^
+[compile:jd-roundtrip]                           ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' has been explicitly marked deprecated here
+[compile:jd-roundtrip] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' has been explicitly marked deprecated here
+[compile:jd-query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-roundtrip]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-query]            ^
+[compile:jd-roundtrip]            ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-roundtrip] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-roundtrip] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-query]                                  ^
+[compile:jd-roundtrip]                                  ^
+[compile:jd-json] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-json.cpp:11:
+[compile:jd-json] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-json] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-json] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-json]                              ^
+[compile:jd-json] ./include/jotdown/parser.h:1269:27: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::parser::Token>>' requested here
+[compile:jd-json]     static const Iterator end() {
+[compile:jd-json]                           ^
+[compile:jd-json] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' has been explicitly marked deprecated here
+[compile:jd-json]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-json]            ^
+[compile:jd-json] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-json] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-json]                                  ^
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:query] In file included from ./include/jotdown/object.h:13:
+[compile:query] In file included from ./include/jotdown/parser.h:13:
+[compile:query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' is deprecated [-Wdeprecated-declarations]
+[compile:query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:query]                              ^
+[compile:query] ./include/jotdown/parser.h:1269:27: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::parser::Token>>' requested here
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:query]     static const Iterator end() {
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:query]                           ^
+[compile:front-matter] In file included from ./include/jotdown/object.h:13:
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' has been explicitly marked deprecated here
+[compile:front-matter] In file included from ./include/jotdown/parser.h:13:
+[compile:query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' is deprecated [-Wdeprecated-declarations]
+[compile:query]            ^
+[compile:front-matter] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter]                              ^
+[compile:query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:front-matter] ./include/jotdown/parser.h:1269:27: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::parser::Token>>' requested here
+[compile:query]                                  ^
+[compile:front-matter]     static const Iterator end() {
+[compile:front-matter]                           ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' has been explicitly marked deprecated here
+[compile:front-matter]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter]            ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:front-matter]                                  ^
+[compile:jd-tokenize] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-tokenize.cpp:12:
+[compile:jd-tokenize] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-tokenize] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-tokenize] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-tokenize]                              ^
+[compile:jd-tokenize] ./include/jotdown/parser.h:1269:27: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::parser::Token>>' requested here
+[compile:jd-tokenize]     static const Iterator end() {
+[compile:jd-tokenize]                           ^
+[compile:jd-tokenize] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::parser::Token>>' has been explicitly marked deprecated here
+[compile:jd-tokenize]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-tokenize]            ^
+[compile:jd-tokenize] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-tokenize] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-tokenize]                                  ^
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:12:
+[compile:jd-roundtrip] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-roundtrip.cpp:12:
+[compile:jd-query] In file included from ./include/jotdown/compiler.h:16:
+[compile:jd-roundtrip] In file included from ./include/jotdown/compiler.h:16:
+[compile:jd-query] ./include/jotdown/object.h:868:12: warning: 'label' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-roundtrip] ./include/jotdown/object.h:868:12: warning: 'label' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-query]     text_t label() const {
+[compile:jd-roundtrip]     text_t label() const {
+[compile:jd-query]            ^
+[compile:jd-roundtrip]            ^
+[compile:jd-query] ./include/jotdown/object.h:120:20: note: overridden virtual function is here
+[compile:jd-roundtrip] ./include/jotdown/object.h:120:20: note: overridden virtual function is here
+[compile:jd-query]     virtual text_t label() const {
+[compile:jd-roundtrip]     virtual text_t label() const {
+[compile:jd-query]                    ^
+[compile:jd-roundtrip]                    ^
+[compile:jd-query] ./include/jotdown/object.h:872:13: warning: 'clabel' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-roundtrip] ./include/jotdown/object.h:872:13: warning: 'clabel' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-query]     ctext_t clabel() const {
+[compile:jd-roundtrip]     ctext_t clabel() const {
+[compile:jd-query]             ^
+[compile:jd-roundtrip]             ^
+[compile:jd-query] ./include/jotdown/object.h:124:21: note: overridden virtual function is here
+[compile:jd-roundtrip] ./include/jotdown/object.h:124:21: note: overridden virtual function is here
+[compile:jd-query]     virtual ctext_t clabel() const {
+[compile:jd-roundtrip]     virtual ctext_t clabel() const {
+[compile:jd-query]                     ^
+[compile:jd-roundtrip]                     ^
+[compile:jd-query] ./include/jotdown/object.h:884:26: warning: 'to_json' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-roundtrip] ./include/jotdown/object.h:884:26: warning: 'to_json' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-query]     virtual json::Object to_json() const {
+[compile:jd-roundtrip]     virtual json::Object to_json() const {
+[compile:jd-query]                          ^
+[compile:jd-roundtrip]                          ^
+[compile:jd-query] ./include/jotdown/object.h:344:18: note: overridden virtual function is here
+[compile:jd-roundtrip] ./include/jotdown/object.h:344:18: note: overridden virtual function is here
+[compile:jd-query]     json::Object to_json() const {
+[compile:jd-roundtrip]     json::Object to_json() const {
+[compile:jd-query]                  ^
+[compile:jd-roundtrip]                  ^
+[compile:jd-query] ./include/jotdown/object.h:893:17: warning: 'to_jotdown' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-roundtrip] ./include/jotdown/object.h:893:17: warning: 'to_jotdown' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-query]     std::string to_jotdown() const {
+[compile:jd-roundtrip]     std::string to_jotdown() const {
+[compile:jd-query]                 ^
+[compile:jd-roundtrip]                 ^
+[compile:jd-query] ./include/jotdown/object.h:195:25: note: overridden virtual function is here
+[compile:jd-roundtrip] ./include/jotdown/object.h:195:25: note: overridden virtual function is here
+[compile:jd-query]     virtual std::string to_jotdown() const = 0;
+[compile:jd-roundtrip]     virtual std::string to_jotdown() const = 0;
+[compile:jd-query]                         ^
+[compile:jd-roundtrip]                         ^
+[compile:jd-query] ./include/jotdown/object.h:945:17: warning: 'to_search_string' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-roundtrip] ./include/jotdown/object.h:945:17: warning: 'to_search_string' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-query]     std::string to_search_string() const {
+[compile:jd-roundtrip]     std::string to_search_string() const {
+[compile:jd-query]                 ^
+[compile:jd-roundtrip]                 ^
+[compile:jd-query] ./include/jotdown/object.h:354:17: note: overridden virtual function is here
+[compile:jd-roundtrip] ./include/jotdown/object.h:354:17: note: overridden virtual function is here
+[compile:jd-query]     std::string to_search_string() const {
+[compile:jd-roundtrip]     std::string to_search_string() const {
+[compile:jd-query]                 ^
+[compile:jd-roundtrip]                 ^
+[compile:jd-query] ./include/jotdown/object.h:957:17: warning: 'repr' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-roundtrip] ./include/jotdown/object.h:957:17: warning: 'repr' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-query]     std::string repr() const {
+[compile:jd-roundtrip]     std::string repr() const {
+[compile:jd-query]                 ^
+[compile:jd-roundtrip]                 ^
+[compile:jd-query] ./include/jotdown/object.h:362:17: note: overridden virtual function is here
+[compile:jd-roundtrip] ./include/jotdown/object.h:362:17: note: overridden virtual function is here
+[compile:jd-query]     std::string repr() const {
+[compile:jd-roundtrip]     std::string repr() const {
+[compile:jd-query]                 ^
+[compile:jd-roundtrip]                 ^
+[compile:jd-json] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-json.cpp:12:
+[compile:jd-json] In file included from ./include/jotdown/compiler.h:16:
+[compile:jd-json] ./include/jotdown/object.h:868:12: warning: 'label' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-json]     text_t label() const {
+[compile:jd-json]            ^
+[compile:jd-json] ./include/jotdown/object.h:120:20: note: overridden virtual function is here
+[compile:jd-json]     virtual text_t label() const {
+[compile:jd-json]                    ^
+[compile:jd-json] ./include/jotdown/object.h:872:13: warning: 'clabel' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-json]     ctext_t clabel() const {
+[compile:jd-json]             ^
+[compile:jd-json] ./include/jotdown/object.h:124:21: note: overridden virtual function is here
+[compile:jd-json]     virtual ctext_t clabel() const {
+[compile:jd-json]                     ^
+[compile:jd-json] ./include/jotdown/object.h:884:26: warning: 'to_json' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-json]     virtual json::Object to_json() const {
+[compile:jd-json]                          ^
+[compile:jd-json] ./include/jotdown/object.h:344:18: note: overridden virtual function is here
+[compile:jd-json]     json::Object to_json() const {
+[compile:jd-json]                  ^
+[compile:jd-json] ./include/jotdown/object.h:893:17: warning: 'to_jotdown' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-json]     std::string to_jotdown() const {
+[compile:jd-json]                 ^
+[compile:jd-json] ./include/jotdown/object.h:195:25: note: overridden virtual function is here
+[compile:jd-json]     virtual std::string to_jotdown() const = 0;
+[compile:jd-json]                         ^
+[compile:jd-json] ./include/jotdown/object.h:945:17: warning: 'to_search_string' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-json]     std::string to_search_string() const {
+[compile:jd-json]                 ^
+[compile:jd-json] ./include/jotdown/object.h:354:17: note: overridden virtual function is here
+[compile:jd-json]     std::string to_search_string() const {
+[compile:jd-json]                 ^
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:jd-json] ./include/jotdown/object.h:957:17: warning: 'repr' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:jd-json]     std::string repr() const {
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:query] ./include/jotdown/object.h:868:12: warning: 'label' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-json]                 ^
+[compile:front-matter] ./include/jotdown/object.h:868:12: warning: 'label' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:query]     text_t label() const {
+[compile:jd-json] ./include/jotdown/object.h:362:17: note: overridden virtual function is here
+[compile:front-matter]     text_t label() const {
+[compile:query]            ^
+[compile:jd-json]     std::string repr() const {
+[compile:front-matter]            ^
+[compile:query] ./include/jotdown/object.h:120:20: note: overridden virtual function is here
+[compile:jd-json]                 ^
+[compile:front-matter] ./include/jotdown/object.h:120:20: note: overridden virtual function is here
+[compile:query]     virtual text_t label() const {
+[compile:front-matter]     virtual text_t label() const {
+[compile:query]                    ^
+[compile:front-matter]                    ^
+[compile:query] ./include/jotdown/object.h:872:13: warning: 'clabel' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:front-matter] ./include/jotdown/object.h:872:13: warning: 'clabel' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:query]     ctext_t clabel() const {
+[compile:front-matter]     ctext_t clabel() const {
+[compile:query]             ^
+[compile:front-matter]             ^
+[compile:query] ./include/jotdown/object.h:124:21: note: overridden virtual function is here
+[compile:front-matter] ./include/jotdown/object.h:124:21: note: overridden virtual function is here
+[compile:query]     virtual ctext_t clabel() const {
+[compile:front-matter]     virtual ctext_t clabel() const {
+[compile:query]                     ^
+[compile:front-matter]                     ^
+[compile:query] ./include/jotdown/object.h:884:26: warning: 'to_json' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:front-matter] ./include/jotdown/object.h:884:26: warning: 'to_json' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:query]     virtual json::Object to_json() const {
+[compile:front-matter]     virtual json::Object to_json() const {
+[compile:query]                          ^
+[compile:front-matter]                          ^
+[compile:query] ./include/jotdown/object.h:344:18: note: overridden virtual function is here
+[compile:front-matter] ./include/jotdown/object.h:344:18: note: overridden virtual function is here
+[compile:query]     json::Object to_json() const {
+[compile:front-matter]     json::Object to_json() const {
+[compile:query]                  ^
+[compile:front-matter]                  ^
+[compile:query] ./include/jotdown/object.h:893:17: warning: 'to_jotdown' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:front-matter] ./include/jotdown/object.h:893:17: warning: 'to_jotdown' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:query]     std::string to_jotdown() const {
+[compile:front-matter]     std::string to_jotdown() const {
+[compile:query]                 ^
+[compile:front-matter]                 ^
+[compile:query] ./include/jotdown/object.h:195:25: note: overridden virtual function is here
+[compile:front-matter] ./include/jotdown/object.h:195:25: note: overridden virtual function is here
+[compile:query]     virtual std::string to_jotdown() const = 0;
+[compile:front-matter]     virtual std::string to_jotdown() const = 0;
+[compile:query]                         ^
+[compile:front-matter]                         ^
+[compile:query] ./include/jotdown/object.h:945:17: warning: 'to_search_string' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:front-matter] ./include/jotdown/object.h:945:17: warning: 'to_search_string' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:query]     std::string to_search_string() const {
+[compile:front-matter]     std::string to_search_string() const {
+[compile:query]                 ^
+[compile:front-matter]                 ^
+[compile:query] ./include/jotdown/object.h:354:17: note: overridden virtual function is here
+[compile:front-matter] ./include/jotdown/object.h:354:17: note: overridden virtual function is here
+[compile:query]     std::string to_search_string() const {
+[compile:front-matter]     std::string to_search_string() const {
+[compile:query]                 ^
+[compile:front-matter]                 ^
+[compile:query] ./include/jotdown/object.h:957:17: warning: 'repr' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:front-matter] ./include/jotdown/object.h:957:17: warning: 'repr' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:query]     std::string repr() const {
+[compile:front-matter]     std::string repr() const {
+[compile:query]                 ^
+[compile:front-matter]                 ^
+[compile:query] ./include/jotdown/object.h:362:17: note: overridden virtual function is here
+[compile:front-matter] ./include/jotdown/object.h:362:17: note: overridden virtual function is here
+[compile:query]     std::string repr() const {
+[compile:front-matter]     std::string repr() const {
+[compile:query]                 ^
+[compile:front-matter]                 ^
+[compile:jd-tokenize] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-tokenize.cpp:13:
+[compile:jd-tokenize] In file included from ./include/jotdown/compiler.h:16:
+[compile:jd-tokenize] ./include/jotdown/object.h:868:12: warning: 'label' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-tokenize]     text_t label() const {
+[compile:jd-tokenize]            ^
+[compile:jd-tokenize] ./include/jotdown/object.h:120:20: note: overridden virtual function is here
+[compile:jd-tokenize]     virtual text_t label() const {
+[compile:jd-tokenize]                    ^
+[compile:jd-tokenize] ./include/jotdown/object.h:872:13: warning: 'clabel' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-tokenize]     ctext_t clabel() const {
+[compile:jd-tokenize]             ^
+[compile:jd-tokenize] ./include/jotdown/object.h:124:21: note: overridden virtual function is here
+[compile:jd-tokenize]     virtual ctext_t clabel() const {
+[compile:jd-tokenize]                     ^
+[compile:jd-tokenize] ./include/jotdown/object.h:884:26: warning: 'to_json' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-tokenize]     virtual json::Object to_json() const {
+[compile:jd-tokenize]                          ^
+[compile:jd-tokenize] ./include/jotdown/object.h:344:18: note: overridden virtual function is here
+[compile:jd-tokenize]     json::Object to_json() const {
+[compile:jd-tokenize]                  ^
+[compile:jd-tokenize] ./include/jotdown/object.h:893:17: warning: 'to_jotdown' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-tokenize]     std::string to_jotdown() const {
+[compile:jd-tokenize]                 ^
+[compile:jd-tokenize] ./include/jotdown/object.h:195:25: note: overridden virtual function is here
+[compile:jd-tokenize]     virtual std::string to_jotdown() const = 0;
+[compile:jd-tokenize]                         ^
+[compile:jd-tokenize] ./include/jotdown/object.h:945:17: warning: 'to_search_string' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-tokenize]     std::string to_search_string() const {
+[compile:jd-tokenize]                 ^
+[compile:jd-tokenize] ./include/jotdown/object.h:354:17: note: overridden virtual function is here
+[compile:jd-tokenize]     std::string to_search_string() const {
+[compile:jd-tokenize]                 ^
+[compile:jd-tokenize] ./include/jotdown/object.h:957:17: warning: 'repr' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+[compile:jd-tokenize]     std::string repr() const {
+[compile:jd-tokenize]                 ^
+[compile:jd-tokenize] ./include/jotdown/object.h:362:17: note: overridden virtual function is here
+[compile:jd-tokenize]     std::string repr() const {
+[compile:jd-tokenize]                 ^
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:11:
+[compile:jd-query] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::Object>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-query]                              ^
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::Object>>' requested here
+[compile:jd-query]     gen::Iterator<T> _begin;
+[compile:jd-query]                      ^
+[compile:jd-query] ./include/jotdown/query.h:316:18: note: in instantiation of template class 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>' requested here
+[compile:jd-query]     ResultStream _results;
+[compile:jd-query]                  ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::Object>>' has been explicitly marked deprecated here
+[compile:jd-query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-query]            ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-query]                                  ^
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:front-matter] In file included from ./include/jotdown/object.h:13:
+[compile:front-matter] In file included from ./include/jotdown/parser.h:13:
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::Object>>' is deprecated [-Wdeprecated-declarations]
+[compile:front-matter] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:front-matter]                              ^
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::Object>>' requested here
+[compile:front-matter]     gen::Iterator<T> _begin;
+[compile:front-matter]                      ^
+[compile:front-matter] ./include/jotdown/query.h:316:18: note: in instantiation of template class 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>' requested here
+[compile:front-matter]     ResultStream _results;
+[compile:front-matter]                  ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::Object>>' has been explicitly marked deprecated here
+[compile:front-matter]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter]            ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:front-matter]                                  ^
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:query] In file included from ./include/jotdown/object.h:13:
+[compile:query] In file included from ./include/jotdown/parser.h:13:
+[compile:query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::Object>>' is deprecated [-Wdeprecated-declarations]
+[compile:query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:query]                              ^
+[compile:query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::shared_ptr<jotdown::Object>>' requested here
+[compile:query]     gen::Iterator<T> _begin;
+[compile:query]                      ^
+[compile:query] ./include/jotdown/query.h:316:18: note: in instantiation of template class 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>' requested here
+[compile:query]     ResultStream _results;
+[compile:query]                  ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::shared_ptr<jotdown::Object>>' has been explicitly marked deprecated here
+[compile:query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:query]            ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:query]                                  ^
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:14:
+[compile:jd-query] ./include/jotdown/query.h:63:10: error: expected ';' after expression
+[compile:jd-query]         }
+[compile:jd-query]          ^
+[compile:jd-query]          ;
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:11:
+[compile:jd-query] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::pair<const std::basic_string<char>, jotdown::Object::Type>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-query]                              ^
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::pair<const std::basic_string<char>, jotdown::Object::Type>>' requested here
+[compile:jd-query]     gen::Iterator<T> _begin;
+[compile:jd-query]                      ^
+[compile:jd-query] ./include/jotdown/query.h:92:32: note: in instantiation of template class 'moonlight::gen::Stream<std::pair<const std::basic_string<char>, jotdown::Object::Type>>' requested here
+[compile:jd-query]         const auto lower_map = gen::stream(Object::type_names_map())
+[compile:jd-query]                                ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::pair<const std::basic_string<char>, jotdown::Object::Type>>' has been explicitly marked deprecated here
+[compile:jd-query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-query]            ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-query]                                  ^
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:16:
+[compile:front-matter] ./include/jotdown/query.h:63:10: error: expected ';' after expression
+[compile:front-matter]         }
+[compile:front-matter]          ^
+[compile:front-matter]          ;
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:16:
+[compile:query] ./include/jotdown/query.h:63:10: error: expected ';' after expression
+[compile:query]         }
+[compile:query]          ^
+[compile:query]          ;
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:front-matter] In file included from ./include/jotdown/object.h:13:
+[compile:front-matter] In file included from ./include/jotdown/parser.h:13:
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::pair<const std::basic_string<char>, jotdown::Object::Type>>' is deprecated [-Wdeprecated-declarations]
+[compile:front-matter] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:front-matter]                              ^
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::pair<const std::basic_string<char>, jotdown::Object::Type>>' requested here
+[compile:front-matter]     gen::Iterator<T> _begin;
+[compile:front-matter]                      ^
+[compile:front-matter] ./include/jotdown/query.h:92:32: note: in instantiation of template class 'moonlight::gen::Stream<std::pair<const std::basic_string<char>, jotdown::Object::Type>>' requested here
+[compile:front-matter]         const auto lower_map = gen::stream(Object::type_names_map())
+[compile:front-matter]                                ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::pair<const std::basic_string<char>, jotdown::Object::Type>>' has been explicitly marked deprecated here
+[compile:front-matter]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter]            ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:front-matter]                                  ^
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:query] In file included from ./include/jotdown/object.h:13:
+[compile:query] In file included from ./include/jotdown/parser.h:13:
+[compile:query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, std::pair<const std::basic_string<char>, jotdown::Object::Type>>' is deprecated [-Wdeprecated-declarations]
+[compile:query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:query]                              ^
+[compile:query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<std::pair<const std::basic_string<char>, jotdown::Object::Type>>' requested here
+[compile:query]     gen::Iterator<T> _begin;
+[compile:query]                      ^
+[compile:query] ./include/jotdown/query.h:92:32: note: in instantiation of template class 'moonlight::gen::Stream<std::pair<const std::basic_string<char>, jotdown::Object::Type>>' requested here
+[compile:query]         const auto lower_map = gen::stream(Object::type_names_map())
+[compile:query]                                ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, std::pair<const std::basic_string<char>, jotdown::Object::Type>>' has been explicitly marked deprecated here
+[compile:query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:query]            ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:query]                                  ^
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:11:
+[compile:jd-query] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' is deprecated [-Wdeprecated-declarations]
+[compile:jd-query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:jd-query]                              ^
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:jd-query]     gen::Iterator<T> _begin;
+[compile:jd-query]                      ^
+[compile:jd-query] ./include/jotdown/query.h:169:31: note: in instantiation of template class 'moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:jd-query]             return gen::merge(gen::stream(iterables));
+[compile:jd-query]                               ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' has been explicitly marked deprecated here
+[compile:jd-query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:jd-query]            ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:jd-query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:jd-query]                                  ^
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:front-matter] In file included from ./include/jotdown/object.h:13:
+[compile:front-matter] In file included from ./include/jotdown/parser.h:13:
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' is deprecated [-Wdeprecated-declarations]
+[compile:front-matter] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:front-matter]                              ^
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:front-matter]     gen::Iterator<T> _begin;
+[compile:front-matter]                      ^
+[compile:front-matter] ./include/jotdown/query.h:169:31: note: in instantiation of template class 'moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:front-matter]             return gen::merge(gen::stream(iterables));
+[compile:front-matter]                               ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' has been explicitly marked deprecated here
+[compile:front-matter]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter]            ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:front-matter]                                  ^
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:query] In file included from ./include/jotdown/object.h:13:
+[compile:query] In file included from ./include/jotdown/parser.h:13:
+[compile:query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' is deprecated [-Wdeprecated-declarations]
+[compile:query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:query]                              ^
+[compile:query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:query]     gen::Iterator<T> _begin;
+[compile:query]                      ^
+[compile:query] ./include/jotdown/query.h:169:31: note: in instantiation of template class 'moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:query]             return gen::merge(gen::stream(iterables));
+[compile:query]                               ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' has been explicitly marked deprecated here
+[compile:query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:query]            ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:query]                                  ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] In file included from ./include/jotdown/object.h:13:
+[compile:links] In file included from ./include/jotdown/parser.h:13:
+[compile:links] ./moonlight/include/moonlight/generator.h:723:24: error: member 'end' used before its declaration
+[compile:links]     return gen::Stream(end<T>());
+[compile:links]                        ^
+[compile:links] ./include/jotdown/query.h:42:30: note: in instantiation of member function 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>::empty' requested here
+[compile:links]     : _results(ResultStream::empty()) { }
+[compile:links]                              ^
+[compile:links] ./moonlight/include/moonlight/generator.h:313:22: note: member is declared here
+[compile:links]     gen::Iterator<T> end() const {
+[compile:links]                      ^
+[compile:links] ./moonlight/include/moonlight/generator.h:723:24: error: call to non-static member function without an object argument
+[compile:links]     return gen::Stream(end<T>());
+[compile:links]                        ^~~
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] ./include/jotdown/api.h:36:8: error: use of undeclared identifier 'q'
+[compile:front-matter] inline q::Query query(const std::string& query_str) {
+[compile:front-matter]        ^
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] ./include/jotdown/api.h:36:8: error: use of undeclared identifier 'q'
+[compile:query] inline q::Query query(const std::string& query_str) {
+[compile:query]        ^
+[compile:jd-query] /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:29:24: error: calling a private constructor of class 'jotdown::Query'
+[compile:jd-query]         jotdown::Query query;
+[compile:jd-query]                        ^
+[compile:jd-query] ./include/jotdown/query.h:41:5: note: implicitly declared private here
+[compile:jd-query]     Query()
+[compile:jd-query]     ^
+[compile:front-matter] ./include/jotdown/api.h:37:12: error: use of undeclared identifier 'q'
+[compile:front-matter]     return q::parse(query_str);
+[compile:front-matter]            ^
+[compile:query] ./include/jotdown/api.h:37:12: error: use of undeclared identifier 'q'
+[compile:query]     return q::parse(query_str);
+[compile:query]            ^
+[compile:jd-query] /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:31:30: error: no member named 'q' in namespace 'jotdown'
+[compile:jd-query]             query = jotdown::q::parse(str);
+[compile:jd-query]                     ~~~~~~~~~^
+[compile:jd-query] /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:36:28: error: no member named 'repr' in 'jotdown::Query'
+[compile:jd-query]         std::cout << query.repr() << std::endl;
+[compile:jd-query]                      ~~~~~ ^
+[compile:jd-query] /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:37:30: error: no member named 'select' in 'jotdown::Query'
+[compile:jd-query]         auto results = query.select(doc);
+[compile:jd-query]                        ~~~~~ ^
+[compile:front-matter] ./include/jotdown/api.h:42:12: error: use of undeclared identifier 'q'
+[compile:front-matter]     return q::parse(query_str).select(objects);
+[compile:front-matter]            ^
+[compile:query] ./include/jotdown/api.h:42:12: error: use of undeclared identifier 'q'
+[compile:query]     return q::parse(query_str).select(objects);
+[compile:query]            ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:16:
+[compile:links] ./include/jotdown/query.h:67:36: error: no viable conversion from 'std::basic_string<char>' to 'const std::regex' (aka 'const basic_regex<char>')
+[compile:links]             query = query.rx_match(moonlight::slice(s, 1, {}));
+[compile:links]                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2565:7: note: in instantiation of function template specialization 'jotdown::Query::parse(const std::string &)::(anonymous class)::operator()<std::basic_string<char>>' requested here
+[compile:links]       std::declval<_Fn>()(std::declval<_Args>()...)
+[compile:links]       ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2576:24: note: while substituting deduced template arguments into function template '_S_test' [with _Fn = (lambda at ./include/jotdown/query.h:66:31) &, _Args = (no value)]
+[compile:links]       typedef decltype(_S_test<_Functor, _ArgTypes...>(0)) type;
+[compile:links]                        ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2582:14: note: in instantiation of template class 'std::__result_of_impl<false, false, (lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>' requested here
+[compile:links]     : public __result_of_impl<
+[compile:links]              ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2915:29: note: in instantiation of template class 'std::__invoke_result<(lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>' requested here
+[compile:links]                                __void_t<typename _Result::type>>
+[compile:links]                                                  ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: during template argument deduction for class template partial specialization '__is_invocable_impl<_Result, _Ret, true>' [with _Result = std::__invoke_result<(lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>, _Ret = void]
+[compile:links]         : __is_invocable_impl<_Res2, _Res>::type
+[compile:links]           ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: (skipping 2 contexts in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:434:33: note: in instantiation of template type alias '_Requires' requested here
+[compile:links]                typename _Constraints = _Requires<_Callable<_Functor>>>
+[compile:links]                                        ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:435:2: note: in instantiation of default argument for 'function<(lambda at ./include/jotdown/query.h:66:31) &>' required here
+[compile:links]         function(_Functor&& __f)
+[compile:links]         ^~~~~~~~~~~~~~~~~~~~~~~~
+[compile:links] ./moonlight/include/moonlight/classify.h:67:86: note: while substituting deduced template arguments into function template 'function' [with _Functor = (lambda at ./include/jotdown/query.h:66:31) &, _Constraints = (no value)]
+[compile:links]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:links]                                                                                      ^
+[compile:links] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:66:31)>' requested here
+[compile:links]             _switch._cases.push_back(Case(_match, action));
+[compile:links]                                      ^
+[compile:links] ./include/jotdown/query.h:66:29: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:66:31)>' requested here
+[compile:links]         classify(rx("=.*")) = [&](const auto& s) {
+[compile:links]                             ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:479:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'const std::basic_regex<char> &' for 1st argument
+[compile:links]       basic_regex(const basic_regex& __rhs) = default;
+[compile:links]       ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:486:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'std::basic_regex<char> &&' for 1st argument
+[compile:links]       basic_regex(basic_regex&& __rhs) noexcept = default;
+[compile:links]       ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:530:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'initializer_list<char>' for 1st argument
+[compile:links]       basic_regex(initializer_list<_Ch_type> __l, flag_type __f = ECMAScript)
+[compile:links]       ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:452:7: note: explicit constructor is not a candidate
+[compile:links]       basic_regex(const _Ch_type* __p, flag_type __f = ECMAScript)
+[compile:links]       ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:499:2: note: explicit constructor is not a candidate
+[compile:links]         basic_regex(const std::basic_string<_Ch_type, _Ch_traits,
+[compile:links]         ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/basic_string.h:936:7: note: candidate function
+[compile:links]       operator __sv_type() const noexcept
+[compile:links]       ^
+[compile:links] ./include/jotdown/query.h:224:38: note: passing argument to parameter 'rx' here
+[compile:links]     Query rx_match(const std::regex& rx, bool focus_label = true) {
+[compile:links]                                      ^
+[compile:links] ./include/jotdown/query.h:99:36: error: no viable overloaded operator[] for type 'const std::unordered_map<basic_string<char>, Type>'
+[compile:links]                 query = query.type(lower_map[s]);
+[compile:links]                                    ^~~~~~~~~ ~
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2565:7: note: in instantiation of function template specialization 'jotdown::Query::parse(const std::string &)::(anonymous class)::operator()(const std::basic_string<char> &)::(anonymous class)::operator()<std::basic_string<char>>' requested here
+[compile:links]       std::declval<_Fn>()(std::declval<_Args>()...)
+[compile:links]       ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2576:24: note: while substituting deduced template arguments into function template '_S_test' [with _Fn = (lambda at ./include/jotdown/query.h:98:34) &, _Args = (no value)]
+[compile:links]       typedef decltype(_S_test<_Functor, _ArgTypes...>(0)) type;
+[compile:links]                        ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2582:14: note: in instantiation of template class 'std::__result_of_impl<false, false, (lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>' requested here
+[compile:links]     : public __result_of_impl<
+[compile:links]              ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2915:29: note: in instantiation of template class 'std::__invoke_result<(lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>' requested here
+[compile:links]                                __void_t<typename _Result::type>>
+[compile:links]                                                  ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: during template argument deduction for class template partial specialization '__is_invocable_impl<_Result, _Ret, true>' [with _Result = std::__invoke_result<(lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>, _Ret = void]
+[compile:links]         : __is_invocable_impl<_Res2, _Res>::type
+[compile:links]           ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: (skipping 2 contexts in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:434:33: note: in instantiation of template type alias '_Requires' requested here
+[compile:links]                typename _Constraints = _Requires<_Callable<_Functor>>>
+[compile:links]                                        ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:435:2: note: in instantiation of default argument for 'function<(lambda at ./include/jotdown/query.h:98:34) &>' required here
+[compile:links]         function(_Functor&& __f)
+[compile:links]         ^~~~~~~~~~~~~~~~~~~~~~~~
+[compile:links] ./moonlight/include/moonlight/classify.h:67:86: note: while substituting deduced template arguments into function template 'function' [with _Functor = (lambda at ./include/jotdown/query.h:98:34) &, _Constraints = (no value)]
+[compile:links]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:links]                                                                                      ^
+[compile:links] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:links]             _switch._cases.push_back(Case(_match, action));
+[compile:links]                                      ^
+[compile:links] ./include/jotdown/query.h:98:32: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:links]             classify(rx(name)) = [&](const auto& s) {
+[compile:links]                                ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/unordered_map.h:979:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<basic_string<char>, Type>', but method is not marked const
+[compile:links]       operator[](const key_type& __k)
+[compile:links]       ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/unordered_map.h:983:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<basic_string<char>, Type>', but method is not marked const
+[compile:links]       operator[](key_type&& __k)
+[compile:links]       ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:16:
+[compile:links] In file included from ./include/jotdown/query.h:15:
+[compile:links] ./moonlight/include/moonlight/classify.h:67:79: error: no matching conversion for functional-style cast from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::Action'
+[compile:links]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:links]                                                                               ^~~~~~~~~~~~~
+[compile:links] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:links]             _switch._cases.push_back(Case(_match, action));
+[compile:links]                                      ^
+[compile:links] ./include/jotdown/query.h:98:32: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:links]             classify(rx(name)) = [&](const auto& s) {
+[compile:links]                                ^
+[compile:links] ./moonlight/include/moonlight/classify.h:42:11: note: candidate constructor (the implicit copy constructor) not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'const moonlight::Classifier<std::basic_string<char>>::Action' for 1st argument
+[compile:links]     class Action {
+[compile:links]           ^
+[compile:links] ./moonlight/include/moonlight/classify.h:42:11: note: candidate constructor (the implicit move constructor) not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::Action' for 1st argument
+[compile:links]     class Action {
+[compile:links]           ^
+[compile:links] ./moonlight/include/moonlight/classify.h:44:9: note: candidate constructor not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::NullaryAction' (aka 'function<void ()>') for 1st argument
+[compile:links]         Action(NullaryAction action) : _nullary(action), _unary({}) { }
+[compile:links]         ^
+[compile:links] ./moonlight/include/moonlight/classify.h:45:9: note: candidate constructor not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::UnaryAction' (aka 'function<void (const std::basic_string<char> &)>') for 1st argument
+[compile:links]         Action(UnaryAction action) : _nullary({}), _unary(action) { }
+[compile:links]         ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] In file included from ./include/jotdown/object.h:13:
+[compile:links] In file included from ./include/jotdown/parser.h:13:
+[compile:links] ./moonlight/include/moonlight/generator.h:612:16: error: type 'const gen::Iterator<shared_ptr<Object>>' does not provide a call operator
+[compile:links]         return _begin() == gen::end<T>();
+[compile:links]                ^~~~~~
+[compile:links] ./include/jotdown/query.h:178:37: note: in instantiation of member function 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>::is_empty' requested here
+[compile:links]         if (! child_query.results().is_empty()) {
+[compile:links]                                     ^
+[compile:links] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/links.cpp:10:
+[compile:links] In file included from ./include/jotdown/api.h:13:
+[compile:links] In file included from ./include/jotdown/object.h:13:
+[compile:links] In file included from ./include/jotdown/parser.h:13:
+[compile:links] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' is deprecated [-Wdeprecated-declarations]
+[compile:links] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:links]                              ^
+[compile:links] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' requested here
+[compile:links]     gen::Iterator<T> _begin;
+[compile:links]                      ^
+[compile:links] ./moonlight/include/moonlight/generator.h:715:23: note: in instantiation of template class 'moonlight::gen::Stream<moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' requested here
+[compile:links]     return gen::merge(Stream<Stream<T>>::lazy_singleton(f));
+[compile:links]                       ^
+[compile:links] ./moonlight/include/moonlight/generator.h:705:23: note: in instantiation of member function 'moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>::lazy' requested here
+[compile:links]     return Stream<T>::lazy([=]() -> gen::Stream<T> {
+[compile:links]                       ^
+[compile:links] ./include/jotdown/query.h:183:18: note: in instantiation of function template specialization 'moonlight::gen::seq<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:links]             gen::seq(
+[compile:links]                  ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' has been explicitly marked deprecated here
+[compile:links]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:links]            ^
+[compile:links] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:links] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:links]                                  ^
+[compile:links] 12 warnings and 10 errors generated.
+[compile:links] AssertionError: Command failed.
+[run_test:links] Recipe 'compile:links' didn't complete successfully.
+[run_test:links] AssertionError: 1 recipe didn't complete successfully.
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:11:
+[compile:jd-query] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:723:24: error: member 'end' used before its declaration
+[compile:jd-query]     return gen::Stream(end<T>());
+[compile:jd-query]                        ^
+[compile:jd-query] ./include/jotdown/query.h:42:30: note: in instantiation of member function 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>::empty' requested here
+[compile:jd-query]     : _results(ResultStream::empty()) { }
+[compile:jd-query]                              ^
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:313:22: note: member is declared here
+[compile:jd-query]     gen::Iterator<T> end() const {
+[compile:jd-query]                      ^
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:723:24: error: call to non-static member function without an object argument
+[compile:jd-query]     return gen::Stream(end<T>());
+[compile:jd-query]                        ^~~
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:query] In file included from ./include/jotdown/object.h:13:
+[compile:query] In file included from ./include/jotdown/parser.h:13:
+[compile:query] ./moonlight/include/moonlight/generator.h:723:24: error: member 'end' used before its declaration
+[compile:query]     return gen::Stream(end<T>());
+[compile:query]                        ^
+[compile:query] ./include/jotdown/query.h:42:30: note: in instantiation of member function 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>::empty' requested here
+[compile:query]     : _results(ResultStream::empty()) { }
+[compile:query]                              ^
+[compile:query] ./moonlight/include/moonlight/generator.h:313:22: note: member is declared here
+[compile:query]     gen::Iterator<T> end() const {
+[compile:query]                      ^
+[compile:query] ./moonlight/include/moonlight/generator.h:723:24: error: call to non-static member function without an object argument
+[compile:query]     return gen::Stream(end<T>());
+[compile:query]                        ^~~
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:front-matter] In file included from ./include/jotdown/object.h:13:
+[compile:front-matter] In file included from ./include/jotdown/parser.h:13:
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:723:24: error: member 'end' used before its declaration
+[compile:front-matter]     return gen::Stream(end<T>());
+[compile:front-matter]                        ^
+[compile:front-matter] ./include/jotdown/query.h:42:30: note: in instantiation of member function 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>::empty' requested here
+[compile:front-matter]     : _results(ResultStream::empty()) { }
+[compile:front-matter]                              ^
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:313:22: note: member is declared here
+[compile:front-matter]     gen::Iterator<T> end() const {
+[compile:front-matter]                      ^
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:723:24: error: call to non-static member function without an object argument
+[compile:front-matter]     return gen::Stream(end<T>());
+[compile:front-matter]                        ^~~
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:16:
+[compile:query] ./include/jotdown/query.h:67:36: error: no viable conversion from 'std::basic_string<char>' to 'const std::regex' (aka 'const basic_regex<char>')
+[compile:query]             query = query.rx_match(moonlight::slice(s, 1, {}));
+[compile:query]                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2565:7: note: in instantiation of function template specialization 'jotdown::Query::parse(const std::string &)::(anonymous class)::operator()<std::basic_string<char>>' requested here
+[compile:query]       std::declval<_Fn>()(std::declval<_Args>()...)
+[compile:query]       ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2576:24: note: while substituting deduced template arguments into function template '_S_test' [with _Fn = (lambda at ./include/jotdown/query.h:66:31) &, _Args = (no value)]
+[compile:query]       typedef decltype(_S_test<_Functor, _ArgTypes...>(0)) type;
+[compile:query]                        ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2582:14: note: in instantiation of template class 'std::__result_of_impl<false, false, (lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>' requested here
+[compile:query]     : public __result_of_impl<
+[compile:query]              ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2915:29: note: in instantiation of template class 'std::__invoke_result<(lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>' requested here
+[compile:query]                                __void_t<typename _Result::type>>
+[compile:query]                                                  ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: during template argument deduction for class template partial specialization '__is_invocable_impl<_Result, _Ret, true>' [with _Result = std::__invoke_result<(lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>, _Ret = void]
+[compile:query]         : __is_invocable_impl<_Res2, _Res>::type
+[compile:query]           ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: (skipping 2 contexts in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:434:33: note: in instantiation of template type alias '_Requires' requested here
+[compile:query]                typename _Constraints = _Requires<_Callable<_Functor>>>
+[compile:query]                                        ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:435:2: note: in instantiation of default argument for 'function<(lambda at ./include/jotdown/query.h:66:31) &>' required here
+[compile:query]         function(_Functor&& __f)
+[compile:query]         ^~~~~~~~~~~~~~~~~~~~~~~~
+[compile:query] ./moonlight/include/moonlight/classify.h:67:86: note: while substituting deduced template arguments into function template 'function' [with _Functor = (lambda at ./include/jotdown/query.h:66:31) &, _Constraints = (no value)]
+[compile:query]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:query]                                                                                      ^
+[compile:query] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:66:31)>' requested here
+[compile:query]             _switch._cases.push_back(Case(_match, action));
+[compile:query]                                      ^
+[compile:query] ./include/jotdown/query.h:66:29: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:66:31)>' requested here
+[compile:query]         classify(rx("=.*")) = [&](const auto& s) {
+[compile:query]                             ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:479:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'const std::basic_regex<char> &' for 1st argument
+[compile:query]       basic_regex(const basic_regex& __rhs) = default;
+[compile:query]       ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:486:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'std::basic_regex<char> &&' for 1st argument
+[compile:query]       basic_regex(basic_regex&& __rhs) noexcept = default;
+[compile:query]       ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:530:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'initializer_list<char>' for 1st argument
+[compile:query]       basic_regex(initializer_list<_Ch_type> __l, flag_type __f = ECMAScript)
+[compile:query]       ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:452:7: note: explicit constructor is not a candidate
+[compile:query]       basic_regex(const _Ch_type* __p, flag_type __f = ECMAScript)
+[compile:query]       ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:499:2: note: explicit constructor is not a candidate
+[compile:query]         basic_regex(const std::basic_string<_Ch_type, _Ch_traits,
+[compile:query]         ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/basic_string.h:936:7: note: candidate function
+[compile:query]       operator __sv_type() const noexcept
+[compile:query]       ^
+[compile:query] ./include/jotdown/query.h:224:38: note: passing argument to parameter 'rx' here
+[compile:query]     Query rx_match(const std::regex& rx, bool focus_label = true) {
+[compile:query]                                      ^
+[compile:query] ./include/jotdown/query.h:99:36: error: no viable overloaded operator[] for type 'const std::unordered_map<basic_string<char>, Type>'
+[compile:query]                 query = query.type(lower_map[s]);
+[compile:query]                                    ^~~~~~~~~ ~
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2565:7: note: in instantiation of function template specialization 'jotdown::Query::parse(const std::string &)::(anonymous class)::operator()(const std::basic_string<char> &)::(anonymous class)::operator()<std::basic_string<char>>' requested here
+[compile:query]       std::declval<_Fn>()(std::declval<_Args>()...)
+[compile:query]       ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2576:24: note: while substituting deduced template arguments into function template '_S_test' [with _Fn = (lambda at ./include/jotdown/query.h:98:34) &, _Args = (no value)]
+[compile:query]       typedef decltype(_S_test<_Functor, _ArgTypes...>(0)) type;
+[compile:query]                        ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2582:14: note: in instantiation of template class 'std::__result_of_impl<false, false, (lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>' requested here
+[compile:query]     : public __result_of_impl<
+[compile:query]              ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2915:29: note: in instantiation of template class 'std::__invoke_result<(lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>' requested here
+[compile:query]                                __void_t<typename _Result::type>>
+[compile:query]                                                  ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: during template argument deduction for class template partial specialization '__is_invocable_impl<_Result, _Ret, true>' [with _Result = std::__invoke_result<(lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>, _Ret = void]
+[compile:query]         : __is_invocable_impl<_Res2, _Res>::type
+[compile:query]           ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: (skipping 2 contexts in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:434:33: note: in instantiation of template type alias '_Requires' requested here
+[compile:query]                typename _Constraints = _Requires<_Callable<_Functor>>>
+[compile:query]                                        ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:435:2: note: in instantiation of default argument for 'function<(lambda at ./include/jotdown/query.h:98:34) &>' required here
+[compile:query]         function(_Functor&& __f)
+[compile:query]         ^~~~~~~~~~~~~~~~~~~~~~~~
+[compile:query] ./moonlight/include/moonlight/classify.h:67:86: note: while substituting deduced template arguments into function template 'function' [with _Functor = (lambda at ./include/jotdown/query.h:98:34) &, _Constraints = (no value)]
+[compile:query]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:query]                                                                                      ^
+[compile:query] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:query]             _switch._cases.push_back(Case(_match, action));
+[compile:query]                                      ^
+[compile:query] ./include/jotdown/query.h:98:32: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:query]             classify(rx(name)) = [&](const auto& s) {
+[compile:query]                                ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/unordered_map.h:979:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<basic_string<char>, Type>', but method is not marked const
+[compile:query]       operator[](const key_type& __k)
+[compile:query]       ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/unordered_map.h:983:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<basic_string<char>, Type>', but method is not marked const
+[compile:query]       operator[](key_type&& __k)
+[compile:query]       ^
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:16:
+[compile:query] In file included from ./include/jotdown/query.h:15:
+[compile:query] ./moonlight/include/moonlight/classify.h:67:79: error: no matching conversion for functional-style cast from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::Action'
+[compile:query]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:query]                                                                               ^~~~~~~~~~~~~
+[compile:query] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:query]             _switch._cases.push_back(Case(_match, action));
+[compile:query]                                      ^
+[compile:query] ./include/jotdown/query.h:98:32: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:query]             classify(rx(name)) = [&](const auto& s) {
+[compile:query]                                ^
+[compile:query] ./moonlight/include/moonlight/classify.h:42:11: note: candidate constructor (the implicit copy constructor) not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'const moonlight::Classifier<std::basic_string<char>>::Action' for 1st argument
+[compile:query]     class Action {
+[compile:query]           ^
+[compile:query] ./moonlight/include/moonlight/classify.h:42:11: note: candidate constructor (the implicit move constructor) not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::Action' for 1st argument
+[compile:query]     class Action {
+[compile:query]           ^
+[compile:query] ./moonlight/include/moonlight/classify.h:44:9: note: candidate constructor not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::NullaryAction' (aka 'function<void ()>') for 1st argument
+[compile:query]         Action(NullaryAction action) : _nullary(action), _unary({}) { }
+[compile:query]         ^
+[compile:query] ./moonlight/include/moonlight/classify.h:45:9: note: candidate constructor not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::UnaryAction' (aka 'function<void (const std::basic_string<char> &)>') for 1st argument
+[compile:query]         Action(UnaryAction action) : _nullary({}), _unary(action) { }
+[compile:query]         ^
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:14:
+[compile:jd-query] ./include/jotdown/query.h:67:36: error: no viable conversion from 'std::basic_string<char>' to 'const std::regex' (aka 'const basic_regex<char>')
+[compile:jd-query]             query = query.rx_match(moonlight::slice(s, 1, {}));
+[compile:jd-query]                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2565:7: note: in instantiation of function template specialization 'jotdown::Query::parse(const std::string &)::(anonymous class)::operator()<std::basic_string<char>>' requested here
+[compile:jd-query]       std::declval<_Fn>()(std::declval<_Args>()...)
+[compile:jd-query]       ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2576:24: note: while substituting deduced template arguments into function template '_S_test' [with _Fn = (lambda at ./include/jotdown/query.h:66:31) &, _Args = (no value)]
+[compile:jd-query]       typedef decltype(_S_test<_Functor, _ArgTypes...>(0)) type;
+[compile:jd-query]                        ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2582:14: note: in instantiation of template class 'std::__result_of_impl<false, false, (lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>' requested here
+[compile:jd-query]     : public __result_of_impl<
+[compile:jd-query]              ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2915:29: note: in instantiation of template class 'std::__invoke_result<(lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>' requested here
+[compile:jd-query]                                __void_t<typename _Result::type>>
+[compile:jd-query]                                                  ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: during template argument deduction for class template partial specialization '__is_invocable_impl<_Result, _Ret, true>' [with _Result = std::__invoke_result<(lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>, _Ret = void]
+[compile:jd-query]         : __is_invocable_impl<_Res2, _Res>::type
+[compile:jd-query]           ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: (skipping 2 contexts in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:434:33: note: in instantiation of template type alias '_Requires' requested here
+[compile:jd-query]                typename _Constraints = _Requires<_Callable<_Functor>>>
+[compile:jd-query]                                        ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:435:2: note: in instantiation of default argument for 'function<(lambda at ./include/jotdown/query.h:66:31) &>' required here
+[compile:jd-query]         function(_Functor&& __f)
+[compile:jd-query]         ^~~~~~~~~~~~~~~~~~~~~~~~
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:67:86: note: while substituting deduced template arguments into function template 'function' [with _Functor = (lambda at ./include/jotdown/query.h:66:31) &, _Constraints = (no value)]
+[compile:jd-query]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:jd-query]                                                                                      ^
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:66:31)>' requested here
+[compile:jd-query]             _switch._cases.push_back(Case(_match, action));
+[compile:jd-query]                                      ^
+[compile:jd-query] ./include/jotdown/query.h:66:29: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:66:31)>' requested here
+[compile:jd-query]         classify(rx("=.*")) = [&](const auto& s) {
+[compile:jd-query]                             ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:479:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'const std::basic_regex<char> &' for 1st argument
+[compile:jd-query]       basic_regex(const basic_regex& __rhs) = default;
+[compile:jd-query]       ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:486:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'std::basic_regex<char> &&' for 1st argument
+[compile:jd-query]       basic_regex(basic_regex&& __rhs) noexcept = default;
+[compile:jd-query]       ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:530:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'initializer_list<char>' for 1st argument
+[compile:jd-query]       basic_regex(initializer_list<_Ch_type> __l, flag_type __f = ECMAScript)
+[compile:jd-query]       ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:452:7: note: explicit constructor is not a candidate
+[compile:jd-query]       basic_regex(const _Ch_type* __p, flag_type __f = ECMAScript)
+[compile:jd-query]       ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:499:2: note: explicit constructor is not a candidate
+[compile:jd-query]         basic_regex(const std::basic_string<_Ch_type, _Ch_traits,
+[compile:jd-query]         ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/basic_string.h:936:7: note: candidate function
+[compile:jd-query]       operator __sv_type() const noexcept
+[compile:jd-query]       ^
+[compile:jd-query] ./include/jotdown/query.h:224:38: note: passing argument to parameter 'rx' here
+[compile:jd-query]     Query rx_match(const std::regex& rx, bool focus_label = true) {
+[compile:jd-query]                                      ^
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:query] In file included from ./include/jotdown/object.h:13:
+[compile:query] In file included from ./include/jotdown/parser.h:13:
+[compile:query] ./moonlight/include/moonlight/generator.h:612:16: error: type 'const gen::Iterator<shared_ptr<Object>>' does not provide a call operator
+[compile:query]         return _begin() == gen::end<T>();
+[compile:query]                ^~~~~~
+[compile:query] ./include/jotdown/query.h:178:37: note: in instantiation of member function 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>::is_empty' requested here
+[compile:query]         if (! child_query.results().is_empty()) {
+[compile:query]                                     ^
+[compile:query] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/query.cpp:10:
+[compile:query] In file included from ./include/jotdown/api.h:13:
+[compile:query] In file included from ./include/jotdown/object.h:13:
+[compile:query] In file included from ./include/jotdown/parser.h:13:
+[compile:query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' is deprecated [-Wdeprecated-declarations]
+[compile:query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:query]                              ^
+[compile:query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' requested here
+[compile:query]     gen::Iterator<T> _begin;
+[compile:query]                      ^
+[compile:query] ./moonlight/include/moonlight/generator.h:715:23: note: in instantiation of template class 'moonlight::gen::Stream<moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' requested here
+[compile:query]     return gen::merge(Stream<Stream<T>>::lazy_singleton(f));
+[compile:query]                       ^
+[compile:query] ./moonlight/include/moonlight/generator.h:705:23: note: in instantiation of member function 'moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>::lazy' requested here
+[compile:query]     return Stream<T>::lazy([=]() -> gen::Stream<T> {
+[compile:query]                       ^
+[compile:query] ./include/jotdown/query.h:183:18: note: in instantiation of function template specialization 'moonlight::gen::seq<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:query]             gen::seq(
+[compile:query]                  ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' has been explicitly marked deprecated here
+[compile:query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:query]            ^
+[compile:query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:query]                                  ^
+[compile:jd-query] ./include/jotdown/query.h:99:36: error: no viable overloaded operator[] for type 'const std::unordered_map<basic_string<char>, Type>'
+[compile:jd-query]                 query = query.type(lower_map[s]);
+[compile:jd-query]                                    ^~~~~~~~~ ~
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2565:7: note: in instantiation of function template specialization 'jotdown::Query::parse(const std::string &)::(anonymous class)::operator()(const std::basic_string<char> &)::(anonymous class)::operator()<std::basic_string<char>>' requested here
+[compile:jd-query]       std::declval<_Fn>()(std::declval<_Args>()...)
+[compile:jd-query]       ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2576:24: note: while substituting deduced template arguments into function template '_S_test' [with _Fn = (lambda at ./include/jotdown/query.h:98:34) &, _Args = (no value)]
+[compile:jd-query]       typedef decltype(_S_test<_Functor, _ArgTypes...>(0)) type;
+[compile:jd-query]                        ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2582:14: note: in instantiation of template class 'std::__result_of_impl<false, false, (lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>' requested here
+[compile:jd-query]     : public __result_of_impl<
+[compile:jd-query]              ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2915:29: note: in instantiation of template class 'std::__invoke_result<(lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>' requested here
+[compile:jd-query]                                __void_t<typename _Result::type>>
+[compile:jd-query]                                                  ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: during template argument deduction for class template partial specialization '__is_invocable_impl<_Result, _Ret, true>' [with _Result = std::__invoke_result<(lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>, _Ret = void]
+[compile:jd-query]         : __is_invocable_impl<_Res2, _Res>::type
+[compile:jd-query]           ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: (skipping 2 contexts in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:434:33: note: in instantiation of template type alias '_Requires' requested here
+[compile:jd-query]                typename _Constraints = _Requires<_Callable<_Functor>>>
+[compile:jd-query]                                        ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:435:2: note: in instantiation of default argument for 'function<(lambda at ./include/jotdown/query.h:98:34) &>' required here
+[compile:jd-query]         function(_Functor&& __f)
+[compile:jd-query]         ^~~~~~~~~~~~~~~~~~~~~~~~
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:67:86: note: while substituting deduced template arguments into function template 'function' [with _Functor = (lambda at ./include/jotdown/query.h:98:34) &, _Constraints = (no value)]
+[compile:jd-query]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:jd-query]                                                                                      ^
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:jd-query]             _switch._cases.push_back(Case(_match, action));
+[compile:jd-query]                                      ^
+[compile:jd-query] ./include/jotdown/query.h:98:32: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:jd-query]             classify(rx(name)) = [&](const auto& s) {
+[compile:jd-query]                                ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/unordered_map.h:979:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<basic_string<char>, Type>', but method is not marked const
+[compile:jd-query]       operator[](const key_type& __k)
+[compile:jd-query]       ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/unordered_map.h:983:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<basic_string<char>, Type>', but method is not marked const
+[compile:jd-query]       operator[](key_type&& __k)
+[compile:jd-query]       ^
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:14:
+[compile:jd-query] In file included from ./include/jotdown/query.h:15:
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:67:79: error: no matching conversion for functional-style cast from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::Action'
+[compile:jd-query]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:jd-query]                                                                               ^~~~~~~~~~~~~
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:jd-query]             _switch._cases.push_back(Case(_match, action));
+[compile:jd-query]                                      ^
+[compile:jd-query] ./include/jotdown/query.h:98:32: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:jd-query]             classify(rx(name)) = [&](const auto& s) {
+[compile:jd-query]                                ^
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:42:11: note: candidate constructor (the implicit copy constructor) not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'const moonlight::Classifier<std::basic_string<char>>::Action' for 1st argument
+[compile:jd-query]     class Action {
+[compile:jd-query]           ^
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:42:11: note: candidate constructor (the implicit move constructor) not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::Action' for 1st argument
+[compile:jd-query]     class Action {
+[compile:jd-query]           ^
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:44:9: note: candidate constructor not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::NullaryAction' (aka 'function<void ()>') for 1st argument
+[compile:jd-query]         Action(NullaryAction action) : _nullary(action), _unary({}) { }
+[compile:jd-query]         ^
+[compile:jd-query] ./moonlight/include/moonlight/classify.h:45:9: note: candidate constructor not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::UnaryAction' (aka 'function<void (const std::basic_string<char> &)>') for 1st argument
+[compile:jd-query]         Action(UnaryAction action) : _nullary({}), _unary(action) { }
+[compile:jd-query]         ^
+[compile:query] 12 warnings and 10 errors generated.
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:16:
+[compile:front-matter] ./include/jotdown/query.h:67:36: error: no viable conversion from 'std::basic_string<char>' to 'const std::regex' (aka 'const basic_regex<char>')
+[compile:front-matter]             query = query.rx_match(moonlight::slice(s, 1, {}));
+[compile:front-matter]                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2565:7: note: in instantiation of function template specialization 'jotdown::Query::parse(const std::string &)::(anonymous class)::operator()<std::basic_string<char>>' requested here
+[compile:front-matter]       std::declval<_Fn>()(std::declval<_Args>()...)
+[compile:front-matter]       ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2576:24: note: while substituting deduced template arguments into function template '_S_test' [with _Fn = (lambda at ./include/jotdown/query.h:66:31) &, _Args = (no value)]
+[compile:front-matter]       typedef decltype(_S_test<_Functor, _ArgTypes...>(0)) type;
+[compile:front-matter]                        ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2582:14: note: in instantiation of template class 'std::__result_of_impl<false, false, (lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>' requested here
+[compile:front-matter]     : public __result_of_impl<
+[compile:front-matter]              ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2915:29: note: in instantiation of template class 'std::__invoke_result<(lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>' requested here
+[compile:front-matter]                                __void_t<typename _Result::type>>
+[compile:front-matter]                                                  ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: during template argument deduction for class template partial specialization '__is_invocable_impl<_Result, _Ret, true>' [with _Result = std::__invoke_result<(lambda at ./include/jotdown/query.h:66:31) &, const std::basic_string<char> &>, _Ret = void]
+[compile:front-matter]         : __is_invocable_impl<_Res2, _Res>::type
+[compile:front-matter]           ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: (skipping 2 contexts in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:434:33: note: in instantiation of template type alias '_Requires' requested here
+[compile:front-matter]                typename _Constraints = _Requires<_Callable<_Functor>>>
+[compile:front-matter]                                        ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:435:2: note: in instantiation of default argument for 'function<(lambda at ./include/jotdown/query.h:66:31) &>' required here
+[compile:front-matter]         function(_Functor&& __f)
+[compile:front-matter]         ^~~~~~~~~~~~~~~~~~~~~~~~
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:67:86: note: while substituting deduced template arguments into function template 'function' [with _Functor = (lambda at ./include/jotdown/query.h:66:31) &, _Constraints = (no value)]
+[compile:front-matter]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:front-matter]                                                                                      ^
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:66:31)>' requested here
+[compile:front-matter]             _switch._cases.push_back(Case(_match, action));
+[compile:front-matter]                                      ^
+[compile:front-matter] ./include/jotdown/query.h:66:29: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:66:31)>' requested here
+[compile:front-matter]         classify(rx("=.*")) = [&](const auto& s) {
+[compile:front-matter]                             ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:479:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'const std::basic_regex<char> &' for 1st argument
+[compile:front-matter]       basic_regex(const basic_regex& __rhs) = default;
+[compile:front-matter]       ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:486:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'std::basic_regex<char> &&' for 1st argument
+[compile:front-matter]       basic_regex(basic_regex&& __rhs) noexcept = default;
+[compile:front-matter]       ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:530:7: note: candidate constructor not viable: no known conversion from 'std::basic_string<char>' to 'initializer_list<char>' for 1st argument
+[compile:front-matter]       basic_regex(initializer_list<_Ch_type> __l, flag_type __f = ECMAScript)
+[compile:front-matter]       ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:452:7: note: explicit constructor is not a candidate
+[compile:front-matter]       basic_regex(const _Ch_type* __p, flag_type __f = ECMAScript)
+[compile:front-matter]       ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/regex.h:499:2: note: explicit constructor is not a candidate
+[compile:front-matter]         basic_regex(const std::basic_string<_Ch_type, _Ch_traits,
+[compile:front-matter]         ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/basic_string.h:936:7: note: candidate function
+[compile:front-matter]       operator __sv_type() const noexcept
+[compile:front-matter]       ^
+[compile:front-matter] ./include/jotdown/query.h:224:38: note: passing argument to parameter 'rx' here
+[compile:front-matter]     Query rx_match(const std::regex& rx, bool focus_label = true) {
+[compile:front-matter]                                      ^
+[compile:query] AssertionError: Command failed.
+[run_test:query] Recipe 'compile:query' didn't complete successfully.
+[run_test:query] AssertionError: 1 recipe didn't complete successfully.
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:11:
+[compile:jd-query] In file included from ./include/jotdown/parser.h:13:
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:612:16: error: type 'const gen::Iterator<shared_ptr<Object>>' does not provide a call operator
+[compile:jd-query]         return _begin() == gen::end<T>();
+[compile:jd-query]                ^~~~~~
+[compile:jd-query] ./include/jotdown/query.h:178:37: note: in instantiation of member function 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>::is_empty' requested here
+[compile:jd-query]         if (! child_query.results().is_empty()) {
+[compile:jd-query]                                     ^
+[compile:front-matter] ./include/jotdown/query.h:99:36: error: no viable overloaded operator[] for type 'const std::unordered_map<basic_string<char>, Type>'
+[compile:front-matter]                 query = query.type(lower_map[s]);
+[compile:jd-query] In file included from /home/lainproliant/sync/lain/proj/jotdown/demo/jd-query.cpp:11:
+[compile:front-matter]                                    ^~~~~~~~~ ~
+[compile:jd-query] In file included from ./include/jotdown/parser.h:13:
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2565:7: note: in instantiation of function template specialization 'jotdown::Query::parse(const std::string &)::(anonymous class)::operator()(const std::basic_string<char> &)::(anonymous class)::operator()<std::basic_string<char>>' requested here
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' is deprecated [-Wdeprecated-declarations]
+[compile:front-matter]       std::declval<_Fn>()(std::declval<_Args>()...)
+[compile:jd-query] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:front-matter]       ^
+[compile:jd-query]                              ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2576:24: note: while substituting deduced template arguments into function template '_S_test' [with _Fn = (lambda at ./include/jotdown/query.h:98:34) &, _Args = (no value)]
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' requested here
+[compile:front-matter]       typedef decltype(_S_test<_Functor, _ArgTypes...>(0)) type;
+[compile:jd-query]     gen::Iterator<T> _begin;
+[compile:front-matter]                        ^
+[compile:jd-query]                      ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2582:14: note: in instantiation of template class 'std::__result_of_impl<false, false, (lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>' requested here
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:715:23: note: in instantiation of template class 'moonlight::gen::Stream<moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' requested here
+[compile:front-matter]     : public __result_of_impl<
+[compile:jd-query]     return gen::merge(Stream<Stream<T>>::lazy_singleton(f));
+[compile:front-matter]              ^
+[compile:jd-query]                       ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/type_traits:2915:29: note: in instantiation of template class 'std::__invoke_result<(lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>' requested here
+[compile:jd-query] ./moonlight/include/moonlight/generator.h:705:23: note: in instantiation of member function 'moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>::lazy' requested here
+[compile:front-matter]                                __void_t<typename _Result::type>>
+[compile:jd-query]     return Stream<T>::lazy([=]() -> gen::Stream<T> {
+[compile:front-matter]                                                  ^
+[compile:jd-query]                       ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: during template argument deduction for class template partial specialization '__is_invocable_impl<_Result, _Ret, true>' [with _Result = std::__invoke_result<(lambda at ./include/jotdown/query.h:98:34) &, const std::basic_string<char> &>, _Ret = void]
+[compile:jd-query] ./include/jotdown/query.h:183:18: note: in instantiation of function template specialization 'moonlight::gen::seq<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:front-matter]         : __is_invocable_impl<_Res2, _Res>::type
+[compile:jd-query]             gen::seq(
+[compile:front-matter]           ^
+[compile:jd-query]                  ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:349:4: note: (skipping 2 contexts in backtrace; use -ftemplate-backtrace-limit=0 to see all)
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' has been explicitly marked deprecated here
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:434:33: note: in instantiation of template type alias '_Requires' requested here
+[compile:jd-query]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter]                typename _Constraints = _Requires<_Callable<_Functor>>>
+[compile:jd-query]            ^
+[compile:front-matter]                                        ^
+[compile:jd-query] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/std_function.h:435:2: note: in instantiation of default argument for 'function<(lambda at ./include/jotdown/query.h:98:34) &>' required here
+[compile:jd-query] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:front-matter]         function(_Functor&& __f)
+[compile:jd-query]                                  ^
+[compile:front-matter]         ^~~~~~~~~~~~~~~~~~~~~~~~
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:67:86: note: while substituting deduced template arguments into function template 'function' [with _Functor = (lambda at ./include/jotdown/query.h:98:34) &, _Constraints = (no value)]
+[compile:front-matter]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:front-matter]                                                                                      ^
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:front-matter]             _switch._cases.push_back(Case(_match, action));
+[compile:front-matter]                                      ^
+[compile:front-matter] ./include/jotdown/query.h:98:32: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:front-matter]             classify(rx(name)) = [&](const auto& s) {
+[compile:front-matter]                                ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/unordered_map.h:979:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<basic_string<char>, Type>', but method is not marked const
+[compile:front-matter]       operator[](const key_type& __k)
+[compile:front-matter]       ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/unordered_map.h:983:7: note: candidate function not viable: 'this' argument has type 'const std::unordered_map<basic_string<char>, Type>', but method is not marked const
+[compile:front-matter]       operator[](key_type&& __k)
+[compile:front-matter]       ^
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:16:
+[compile:front-matter] In file included from ./include/jotdown/query.h:15:
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:67:79: error: no matching conversion for functional-style cast from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::Action'
+[compile:front-matter]         Case(MatchFunction match, ActionImpl action) : _match(match), _action(Action(action)) { }
+[compile:front-matter]                                                                               ^~~~~~~~~~~~~
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:92:38: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::Case::Case<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:front-matter]             _switch._cases.push_back(Case(_match, action));
+[compile:front-matter]                                      ^
+[compile:front-matter] ./include/jotdown/query.h:98:32: note: in instantiation of function template specialization 'moonlight::Classifier<std::basic_string<char>>::CaseAssigner::operator=<(lambda at ./include/jotdown/query.h:98:34)>' requested here
+[compile:front-matter]             classify(rx(name)) = [&](const auto& s) {
+[compile:front-matter]                                ^
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:42:11: note: candidate constructor (the implicit copy constructor) not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'const moonlight::Classifier<std::basic_string<char>>::Action' for 1st argument
+[compile:front-matter]     class Action {
+[compile:front-matter]           ^
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:42:11: note: candidate constructor (the implicit move constructor) not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::Action' for 1st argument
+[compile:front-matter]     class Action {
+[compile:front-matter]           ^
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:44:9: note: candidate constructor not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::NullaryAction' (aka 'function<void ()>') for 1st argument
+[compile:front-matter]         Action(NullaryAction action) : _nullary(action), _unary({}) { }
+[compile:front-matter]         ^
+[compile:front-matter] ./moonlight/include/moonlight/classify.h:45:9: note: candidate constructor not viable: no known conversion from '(lambda at ./include/jotdown/query.h:98:34)' to 'moonlight::Classifier<std::basic_string<char>>::UnaryAction' (aka 'function<void (const std::basic_string<char> &)>') for 1st argument
+[compile:front-matter]         Action(UnaryAction action) : _nullary({}), _unary(action) { }
+[compile:front-matter]         ^
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:front-matter] In file included from ./include/jotdown/object.h:13:
+[compile:front-matter] In file included from ./include/jotdown/parser.h:13:
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:612:16: error: type 'const gen::Iterator<shared_ptr<Object>>' does not provide a call operator
+[compile:front-matter]         return _begin() == gen::end<T>();
+[compile:front-matter]                ^~~~~~
+[compile:front-matter] ./include/jotdown/query.h:178:37: note: in instantiation of member function 'moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>::is_empty' requested here
+[compile:front-matter]         if (! child_query.results().is_empty()) {
+[compile:front-matter]                                     ^
+[compile:front-matter] In file included from /home/lainproliant/sync/lain/proj/jotdown/test/front-matter.cpp:10:
+[compile:front-matter] In file included from ./include/jotdown/api.h:13:
+[compile:front-matter] In file included from ./include/jotdown/object.h:13:
+[compile:front-matter] In file included from ./include/jotdown/parser.h:13:
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:36:30: warning: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' is deprecated [-Wdeprecated-declarations]
+[compile:front-matter] class Iterator : public std::iterator<std::input_iterator_tag, T> {
+[compile:front-matter]                              ^
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:616:22: note: in instantiation of template class 'moonlight::gen::Iterator<moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' requested here
+[compile:front-matter]     gen::Iterator<T> _begin;
+[compile:front-matter]                      ^
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:715:23: note: in instantiation of template class 'moonlight::gen::Stream<moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' requested here
+[compile:front-matter]     return gen::merge(Stream<Stream<T>>::lazy_singleton(f));
+[compile:front-matter]                       ^
+[compile:front-matter] ./moonlight/include/moonlight/generator.h:705:23: note: in instantiation of member function 'moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>::lazy' requested here
+[compile:front-matter]     return Stream<T>::lazy([=]() -> gen::Stream<T> {
+[compile:front-matter]                       ^
+[compile:front-matter] ./include/jotdown/query.h:183:18: note: in instantiation of function template specialization 'moonlight::gen::seq<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>, moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>' requested here
+[compile:front-matter]             gen::seq(
+[compile:front-matter]                  ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/bits/stl_iterator_base_types.h:127:12: note: 'iterator<std::input_iterator_tag, moonlight::gen::Stream<moonlight::gen::Stream<std::shared_ptr<jotdown::Object>>>>' has been explicitly marked deprecated here
+[compile:front-matter]     struct _GLIBCXX17_DEPRECATED iterator
+[compile:front-matter]            ^
+[compile:front-matter] /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.1.0/../../../../include/c++/12.1.0/x86_64-pc-linux-gnu/bits/c++config.h:119:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+[compile:front-matter] # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+[compile:front-matter]                                  ^
+[compile:jd-query] 12 warnings and 11 errors generated.
+[compile:jd-query] AssertionError: Command failed.
+[compile:front-matter] 12 warnings and 10 errors generated.
+[compile:front-matter] AssertionError: Command failed.
+[run_test:front-matter] Recipe 'compile:front-matter' didn't complete successfully.
+[run_test:front-matter] AssertionError: 1 recipe didn't complete successfully.
+[run_tests] Recipe 'run_test:links' didn't complete successfully.
+[run_tests] Recipe 'run_test:query' didn't complete successfully.
+[run_tests] Recipe 'run_test:front-matter' didn't complete successfully.
+[run_tests] AssertionError: 3 recipes didn't complete successfully.
+[compile_pybind11_module_object:jotdown.o] Recipe 'run_tests' didn't complete successfully.
+[compile_pybind11_module_object:jotdown.o] AssertionError: 1 recipe didn't complete successfully.
+[pymodule_objects] Recipe 'compile_pybind11_module_object:jotdown.o' didn't complete successfully.
+[pymodule_objects] AssertionError: 1 recipe didn't complete successfully.
+[link_pybind11_module:jotdown.cpython-310-x86_64-linux-gnu.so] Recipe 'pymodule_objects' didn't complete successfully.
+[link_pybind11_module:jotdown.cpython-310-x86_64-linux-gnu.so] AssertionError: 1 recipe didn't complete successfully.
+[compile:jd-tokenize] 8 warnings generated.
+[compile:jd-tokenize] ok
+[compile:jd-json] 8 warnings generated.
+[compile:jd-json] ok
+[compile:jd-roundtrip] 8 warnings generated.
+[compile:jd-roundtrip] ok
+[demos] Recipe 'compile:jd-query' didn't complete successfully.
+[demos] AssertionError: 1 recipe didn't complete successfully.
+[all] Recipe 'demos' didn't complete successfully.
+[all] Recipe 'link_pybind11_module:jotdown.cpython-310-x86_64-linux-gnu.so' didn't complete successfully.
+[all] AssertionError: 2 recipes didn't complete successfully.
+[build] Recipe 'all' didn't complete successfully.
+[build] AssertionError: 1 recipe didn't complete successfully.
