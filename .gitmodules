@@ -1,6 +1,0 @@
-[submodule "moonlight"]
-	path = moonlight
-	url = git@github.com:/lainproliant/moonlight
-[submodule "pybind11"]
-	path = pybind11
-	url = git@github.com:/pybind/pybind11

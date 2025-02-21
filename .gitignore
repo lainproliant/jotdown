@@ -7,3 +7,4 @@ python/dist
 python/build
 .cache
 compile_commands.json
+deps

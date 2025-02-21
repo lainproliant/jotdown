@@ -10,22 +10,30 @@
 import shlex
 from pathlib import Path
 
-from xeno.build import Recipe, ValueRecipe, build, default, provide, sh, target, factory
+from xeno.build import Recipe, build, factory, provide, recipe, task
+from xeno.recipes import checkout, sh
+from xeno.recipes.cxx import ENV, compile
 from xeno.shell import check
 
 # -------------------------------------------------------------------
 PYPI_USERNAME = "lainproliant"
 PYPI_KEY_NAME = "pypi"
 
-# -------------------------------------------------------------------
-INCLUDES = [
-    "-I./include",
-    "-I./moonlight/include",
-    "-I./moonlight/deps",
-    "-I./pybind11/include",
+PERFORMANCE = "-O3"
+
+DEPS = [
+    "https://github.com/lainproliant/moonlight",
+    "https://github.com/pybind/pybind11",
 ]
 
-LDFLAGS = ("-rdynamic", "-g", "-ldl")
+INCLUDES = [
+    "-I./include",
+    "-I./deps/moonlight/include",
+    "-I./deps/moonlight/deps",
+    "-I./deps/pybind11/include",
+]
+
+LDFLAGS = ("-rdynamic", PERFORMANCE, "-ldl")
 
 RELEASE_CFLAGS = (*INCLUDES, "--std=c++2a")
 
@@ -38,19 +46,15 @@ TEST_CFLAGS = (
     "-DMOONLIGHT_STACKTRACE_IN_DESCRIPTION",
 )
 
-RELEASE_ENV = dict(CC="clang++", CFLAGS=RELEASE_CFLAGS, LDFLAGS=LDFLAGS)
+RELEASE_ENV = ENV.copy().update(CFLAGS=RELEASE_CFLAGS, LDFLAGS=LDFLAGS)
 
-TEST_ENV = dict(CC="clang++", CFLAGS=TEST_CFLAGS, LDFLAGS=LDFLAGS)
+TEST_ENV = ENV.copy().update(CFLAGS=TEST_CFLAGS, LDFLAGS=LDFLAGS)
+
 
 # -------------------------------------------------------------------
+@factory
 def compile_app(src, headers, env):
-    return sh(
-        "{CC} {CFLAGS} {src} {LDFLAGS} -o {output}",
-        env=env,
-        src=src,
-        output=Path(src).with_suffix(""),
-        includes=headers,
-    )
+    return compile(src, headers=headers, target=Path(src).with_suffix(""), env=env)
 
 
 # -------------------------------------------------------------------
@@ -68,51 +72,45 @@ def compile_demo(src, headers, env):
 # -------------------------------------------------------------------
 @factory
 def run_test(app):
-    return sh("{test}", test=app, cwd="test", interactive=True)
+    return sh(app, cwd="test", interactive=True)
 
 
 # -------------------------------------------------------------------
 @factory
 def link_pybind11_module(pybind11_module_objects):
     return sh(
-        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {input} -o {output}",
+        "{CXX} -O3 -shared -Wall -std=c++2a -fPIC {input} -o {target}",
         env=RELEASE_ENV,
         input=pybind11_module_objects,
-        output=Path("jotdown%s" % check("python3-config --extension-suffix")),
+        target=Path(
+            "jotdown%s" % check("pipenv run python3-config --extension-suffix")
+        ),
     )
 
 
 # -------------------------------------------------------------------
-class FindLatestTarball(ValueRecipe):
-    def __init__(self, path):
-        super().__init__(input=[path])
-        self.path = path.result
-
-    async def compute(self):
-        tarballs = [*self.path.glob("*.tar.gz")]
-        return max(tarballs, key=lambda x: x.stat().st_mtime)
+@recipe
+def find_latest_tarball(path):
+    tarballs = [*Path(path).glob("*.tar.gz")]
+    return max(tarballs, key=lambda x: x.stat().st_mtime)
 
 
 # -------------------------------------------------------------------
-class GetPassword(ValueRecipe):
-    def __init__(self, name: str):
-        super().__init__()
-        self._name = name
-
-    async def compute(self):
-        return check(f"pass {self._name}")
+@recipe
+def get_password(name: str):
+    return check(f"pass {name}")
 
 
 # -------------------------------------------------------------------
 @factory
 def compile_pybind11_module_object(src, headers, tests):
     return sh(
-        "{CC} -O3 -shared -Wall -std=c++2a -fPIC {flags} {src} -o {output}",
+        "{CXX} -O3 -shared -Wall -std=c++2a -fPIC {flags} {src} -o {target}",
         env=RELEASE_ENV,
         src=src,
         tests=tests,
-        output=Path(src).with_suffix(".o"),
-        flags=INCLUDES + shlex.split(check("python-config --includes")),
+        target=Path(src).with_suffix(".o"),
+        flags=INCLUDES + shlex.split(check("pipenv run python-config --includes")),
         requires=headers,
     )
 
@@ -142,8 +140,14 @@ def test_sources():
 
 
 # -------------------------------------------------------------------
-@target
-def demos(demo_sources, headers, submodules):
+@task(keep=True)
+def deps():
+    return [checkout(repo) for repo in DEPS]
+
+
+# -------------------------------------------------------------------
+@task(dep="deps")
+def demos(deps, demo_sources, headers):
     return Recipe(
         [compile_demo(src, headers, RELEASE_ENV) for src in demo_sources],
         setup=submodules,
@@ -151,31 +155,27 @@ def demos(demo_sources, headers, submodules):
 
 
 # -------------------------------------------------------------------
-@target
-def tests(test_sources, headers, submodules):
+@task(dep="deps")
+def tests(deps, test_sources, headers, submodules):
     return Recipe(
         [compile_test(src, headers, TEST_ENV) for src in test_sources], setup=submodules
     )
 
 
 # -------------------------------------------------------------------
-@target
+@task
 def run_tests(tests):
     return [run_test(app) for app in tests]
 
 
 # -------------------------------------------------------------------
-@target
-def pybind11_tests(submodules):
-    return Recipe(
-        [
-            sh("mkdir -p {output}", output="pybind11-test-build"),
-            sh("cmake ../pybind11", cwd=Path("pybind11-test-build")),
-            sh("make check -j 4", cwd=Path("pybind11-test-build"), interactive=True),
-        ],
-        synchronous=True,
-        setup=submodules,
-    )
+@task(sync=True, dep="deps")
+def pybind11_tests(deps):
+    return [
+        sh("mkdir -p {target}", target="pybind11-test-build"),
+        sh("cmake ../pybind11", cwd=Path("pybind11-test-build")),
+        sh("make check -j 4", cwd=Path("pybind11-test-build"), interactive=True),
+    ]
 
 
 # -------------------------------------------------------------------
@@ -185,8 +185,8 @@ def pymodule_sources(submodules):
 
 
 # -------------------------------------------------------------------
-@target
-def pymodule_objects(pymodule_sources, headers, run_tests):
+@task(dep="deps")
+def pymodule_objects(deps, pymodule_sources, headers, run_tests):
     return [
         compile_pybind11_module_object(src, headers, run_tests)
         for src in pymodule_sources
@@ -194,32 +194,32 @@ def pymodule_objects(pymodule_sources, headers, run_tests):
 
 
 # -------------------------------------------------------------------
-@target
+@task
 def pymodule_dev(pymodule_objects):
     return link_pybind11_module(pymodule_objects)
 
 
 # -------------------------------------------------------------------
-@target
-def pymodule_sdist(submodules):
-    return sh("python3 setup.py sdist", output="dist")
+@task(dep="deps")
+def pymodule_sdist(deps):
+    return sh("python3 setup.py sdist", target="dist")
 
 
 # -------------------------------------------------------------------
 @provide
 def latest_tarball(pymodule_sdist):
-    return FindLatestTarball(pymodule_sdist)
+    return find_latest_tarball(pymodule_sdist)
 
 
 # -------------------------------------------------------------------
 @provide
 def pypi_password():
-    return GetPassword(PYPI_KEY_NAME)
+    return get_password(PYPI_KEY_NAME)
 
 
 # -------------------------------------------------------------------
-@target
-def upload_to_pypi(latest_tarball, pypi_password):
+@task
+def upload_to_pypi(pymodule_sdist, latest_tarball, pypi_password):
     return sh(
         "twine upload -u {PYPI_USERNAME} -p {password} {input}",
         PYPI_USERNAME=PYPI_USERNAME,
@@ -230,15 +230,16 @@ def upload_to_pypi(latest_tarball, pypi_password):
 
 
 # -------------------------------------------------------------------
-@default
+@task(default=True)
 def all(demos, pymodule_dev):
     return [demos, pymodule_dev]
 
 
 # -------------------------------------------------------------------
-@target
+@task
 def cc_json():
-    return sh("intercept-build ./build.py compile\* -R; ./build.py -c compile\*")
+    return sh("intercept-build ./build.py compile\\* -R; ./build.py -c compile\\*")
+
 
 # -------------------------------------------------------------------
 build()
